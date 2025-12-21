@@ -12,7 +12,7 @@ class AIService {
   AIService._internal();
 
   // Groq API Configuration
-  final String _groqApiKey = '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'; 
+  final String _groqApiKey = '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'; 
   final String _groqModel = 'llama-3.3-70b-versatile';
   final String _groqBaseUrl = 'https://api.groq.com/openai/v1/chat/completions';
   

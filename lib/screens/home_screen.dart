@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   List<Map<String, dynamic>> _popularRecipes = [];
   final Map<String, double> _recipeRatings = {};
   RealtimeChannel? _bannedChannel;
-  RealtimeChannel? _profileStatsChannel; // Channel untuk mendengarkan perubahan stats
+  RealtimeChannel? _profileStatsChannel;
   
   int _myRecipesCount = 0;
   int _bookmarksCount = 0;
@@ -68,18 +68,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _loadUserStats();
     _loadPopularRecipes();
     _setupBannedListener();
-    _setupProfileStatsListener(); // Setup listener untuk stats
+    _setupProfileStatsListener();
   }
 
   @override
   void dispose() {
     _bannedChannel?.unsubscribe();
-    _profileStatsChannel?.unsubscribe(); // Unsubscribe stats listener
+    _profileStatsChannel?.unsubscribe();
     _animationController.dispose();
     super.dispose();
   }
 
-  // Listener baru untuk mendeteksi perubahan stats di tabel profiles
   void _setupProfileStatsListener() {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
@@ -96,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             value: userId,
           ),
           callback: (payload) {
-            // Update stats ketika ada perubahan di tabel profiles
             if (mounted) {
               setState(() {
                 _myRecipesCount = payload.newRecord['total_recipes'] ?? 0;
@@ -324,125 +322,219 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Container(
                 margin: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryCoral,
+                      AppTheme.primaryOrange,
+                      AppTheme.primaryYellow,
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: AppTheme.primaryShadow,
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Halo, ${_username ?? 'Foodie'}! 👋',
-                                style: AppTheme.headingLarge.copyWith(letterSpacing: 0.3),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Selamat datang kembali di Savora',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatItem(
-                                  icon: Icons.restaurant_rounded,
-                                  value: _myRecipesCount.toString(),
-                                  label: 'Resep Saya',
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildStatItem(
-                                  icon: Icons.bookmark_rounded,
-                                  value: _bookmarksCount.toString(),
-                                  label: 'Tersimpan',
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildStatItem(
-                                  icon: Icons.people_rounded,
-                                  value: _followersCount.toString(),
-                                  label: 'Pengikut',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryCoral.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                    
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1.5,
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Decorative circles
+                    Positioned(
+                      top: -40,
+                      right: -40,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    ),
+                    Positioned(
+                      bottom: -60,
+                      left: -60,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                    ),
+                    // Content
+                    Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
-                                Icons.format_quote_rounded,
-                                color: Colors.white,
-                                size: 20,
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.4),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.waving_hand_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Halo, ${_username ?? 'Foodie'}!',
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                            letterSpacing: 0.3,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Selamat datang kembali di Savora',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white.withValues(alpha: 0.9),
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Inspirasi Hari Ini',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  letterSpacing: 0.5,
-                                ),
+                              const SizedBox(height: 20),
+                              
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildStatItem(
+                                      icon: Icons.restaurant_rounded,
+                                      value: _myRecipesCount.toString(),
+                                      label: 'Resep Saya',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildStatItem(
+                                      icon: Icons.bookmark_rounded,
+                                      value: _bookmarksCount.toString(),
+                                      label: 'Tersimpan',
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildStatItem(
+                                      icon: Icons.people_rounded,
+                                      value: _followersCount.toString(),
+                                      label: 'Pengikut',
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            _getDailyQuote(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.white,
-                              height: 1.5,
-                              fontWeight: FontWeight.w500,
+                        ),
+                        
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              width: 2,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '— ${_getDailyQuoteAuthor()}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontWeight: FontWeight.w400,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Inspirasi Hari Ini',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white.withValues(alpha: 0.95),
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _getDailyQuote(),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.white,
+                                  height: 1.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 3,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.6),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _getDailyQuoteAuthor(),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -551,23 +643,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     required String label,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1,
+          color: Colors.white.withValues(alpha: 0.4),
+          width: 2,
         ),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white, size: 22),
-          const SizedBox(height: 6),
+          Icon(icon, color: Colors.white, size: 24),
+          const SizedBox(height: 8),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               height: 1,
@@ -577,9 +669,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.95),
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
             maxLines: 1,

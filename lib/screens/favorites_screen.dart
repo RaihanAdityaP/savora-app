@@ -24,6 +24,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Color palette icons for collections
+  final List<IconData> _collectionIcons = [
+    Icons.restaurant_menu_rounded,
+    Icons.favorite_rounded,
+    Icons.local_fire_department_rounded,
+    Icons.cake_rounded,
+    Icons.coffee_rounded,
+    Icons.lunch_dining_rounded,
+    Icons.fastfood_rounded,
+    Icons.breakfast_dining_rounded,
+  ];
+
+  final List<List<Color>> _collectionGradients = [
+    [Color(0xFFE76F51), Color(0xFFF4A261)], // Coral-Orange
+    [Color(0xFF2A9D8F), Color(0xFF3DB9A9)], // Teal
+    [Color(0xFFF4A261), Color(0xFFE9C46A)], // Orange-Yellow
+    [Color(0xFFE76F51), Color(0xFFE9C46A)], // Coral-Yellow
+    [Color(0xFF264653), Color(0xFF2A9D8F)], // Dark-Teal
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -416,11 +436,30 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         },
       ),
       floatingActionButton: _selectedCollection == null
-          ? FloatingActionButton.extended(
-              onPressed: _showCreateCollectionDialog,
-              backgroundColor: AppTheme.primaryCoral,
-              icon: const Icon(Icons.add_rounded, color: Colors.white),
-              label: const Text('Koleksi Baru', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: AppTheme.buttonShadow,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showCreateCollectionDialog,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                        const SizedBox(width: 8),
+                        const Text('Koleksi Baru', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             )
           : null,
     );
@@ -466,28 +505,64 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                   child: SlideTransition(
                     position: _slideAnimation,
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
-                          ),
-                          child: const Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 32),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                              ),
+                              child: const Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 32),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Koleksi Resep', style: AppTheme.headingLarge),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Kumpulan resep favorit Anda',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('Koleksi Resep', style: AppTheme.headingLarge),
-                              const SizedBox(height: 4),
-                              Text('${_collections.length} koleksi tersimpan', style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500)),
+                              Icon(Icons.folder_special_rounded, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_collections.length} Koleksi',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -500,9 +575,16 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
           ),
           SliverPadding(
             padding: const EdgeInsets.all(20),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.9),
-              delegate: SliverChildBuilderDelegate((context, index) => _buildCollectionCard(_collections[index]), childCount: _collections.length),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildEnhancedCollectionCard(_collections[index], index),
+                  );
+                },
+                childCount: _collections.length,
+              ),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -511,9 +593,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildCollectionCard(Map<String, dynamic> collection) {
+  Widget _buildEnhancedCollectionCard(Map<String, dynamic> collection, int index) {
     final recipeCount = collection['recipe_count'] ?? 0;
     final description = collection['description'];
+    final gradient = _collectionGradients[index % _collectionGradients.length];
+    final icon = _collectionIcons[index % _collectionIcons.length];
 
     return GestureDetector(
       onTap: () {
@@ -523,48 +607,180 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
       onLongPress: () => _showCollectionOptions(collection),
       child: Container(
         decoration: BoxDecoration(
-          gradient: AppTheme.accentGradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: AppTheme.buttonShadow,
-        ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 32),
-                  ),
-                  const Spacer(),
-                  Text(collection['name'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  if (description != null && description.toString().trim().isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.85), fontWeight: FontWeight.w400),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 4),
-                  Text('$recipeCount resep', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
-              ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: gradient[0].withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              // Background pattern
+              Positioned(
+                right: -30,
+                top: -30,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        gradient[0].withValues(alpha: 0.08),
+                        gradient[1].withValues(alpha: 0.04),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: -20,
+                bottom: -20,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        gradient[1].withValues(alpha: 0.06),
+                        gradient[0].withValues(alpha: 0.02),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    // Icon section (30% visual weight)
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: gradient,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: gradient[0].withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 34),
+                    ),
+                    const SizedBox(width: 16),
+                    
+                    // Text content (60% visual weight)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            collection['name'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (description != null && description.toString().trim().isNotEmpty)
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.textSecondary,
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          else
+                            Text(
+                              'Koleksi resep spesial',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade400,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          const SizedBox(height: 10),
+                          
+                          // Recipe count badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  gradient[0].withValues(alpha: 0.15),
+                                  gradient[1].withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: gradient[0].withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.restaurant_rounded,
+                                  size: 14,
+                                  color: gradient[0],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '$recipeCount Resep',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: gradient[0],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Arrow icon (10% visual weight)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: gradient[0].withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: gradient[0],
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -820,6 +1036,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
                     decoration: BoxDecoration(
                       gradient: AppTheme.cardGradient,
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryCoral.withValues(alpha: 0.2),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: const Icon(Icons.collections_bookmark_outlined, size: 70, color: AppTheme.primaryCoral),
                   ),
@@ -830,6 +1053,49 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
             const Text('Belum Ada Koleksi', style: AppTheme.headingMedium, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Text('Mulai kumpulkan resep favoritmu!\nBuat koleksi untuk mengorganisir resep.', style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary, height: 1.5), textAlign: TextAlign.center),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryCoral.withValues(alpha: 0.1),
+                    AppTheme.primaryOrange.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.primaryCoral.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.lightbulb_outline_rounded, color: AppTheme.primaryCoral, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tips',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryCoral,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Buat koleksi berdasarkan kategori seperti "Sarapan Sehat", "Menu Cepat", atau "Makanan Favorit Keluarga"',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

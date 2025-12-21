@@ -224,7 +224,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     }
   }
 
-  // ============ SHARE FEATURE ============
+// ============ SHARE FEATURE ============
   String _generateShareText() {
     final title = _recipe?['title'] ?? 'Resep Tanpa Judul';
     final profile = _recipe?['profiles'];
@@ -244,18 +244,18 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
 📝 Deskripsi:
 ${_recipe?['description'] ?? 'Tidak ada deskripsi.'}
 Lihat resep lengkap:
-https://savora-nine.vercel.app/recipe/${widget.recipeId}
+savora://recipe/${widget.recipeId}
 '''.trim();
   }
 
-  String _generateUniversalLink() {
-    return 'https://savora-nine.vercel.app/recipe/${widget.recipeId}';
+  String _generateDeepLink() {
+    return 'savora://recipe/${widget.recipeId}';
   }
 
   Future<void> _shareLink() async {
     await SharePlus.instance.share(
       ShareParams(
-        text: _generateUniversalLink(),
+        text: _generateDeepLink(),
         subject: 'Resep dari Savora: ${_recipe?['title']}',
       ),
     );
@@ -287,7 +287,7 @@ https://savora-nine.vercel.app/recipe/${widget.recipeId}
             text: '''${_recipe?['title'] ?? 'Resep Savora'} 🍳
 Dari Savora - Komunitas Resep Indonesia
 Lihat resep lengkap:
-${_generateUniversalLink()}''',
+${_generateDeepLink()}''',
             subject: 'Resep dari Savora: ${_recipe?['title']}',
           ),
         );
@@ -317,7 +317,7 @@ ${_generateUniversalLink()}''',
     final text = '''${_recipe?['title'] ?? 'Resep Savora'} 🍳
 ${_recipe?['description'] ?? ''}
 Lihat resep lengkap:
-${_generateUniversalLink()}''';
+${_generateDeepLink()}''';
     await SharePlus.instance.share(
       ShareParams(
         text: text,
@@ -327,7 +327,7 @@ ${_generateUniversalLink()}''';
   }
 
   Future<void> _copyLinkToClipboard() async {
-    await Clipboard.setData(ClipboardData(text: _generateUniversalLink()));
+    await Clipboard.setData(ClipboardData(text: _generateDeepLink()));
     _showSnackBar('Link berhasil disalin! 🔗', isError: false);
   }
 
