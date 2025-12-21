@@ -9,6 +9,7 @@ import 'screens/searching_screen.dart';
 import 'utils/supabase_client.dart';
 import 'services/notification_service.dart';
 import 'services/ai_service.dart'; 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Global navigator key untuk navigation dari notification dan deep link
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
