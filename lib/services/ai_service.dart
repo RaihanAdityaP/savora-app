@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final _logger = Logger();
 
@@ -11,13 +12,13 @@ class AIService {
   factory AIService() => _instance;
   AIService._internal();
 
-  // Groq API Configuration
-  final String _groqApiKey = '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'; 
-  final String _groqModel = 'llama-3.3-70b-versatile';
+  // Groq API Configuration - dari .env
+  late final String _groqApiKey;
+  late final String _groqModel;
   final String _groqBaseUrl = 'https://api.groq.com/openai/v1/chat/completions';
   
-  // Hugging Face untuk image analysis (backup)
-  final String _hfApiKey = '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';
+  // Hugging Face untuk image analysis - dari .env
+  late final String _hfApiKey;
   final String _imageModel = 'nlpconnect/vit-gpt2-image-captioning';
   
   // Retry configuration
@@ -26,8 +27,21 @@ class AIService {
   final Duration _requestTimeout = const Duration(seconds: 30);
 
   void initialize() {
+    // Load API keys dari .env
+    _groqApiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+    _groqModel = dotenv.env['GROQ_MODEL'] ?? 'llama-3.3-70b-versatile';
+    _hfApiKey = dotenv.env['HF_API_KEY'] ?? '';
+    
     _logger.d('AI Service initialized with Groq');
     _logger.d('Model: $_groqModel');
+    
+    // Validasi API keys
+    if (_groqApiKey.isEmpty) {
+      _logger.e('GROQ_API_KEY not found in .env file!');
+    }
+    if (_hfApiKey.isEmpty) {
+      _logger.w('HF_API_KEY not found in .env file!');
+    }
   }
 
   // Helper method for retry logic
@@ -60,6 +74,10 @@ class AIService {
 
   // 1. Cooking Assistant Chatbot with Groq
   Future<String> askCookingQuestion(String question, String recipeContext) async {
+    if (_groqApiKey.isEmpty) {
+      throw Exception('GROQ_API_KEY tidak ditemukan. Periksa file .env Anda.');
+    }
+    
     return await _retryRequest(() async {
       try {
         _logger.d('Sending cooking question to Groq AI...');
@@ -147,6 +165,10 @@ Konteks Resep: $recipeContext'''
 
   // 2. Analisis Resep dari Foto (Hybrid: HF untuk image, Groq untuk text)
   Future<String> analyzeRecipeFromImage(String imagePath) async {
+    if (_hfApiKey.isEmpty) {
+      throw Exception('HF_API_KEY tidak ditemukan. Periksa file .env Anda.');
+    }
+    
     return await _retryRequest(() async {
       try {
         _logger.d('Reading image file: $imagePath');
