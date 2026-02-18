@@ -382,4 +382,42 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Toggle premium status (admin only)
+     * POST /api/v1/users/{id}/toggle-premium
+     */
+    public function togglePremium($id)
+    {
+        try {
+            // Get current status
+            $users = $this->supabase->select('profiles', ['id', 'is_premium', 'username'], ['id' => $id]);
+            if (empty($users)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+            $user = $users[0];
+            $newStatus = !($user['is_premium'] ?? false);
+            $this->supabase->update('profiles',
+                ['is_premium' => $newStatus],
+                ['id' => $id],
+                true // use service key (admin only)
+            );
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus ? 'Premium granted successfully' : 'Premium removed successfully',
+                'data' => [
+                    'user_id' => $id,
+                    'is_premium' => $newStatus,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
