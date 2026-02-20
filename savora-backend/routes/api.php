@@ -43,6 +43,7 @@ Route::prefix('users')->group(function () {
     // Social
     Route::post('{id}/follow', [UserController::class, 'follow']);
     Route::post('{id}/unfollow', [UserController::class, 'unfollow']);
+    Route::get('{id}/is-following', [UserController::class, 'isFollowing']); // ← BARU
     Route::get('{id}/followers', [UserController::class, 'followers']);
     Route::get('{id}/following', [UserController::class, 'following']);
     Route::get('{id}/recipes', [UserController::class, 'recipes']);
@@ -50,7 +51,7 @@ Route::prefix('users')->group(function () {
     // Admin only
     Route::post('{id}/ban', [UserController::class, 'ban']);
     Route::post('{id}/unban', [UserController::class, 'unban']);
-    Route::post('{id}/toggle-premium', [UserController::class, 'togglePremium']); // NEW
+    Route::post('{id}/toggle-premium', [UserController::class, 'togglePremium']);
 });
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────

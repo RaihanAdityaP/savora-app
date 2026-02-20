@@ -31,18 +31,10 @@ class UserController extends Controller
             $filters = [];
             $options = [];
 
-            // Role filter
             if ($request->has('role')) {
                 $filters['role'] = $request->input('role');
             }
 
-            // Search by username
-            if ($request->has('search')) {
-                // Note: Supabase filter for LIKE search
-                // This is basic implementation, might need adjustment
-            }
-
-            // Pagination
             $limit = $request->input('limit', 20);
             $offset = $request->input('offset', 0);
             $options['limit'] = $limit;
@@ -80,15 +72,12 @@ class UserController extends Controller
 
             $user = $users[0];
 
-            // Get follower count
             $followers = $this->supabase->select('followers', ['id'], ['following_id' => $id]);
             $user['followers_count'] = count($followers);
 
-            // Get following count
             $following = $this->supabase->select('followers', ['id'], ['follower_id' => $id]);
             $user['following_count'] = count($following);
 
-            // Get recipe count
             $recipes = $this->supabase->select('recipes', ['id'], ['user_id' => $id, 'status' => 'approved']);
             $user['recipes_count'] = count($recipes);
 
@@ -128,17 +117,16 @@ class UserController extends Controller
         try {
             $data = $request->only(['username', 'full_name', 'bio']);
 
-            // Handle avatar upload
             if ($request->hasFile('avatar')) {
                 $avatar = $request->file('avatar');
                 $avatarName = Str::uuid() . '.' . $avatar->getClientOriginalExtension();
                 $avatarPath = "avatars/{$avatarName}";
-                
-                $this->supabase->uploadFile('avatars', $avatarPath, 
-                    file_get_contents($avatar->getRealPath()), 
+
+                $this->supabase->uploadFile('avatars', $avatarPath,
+                    file_get_contents($avatar->getRealPath()),
                     $avatar->getMimeType()
                 );
-                
+
                 $data['avatar_url'] = $this->supabase->getPublicUrl('avatars', $avatarPath);
             }
 
@@ -178,7 +166,6 @@ class UserController extends Controller
         try {
             $followerId = $request->input('follower_id');
 
-            // Check if already following
             $existing = $this->supabase->select('followers', ['id'], [
                 'follower_id' => $followerId,
                 'following_id' => $id,
@@ -191,13 +178,11 @@ class UserController extends Controller
                 ], 400);
             }
 
-            // Create follow relationship
             $this->supabase->insert('followers', [
                 'follower_id' => $followerId,
                 'following_id' => $id,
             ]);
 
-            // Send notification to followed user
             $this->supabase->insert('notifications', [
                 'user_id' => $id,
                 'type' => 'new_follower',
@@ -257,14 +242,54 @@ class UserController extends Controller
     }
 
     /**
+     * Check if a user is following another user
+     * GET /api/v1/users/{id}/is-following?follower_id={followerId}
+     */
+    public function isFollowing(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'follower_id' => 'required|uuid',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $followerId = $request->input('follower_id');
+
+            $existing = $this->supabase->select('followers', ['id'], [
+                'follower_id' => $followerId,
+                'following_id' => $id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'is_following' => !empty($existing),
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get user followers
      * GET /api/v1/users/{id}/followers
      */
     public function followers($id)
     {
         try {
-            $followers = $this->supabase->select('followers', 
-                ['*, profiles!followers_follower_id_fkey(*)'], 
+            $followers = $this->supabase->select('followers',
+                ['*, profiles!followers_follower_id_fkey(*)'],
                 ['following_id' => $id]
             );
 
@@ -287,8 +312,8 @@ class UserController extends Controller
     public function following($id)
     {
         try {
-            $following = $this->supabase->select('followers', 
-                ['*, profiles!followers_following_id_fkey(*)'], 
+            $following = $this->supabase->select('followers',
+                ['*, profiles!followers_following_id_fkey(*)'],
                 ['follower_id' => $id]
             );
 
@@ -340,10 +365,10 @@ class UserController extends Controller
     public function ban($id)
     {
         try {
-            $this->supabase->update('profiles', 
+            $this->supabase->update('profiles',
                 ['is_banned' => true],
                 ['id' => $id],
-                true // use service key
+                true
             );
 
             return response()->json([
@@ -365,10 +390,10 @@ class UserController extends Controller
     public function unban($id)
     {
         try {
-            $this->supabase->update('profiles', 
+            $this->supabase->update('profiles',
                 ['is_banned' => false],
                 ['id' => $id],
-                true // use service key
+                true
             );
 
             return response()->json([
@@ -390,7 +415,6 @@ class UserController extends Controller
     public function togglePremium($id)
     {
         try {
-            // Get current status
             $users = $this->supabase->select('profiles', ['id', 'is_premium', 'username'], ['id' => $id]);
             if (empty($users)) {
                 return response()->json([
@@ -403,7 +427,7 @@ class UserController extends Controller
             $this->supabase->update('profiles',
                 ['is_premium' => $newStatus],
                 ['id' => $id],
-                true // use service key (admin only)
+                true
             );
             return response()->json([
                 'success' => true,
