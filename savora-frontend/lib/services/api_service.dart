@@ -22,22 +22,30 @@ class ApiService {
   //   Production        → 'https://api.savora.com/api/v1'   ← ganti domain
   // ─────────────────────────────────────────────
   static const String _baseUrlDebug = 'http://10.0.2.2:8000/api/v1';
-  static const String _baseUrlProd  = 'https://api.savora.com/api/v1';
+  static const String _baseUrlProd = 'https://api.savora.com/api/v1';
 
   static String get _baseUrl => kDebugMode ? _baseUrlDebug : _baseUrlProd;
 
   static const Duration _timeout = Duration(seconds: 30);
 
-  // Token disimpan di memori (tidak butuh package tambahan)
+  // Token & userId disimpan di memori
   static String? _authToken;
+  static String? _currentUserId;
 
   // ─────────────────────────────────────────────
-  // TOKEN MANAGEMENT
+  // TOKEN & USER MANAGEMENT
   // ─────────────────────────────────────────────
   static void setToken(String token) => _authToken = token;
-  static void clearToken() => _authToken = null;
+  static void clearToken() {
+    _authToken = null;
+    _currentUserId = null;
+  }
+
   static String? get currentToken => _authToken;
   static bool get hasToken => _authToken != null;
+
+  static void setCurrentUserId(String userId) => _currentUserId = userId;
+  static String? get currentUserId => _currentUserId;
 
   // ─────────────────────────────────────────────
   // HEADERS
@@ -146,7 +154,8 @@ class ApiService {
     try {
       debugPrint('[API] DELETE $_baseUrl$endpoint');
 
-      final request = http.Request('DELETE', Uri.parse('$_baseUrl$endpoint'));
+      final request =
+          http.Request('DELETE', Uri.parse('$_baseUrl$endpoint'));
       request.headers.addAll(_buildHeaders());
       if (body != null) request.body = json.encode(body);
 
@@ -184,7 +193,8 @@ class ApiService {
         request.headers['Authorization'] = 'Bearer $_authToken';
       }
       request.headers['Accept'] = 'application/json';
-      request.files.add(await http.MultipartFile.fromPath('image', filePath));
+      request.files.add(
+          await http.MultipartFile.fromPath('image', filePath));
       if (fields != null) request.fields.addAll(fields);
 
       final streamed = await request.send().timeout(_timeout);
@@ -216,6 +226,7 @@ class ApiService {
 
   // ─────────────────────────────────────────────
   // INTERNAL: handle & decode response
+  // Mengembalikan body termasuk error response agar bisa dibaca
   // ─────────────────────────────────────────────
   static Map<String, dynamic> _handleResponse(http.Response response) {
     try {
@@ -223,6 +234,7 @@ class ApiService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return decoded;
       }
+      // Untuk 4xx/5xx, kembalikan decoded sehingga caller bisa baca 'message'
       final message = decoded['message'] ?? 'Error ${response.statusCode}';
       throw Exception(message);
     } on FormatException {

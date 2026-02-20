@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
-import '../../services/user_client.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -41,7 +40,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
   }
 
   // ─────────────────────────────────────────────
-  // LOAD USERS via REST API
+  // LOAD USERS
   // ─────────────────────────────────────────────
 
   Future<void> _loadUsers() async {
@@ -86,7 +85,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
   }
 
   // ─────────────────────────────────────────────
-  // BAN / UNBAN via REST API
+  // BAN / UNBAN
   // ─────────────────────────────────────────────
 
   Future<void> _toggleBanUser(Map<String, dynamic> user) async {
@@ -107,16 +106,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1A1A1A),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFF44336), Color(0xFFE57373)],
-                  ),
+                      colors: [Color(0xFFF44336), Color(0xFFE57373)]),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.block_rounded,
@@ -151,19 +149,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                   ].map((reason) {
                     final isSelected = selectedReason == reason;
                     return ChoiceChip(
-                      label: Text(
-                        _getReasonText(reason),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              isSelected ? Colors.black : Colors.white,
-                        ),
-                      ),
+                      label: Text(_getReasonText(reason),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected
+                                  ? Colors.black
+                                  : Colors.white)),
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) {
-                          setDialogState(
-                              () => selectedReason = reason);
+                          setDialogState(() => selectedReason = reason);
                         }
                       },
                       selectedColor: const Color(0xFFFFD700),
@@ -203,8 +198,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
             Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFF44336), Color(0xFFE57373)],
-                ),
+                    colors: [Color(0xFFF44336), Color(0xFFE57373)]),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextButton(
@@ -221,10 +215,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
     );
 
     if (confirmed == true) {
-      final reason = selectedReason == 'other' &&
-              reasonController.text.isNotEmpty
-          ? reasonController.text
-          : _getReasonText(selectedReason);
+      final reason =
+          selectedReason == 'other' && reasonController.text.isNotEmpty
+              ? reasonController.text
+              : _getReasonText(selectedReason);
       await _banUser(user, reason);
     }
   }
@@ -246,14 +240,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
     }
   }
 
-  Future<void> _banUser(
-      Map<String, dynamic> user, String reason) async {
+  Future<void> _banUser(Map<String, dynamic> user, String reason) async {
     try {
-      // POST /api/v1/users/{id}/ban (admin only endpoint)
-      await ApiService.post('/users/${user['id']}/ban', {
-        'reason': reason,
-      });
-
+      await ApiService.post('/users/${user['id']}/ban', {'reason': reason});
       if (mounted) {
         _showSnackBar('User banned successfully', isError: false);
         _loadUsers();
@@ -268,16 +257,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-                ),
+                    colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)]),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.check_circle_rounded,
@@ -301,16 +289,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
           Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-              ),
+                  colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextButton(
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Unban',
                   style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold)),
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -319,9 +305,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
 
     if (confirm == true) {
       try {
-        // POST /api/v1/users/{id}/unban (admin only endpoint)
         await ApiService.post('/users/${user['id']}/unban', {});
-
         if (mounted) {
           _showSnackBar('User unbanned successfully', isError: false);
           _loadUsers();
@@ -333,26 +317,83 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
   }
 
   // ─────────────────────────────────────────────
-  // TOGGLE PREMIUM via REST API
+  // TOGGLE PREMIUM — pakai endpoint baru
   // ─────────────────────────────────────────────
 
   Future<void> _togglePremium(Map<String, dynamic> user) async {
     final isPremium = user['is_premium'] == true;
-    try {
-      await UserClient.updateProfile(
-        userId: user['id'],
-        // Kirim flag premium via update profile
-        // Atau buat endpoint khusus di Laravel jika diperlukan
-      );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isPremium
+                    ? Icons.workspace_premium
+                    : Icons.star_outline_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              isPremium ? 'Remove Premium' : 'Grant Premium',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          isPremium
+              ? 'Remove premium from ${user['username']}?'
+              : 'Grant premium to ${user['username']}?',
+          style: TextStyle(color: Colors.grey.shade300),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel',
+                style: TextStyle(color: Colors.grey.shade400)),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                isPremium ? 'Remove' : 'Grant',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
 
-      // Fallback: langsung pakai generic PUT
-      await ApiService.put('/users/${user['id']}', {
-        'is_premium': !isPremium,
-      });
+    if (confirmed != true) return;
+
+    try {
+      // ✅ Pakai endpoint baru: POST /users/{id}/toggle-premium
+      final response =
+          await ApiService.post('/users/${user['id']}/toggle-premium', {});
 
       if (mounted) {
+        final newStatus = response['data']?['is_premium'] ?? !isPremium;
         _showSnackBar(
-          isPremium ? 'Premium removed' : 'Premium granted',
+          newStatus ? 'Premium granted successfully' : 'Premium removed successfully',
           isError: false,
         );
         _loadUsers();
@@ -369,9 +410,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
         content: Row(
           children: [
             Icon(
-              isError
-                  ? Icons.error_outline
-                  : Icons.check_circle_outline,
+              isError ? Icons.error_outline : Icons.check_circle_outline,
               color: Colors.white,
             ),
             const SizedBox(width: 12),
@@ -381,8 +420,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
         backgroundColor:
             isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -463,13 +502,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
-                      ),
+                          colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)]),
                       borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4CAF50)
-                              .withValues(alpha: 0.4),
+                          color:
+                              const Color(0xFF4CAF50).withValues(alpha: 0.4),
                           blurRadius: 20,
                           spreadRadius: 2,
                         ),
@@ -514,8 +552,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
           Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
-              ),
+                  colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)]),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                   color: Colors.white.withValues(alpha: 0.1), width: 1),
@@ -705,12 +742,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFFFD700),
-                                    Color(0xFFFFA500)
-                                  ],
-                                ),
+                                gradient: const LinearGradient(colors: [
+                                  Color(0xFFFFD700),
+                                  Color(0xFFFFA500)
+                                ]),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text('ADMIN',
@@ -806,13 +841,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: isAdmin
-                            ? null
-                            : () => _toggleBanUser(user),
+                        onTap:
+                            isAdmin ? null : () => _toggleBanUser(user),
                         borderRadius: BorderRadius.circular(14),
                         child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               isBanned
@@ -822,14 +855,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              isBanned ? 'UNBAN' : 'BAN',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
+                            Text(isBanned ? 'UNBAN' : 'BAN',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                )),
                           ],
                         ),
                       ),
@@ -842,8 +873,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                     height: 48,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)],
-                      ),
+                          colors: [Color(0xFF9C27B0), Color(0xFFBA68C8)]),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Material(
@@ -854,8 +884,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                             : () => _togglePremium(user),
                         borderRadius: BorderRadius.circular(14),
                         child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               isPremium
@@ -865,14 +894,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              isPremium ? 'REMOVE' : 'UPGRADE',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
+                            Text(isPremium ? 'REMOVE' : 'UPGRADE',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                )),
                           ],
                         ),
                       ),
@@ -899,8 +926,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen>
                 color: const Color(0xFF1A1A1A),
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 2),
+                    color: Colors.white.withValues(alpha: 0.1), width: 2),
               ),
               child: Icon(Icons.people_outline_rounded,
                   size: 64, color: Colors.grey.shade700),

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import '../utils/supabase_client.dart';
+import '../services/api_service.dart';
 import '../widgets/theme.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
@@ -13,7 +11,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -28,10 +27,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(duration: const Duration(milliseconds: 1800), vsync: this);
-    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
-    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(CurvedAnimation(parent: _animationController, curve: Curves.elasticOut));
+    _animationController = AnimationController(
+        duration: const Duration(milliseconds: 1800), vsync: this);
+    _fadeAnimation = CurvedAnimation(
+        parent: _animationController, curve: Curves.easeInOut);
+    _slideAnimation = Tween<Offset>(
+            begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _animationController, curve: Curves.easeOutCubic));
+    _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
+        CurvedAnimation(
+            parent: _animationController, curve: Curves.elasticOut));
     _animationController.forward();
   }
 
@@ -46,27 +52,37 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Future<void> _signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
     try {
-      const webClientId = '928387294220-hb6h1ioaok3fksdkp0vh8fv0an9im27l.apps.googleusercontent.com';
-      final GoogleSignIn googleSignIn = GoogleSignIn(serverClientId: webClientId);
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) { if (mounted) setState(() => _isGoogleLoading = false); return; }
+      // Panggil endpoint Google OAuth di Laravel backend
+      final response = await ApiService.post('/auth/google', {});
 
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-      if (idToken == null) throw Exception('Google authentication failed: missing idToken');
+      if (response['success'] == true) {
+        final token = response['data']?['token'] as String?;
+        final userId = response['data']?['user']?['id']?.toString();
 
-      final authResponse = await supabase.auth.signInWithIdToken(provider: OAuthProvider.google, idToken: idToken);
-      if (authResponse.user == null) throw Exception('Login gagal');
+        if (token == null) throw Exception('Token tidak diterima dari server');
 
-      final profile = await supabase.from('profiles').select('is_banned, banned_reason, banned_at').eq('id', authResponse.user!.id).maybeSingle().timeout(const Duration(seconds: 5));
-      if (profile != null && profile['is_banned'] == true) {
-        await supabase.auth.signOut();
-        await googleSignIn.signOut();
-        if (mounted) _showBannedDialog(reason: profile['banned_reason'] ?? 'Tidak disebutkan', bannedAt: profile['banned_at']);
-        return;
+        ApiService.setToken(token);
+        if (userId != null) ApiService.setCurrentUserId(userId);
+
+        // Cek apakah akun di-banned
+        final isBanned = response['data']?['user']?['is_banned'] == true;
+        if (isBanned) {
+          ApiService.clearToken();
+          final reason = response['data']?['user']?['banned_reason'] ??
+              'Tidak disebutkan';
+          final bannedAt = response['data']?['user']?['banned_at'];
+          if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
+          return;
+        }
+
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomeScreen()));
+        }
+      } else {
+        throw Exception(
+            response['message'] ?? 'Google Sign In gagal');
       }
-
-      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
       if (mounted) _showSnackBar('Google Sign In gagal: $e', isError: true);
     } finally {
@@ -75,32 +91,55 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _signIn() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) { _showSnackBar('Email dan password harus diisi!', isError: true); return; }
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      _showSnackBar('Email dan password harus diisi!', isError: true);
+      return;
+    }
     setState(() => _isLoading = true);
     try {
-      final authResponse = await supabase.auth.signInWithPassword(email: _emailController.text.trim(), password: _passwordController.text).timeout(const Duration(seconds: 10), onTimeout: () => throw Exception('Login timeout. Cek koneksi internet Anda.'));
-      if (authResponse.user == null) throw Exception('Login gagal');
+      final response = await ApiService.post('/auth/login', {
+        'email': _emailController.text.trim(),
+        'password': _passwordController.text,
+      });
 
-      final profile = await supabase.from('profiles').select('is_banned, banned_reason, banned_at').eq('id', authResponse.user!.id).maybeSingle().timeout(const Duration(seconds: 5));
-      if (profile != null && profile['is_banned'] == true) {
-        await supabase.auth.signOut();
-        if (mounted) _showBannedDialog(reason: profile['banned_reason'] ?? 'Tidak disebutkan', bannedAt: profile['banned_at']);
-        return;
+      if (response['success'] == true) {
+        final token = response['data']?['token'] as String?;
+        final userId = response['data']?['user']?['id']?.toString();
+
+        if (token == null) throw Exception('Token tidak diterima dari server');
+
+        // Cek apakah akun di-banned
+        final isBanned = response['data']?['user']?['is_banned'] == true;
+        if (isBanned) {
+          final reason = response['data']?['user']?['banned_reason'] ??
+              'Tidak disebutkan';
+          final bannedAt = response['data']?['user']?['banned_at'];
+          if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
+          return;
+        }
+
+        ApiService.setToken(token);
+        if (userId != null) ApiService.setCurrentUserId(userId);
+
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomeScreen()));
+        }
+      } else {
+        throw Exception(response['message'] ?? 'Login gagal');
       }
-
-      if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
-    } on AuthException catch (e) {
-      if (!mounted) return;
-      String message = e.message;
-      if (message.contains('Invalid login credentials')) { message = 'Email atau password salah'; }
-      else if (message.contains('Email not confirmed')) { message = 'Silakan verifikasi email Anda terlebih dahulu'; }
-      else { message = 'Error: $message'; }
-      _showSnackBar(message, isError: true);
     } catch (e) {
       if (!mounted) return;
-      String errorMsg = e.toString();
-      if (errorMsg.contains('timeout')) { errorMsg = 'Koneksi timeout. Cek internet Anda.'; }
-      else { errorMsg = 'Terjadi kesalahan: $errorMsg'; }
+      String errorMsg = e.toString().replaceFirst('Exception: ', '');
+      if (errorMsg.contains('Invalid login credentials') ||
+          errorMsg.contains('email or password')) {
+        errorMsg = 'Email atau password salah';
+      } else if (errorMsg.contains('not verified') ||
+          errorMsg.contains('Email not confirmed')) {
+        errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
+      } else if (errorMsg.contains('timeout')) {
+        errorMsg = 'Koneksi timeout. Cek internet Anda.';
+      }
       _showSnackBar(errorMsg, isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -115,41 +154,123 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: AppTheme.primaryCoral.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]), child: const Icon(Icons.email_rounded, color: Colors.white, size: 24)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                      color: AppTheme.primaryCoral.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4))
+                ],
+              ),
+              child:
+                  const Icon(Icons.email_rounded, color: Colors.white, size: 24),
+            ),
             const SizedBox(width: 14),
-            const Expanded(child: Text('Verifikasi Email', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+            const Expanded(
+                child: Text('Verifikasi Email',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Masukkan email Anda untuk mengirim ulang link verifikasi:', style: TextStyle(fontSize: 14, height: 1.5)),
+            const Text(
+                'Masukkan email Anda untuk mengirim ulang link verifikasi:',
+                style: TextStyle(fontSize: 14, height: 1.5)),
             const SizedBox(height: 20),
             Container(
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200, width: 1.5)),
-              child: TextField(controller: emailController, keyboardType: TextInputType.emailAddress, style: const TextStyle(fontSize: 15), decoration: InputDecoration(hintText: 'Email', hintStyle: TextStyle(color: Colors.grey.shade400), prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.primaryCoral, size: 22), border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16))),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade200, width: 1.5),
+              ),
+              child: TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  prefixIcon: const Icon(Icons.email_outlined,
+                      color: AppTheme.primaryCoral, size: 22),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 16),
+                ),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)), child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600))),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.grey.shade600,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+            child: const Text('Batal',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
           Container(
-            decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: AppTheme.primaryCoral.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]),
+            decoration: BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: AppTheme.primaryCoral.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4))
+              ],
+            ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () async {
                   final email = emailController.text.trim();
-                  if (email.isEmpty) { ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Email harus diisi!'))); return; }
+                  if (email.isEmpty) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(content: Text('Email harus diisi!')));
+                    return;
+                  }
                   Navigator.pop(dialogContext);
                   try {
-                    await supabase.auth.resend(type: OtpType.signup, email: email);
-                    if (mounted) _showSnackBar('Email verifikasi telah dikirim ke $email', isError: false);
-                  } catch (e) { if (mounted) _showSnackBar('Gagal mengirim email: ${e.toString()}', isError: true); }
+                    await ApiService.post(
+                        '/auth/resend-verification', {'email': email});
+                    if (mounted) {
+                      _showSnackBar(
+                          'Email verifikasi telah dikirim ke $email',
+                          isError: false);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      _showSnackBar('Gagal mengirim email: ${e.toString()}',
+                          isError: true);
+                    }
+                  }
                 },
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.send_rounded, color: Colors.white, size: 18), SizedBox(width: 8), Text('Kirim', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15))])),
+                child: const Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Kirim',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15)),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -166,7 +287,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.shade400, Colors.red.shade600]), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.block_rounded, color: Colors.white, size: 24)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [Colors.red.shade400, Colors.red.shade600]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child:
+                  const Icon(Icons.block_rounded, color: Colors.white, size: 24),
+            ),
             const SizedBox(width: 14),
             const Text('Akun Dinonaktifkan'),
           ],
@@ -175,18 +305,43 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Akun Anda telah dinonaktifkan oleh administrator.', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Akun Anda telah dinonaktifkan oleh administrator.',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            const Text('Alasan:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Alasan:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.red.shade200)), child: Text(reason, style: TextStyle(color: Colors.red.shade700))),
-            if (bannedAt != null) ...[const SizedBox(height: 12), Text('Dinonaktifkan: ${_formatDateTime(bannedAt)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))],
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child:
+                  Text(reason, style: TextStyle(color: Colors.red.shade700)),
+            ),
+            if (bannedAt != null) ...[
+              const SizedBox(height: 12),
+              Text('Dinonaktifkan: ${_formatDateTime(bannedAt)}',
+                  style:
+                      TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            ],
           ],
         ),
         actions: [
           Container(
-            decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade600]), borderRadius: BorderRadius.circular(12)),
-            child: TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Tutup', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [Colors.grey.shade400, Colors.grey.shade600]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Tutup',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
@@ -199,18 +354,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       final now = DateTime.now();
       final difference = now.difference(dateTime);
       if (difference.inDays > 0) return '${difference.inDays} hari yang lalu';
-      if (difference.inHours > 0) return '${difference.inHours} jam yang lalu';
+      if (difference.inHours > 0)
+        return '${difference.inHours} jam yang lalu';
       return '${difference.inMinutes} menit yang lalu';
-    } catch (e) { return dateTimeStr; }
+    } catch (e) {
+      return dateTimeStr;
+    }
   }
 
   void _showSnackBar(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(children: [Icon(isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded, color: Colors.white), const SizedBox(width: 12), Expanded(child: Text(message))]),
-        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
+        content: Row(children: [
+          Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
+              color: Colors.white),
+          const SizedBox(width: 12),
+          Expanded(child: Text(message)),
+        ]),
+        backgroundColor:
+            isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
       ),
@@ -243,7 +411,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2B6CB0).withValues(alpha: 0.4),
+                              color: const Color(0xFF2B6CB0)
+                                  .withValues(alpha: 0.4),
                               blurRadius: 30,
                               offset: const Offset(0, 10),
                             ),
@@ -259,7 +428,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
                                 Icons.restaurant_rounded,
                                 size: 60,
                                 color: Color(0xFF2B6CB0),
@@ -275,14 +445,58 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(30), border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))]),
-                            child: Text('SELAMAT DATANG', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 4, color: Colors.white, shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 8)])),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 28, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                    color:
+                                        Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 5))
+                              ],
+                            ),
+                            child: Text('SELAMAT DATANG',
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 4,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 8)
+                                    ])),
                           ),
                           const SizedBox(height: 18),
-                          Text('Savora', style: TextStyle(fontSize: 56, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1, letterSpacing: -1, shadows: [Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5))])),
+                          Text('Savora',
+                              style: TextStyle(
+                                  fontSize: 56,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                  letterSpacing: -1,
+                                  shadows: [
+                                    Shadow(
+                                        color:
+                                            Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 5))
+                                  ])),
                           const SizedBox(height: 10),
-                          Text('Petualangan Kuliner Dimulai Disini', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.95), fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+                          Text('Petualangan Kuliner Dimulai Disini',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5)),
                         ],
                       ),
                     ),
@@ -292,40 +506,146 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       child: Container(
                         constraints: const BoxConstraints(maxWidth: 460),
                         padding: const EdgeInsets.all(36),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(32), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 40, offset: const Offset(0, 20))]),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 40,
+                                offset: const Offset(0, 20))
+                          ],
+                        ),
                         child: Column(
                           children: [
-                            _buildModernTextField(controller: _emailController, hint: 'Email Address', icon: Icons.email_outlined, color: AppTheme.primaryCoral),
+                            _buildModernTextField(
+                                controller: _emailController,
+                                hint: 'Email Address',
+                                icon: Icons.email_outlined,
+                                color: AppTheme.primaryCoral),
                             const SizedBox(height: 20),
-                            _buildModernTextField(controller: _passwordController, hint: 'Password', icon: Icons.lock_outline_rounded, color: AppTheme.primaryOrange, isPassword: true),
+                            _buildModernTextField(
+                                controller: _passwordController,
+                                hint: 'Password',
+                                icon: Icons.lock_outline_rounded,
+                                color: AppTheme.primaryOrange,
+                                isPassword: true),
                             const SizedBox(height: 32),
                             Container(
-                              width: double.infinity, height: 58,
-                              decoration: BoxDecoration(gradient: AppTheme.orangeGradient, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: AppTheme.primaryOrange.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, 10))]),
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.orangeGradient,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: AppTheme.primaryOrange
+                                          .withValues(alpha: 0.5),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10))
+                                ],
+                              ),
                               child: Material(
                                 color: Colors.transparent,
                                 child: InkWell(
                                   onTap: _isLoading ? null : _signIn,
                                   borderRadius: BorderRadius.circular(16),
-                                  child: Center(child: _isLoading ? const SizedBox(height: 26, width: 26, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white)) : const Text('MASUK', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 2, color: Colors.white))),
+                                  child: Center(
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            height: 26,
+                                            width: 26,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 3,
+                                                color: Colors.white))
+                                        : const Text('MASUK',
+                                            style: TextStyle(
+                                                fontSize: 17,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 2,
+                                                color: Colors.white)),
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 28),
-                            Row(children: [Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1.5)), Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text('ATAU', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.5))), Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1.5))]),
+                            Row(children: [
+                              Expanded(
+                                  child: Divider(
+                                      color: Colors.grey.shade300,
+                                      thickness: 1.5)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16),
+                                child: Text('ATAU',
+                                    style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        letterSpacing: 1.5)),
+                              ),
+                              Expanded(
+                                  child: Divider(
+                                      color: Colors.grey.shade300,
+                                      thickness: 1.5)),
+                            ]),
                             const SizedBox(height: 28),
                             Container(
-                              width: double.infinity, height: 58,
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade300, width: 2), boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))]),
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                    color: Colors.grey.shade300, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color:
+                                          Colors.grey.withValues(alpha: 0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 5))
+                                ],
+                              ),
                               child: Material(
                                 color: Colors.transparent,
                                 child: InkWell(
-                                  onTap: _isGoogleLoading ? null : _signInWithGoogle,
+                                  onTap: _isGoogleLoading
+                                      ? null
+                                      : _signInWithGoogle,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Center(
                                     child: _isGoogleLoading
-                                        ? const SizedBox(height: 26, width: 26, child: CircularProgressIndicator(strokeWidth: 3, color: AppTheme.primaryCoral))
-                                        : Row(mainAxisAlignment: MainAxisAlignment.center, children: [Image.asset('assets/images/googlelogo.png', height: 26, width: 26, errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata_rounded, size: 26)), const SizedBox(width: 12), Text('Lanjutkan dengan Google', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade800))]),
+                                        ? const SizedBox(
+                                            height: 26,
+                                            width: 26,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 3,
+                                                color: AppTheme.primaryCoral))
+                                        : Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Image.asset(
+                                                  'assets/images/googlelogo.png',
+                                                  height: 26,
+                                                  width: 26,
+                                                  errorBuilder: (context,
+                                                          error, stackTrace) =>
+                                                      const Icon(
+                                                          Icons
+                                                              .g_mobiledata_rounded,
+                                                          size: 26)),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                  'Lanjutkan dengan Google',
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors
+                                                          .grey.shade800)),
+                                            ],
+                                          ),
                                   ),
                                 ),
                               ),
@@ -337,24 +657,80 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     const SizedBox(height: 28),
                     TextButton(
                       onPressed: _showResendVerificationDialog,
-                      style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), backgroundColor: Colors.white.withValues(alpha: 0.15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                      child: Text('Belum verifikasi email?', style: TextStyle(color: Colors.white.withValues(alpha: 0.95), fontSize: 14, fontWeight: FontWeight.w600, decoration: TextDecoration.underline, decorationColor: Colors.white.withValues(alpha: 0.95))),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
+                        backgroundColor:
+                            Colors.white.withValues(alpha: 0.15),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Belum verifikasi email?',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor:
+                                  Colors.white.withValues(alpha: 0.95))),
                     ),
                     const SizedBox(height: 18),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))]),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 22, vertical: 18),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5))
+                        ],
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Belum punya akun?', style: TextStyle(color: Colors.white.withValues(alpha: 0.95), fontSize: 15, fontWeight: FontWeight.w500)),
+                          Text('Belum punya akun?',
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500)),
                           const SizedBox(width: 10),
                           GestureDetector(
-                            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                            onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => const RegisterScreen())),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: AppTheme.primaryCoral.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]),
-                              child: const Row(mainAxisSize: MainAxisSize.min, children: [Text('Daftar', style: TextStyle(color: AppTheme.primaryCoral, fontSize: 15, fontWeight: FontWeight.bold)), SizedBox(width: 6), Icon(Icons.arrow_forward_rounded, color: AppTheme.primaryCoral, size: 18)]),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 18, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: AppTheme.primaryCoral
+                                          .withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4))
+                                ],
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('Daftar',
+                                      style: TextStyle(
+                                          color: AppTheme.primaryCoral,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(width: 6),
+                                  Icon(Icons.arrow_forward_rounded,
+                                      color: AppTheme.primaryCoral, size: 18),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -370,20 +746,51 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildModernTextField({required TextEditingController controller, required String hint, required IconData icon, required Color color, bool isPassword = false}) {
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required Color color,
+    bool isPassword = false,
+  }) {
     return Container(
-      decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200, width: 2), boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 2),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
+      ),
       child: TextField(
         controller: controller,
         obscureText: isPassword && _obscurePassword,
         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
-          hintText: hint, hintStyle: TextStyle(color: Colors.grey.shade400),
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey.shade400),
           prefixIcon: Icon(icon, color: color, size: 22),
-          suffixIcon: isPassword ? IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: Colors.grey.shade600), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)) : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: color, width: 2)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      color: Colors.grey.shade600),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword))
+              : null,
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: color, width: 2)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
       ),
     );

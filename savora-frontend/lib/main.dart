@@ -77,7 +77,6 @@ class _MyAppState extends State<MyApp> {
   void _navigateByUri(Uri uri) {
     if (uri.scheme != 'savora') return;
 
-    // Delay navigation untuk memastikan context sudah tersedia
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (uri.host == 'recipe' && uri.pathSegments.isNotEmpty) {
         final recipeId = uri.pathSegments[0];
@@ -122,8 +121,7 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.orange,
         useMaterial3: true,
       ),
-      // Untuk cek login: pakai ApiService.hasToken atau mekanisme auth kamu
-      // Sementara langsung ke HomeScreen jika sudah ada token, LoginScreen jika belum
+      // Cek token dari ApiService untuk menentukan layar awal
       home: ApiService.hasToken ? const HomeScreen() : const LoginScreen(),
       onGenerateRoute: (settings) {
         debugPrint('Route requested: ${settings.name}');

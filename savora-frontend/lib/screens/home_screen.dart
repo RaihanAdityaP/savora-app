@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../utils/supabase_client.dart';
+import '../services/api_service.dart';
+import '../services/user_client.dart';
+import '../services/recipe_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
@@ -16,15 +17,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   String? _avatarUrl;
   String? _username;
+  String? _currentUserId;
   bool _isLoading = true;
   List<Map<String, dynamic>> _popularRecipes = [];
   final Map<String, double> _recipeRatings = {};
-  RealtimeChannel? _bannedChannel;
-  RealtimeChannel? _profileStatsChannel;
-  
+
   int _myRecipesCount = 0;
   int _bookmarksCount = 0;
   int _followersCount = 0;
@@ -45,17 +46,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
@@ -63,113 +64,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _loadUserData();
-    _loadUserStats();
     _loadPopularRecipes();
-    _setupBannedListener();
-    _setupProfileStatsListener();
   }
 
   @override
   void dispose() {
-    _bannedChannel?.unsubscribe();
-    _profileStatsChannel?.unsubscribe();
     _animationController.dispose();
     super.dispose();
   }
 
-  void _setupProfileStatsListener() {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return;
-
-    _profileStatsChannel = supabase
-        .channel('profile_stats_$userId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'profiles',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: userId,
-          ),
-          callback: (payload) {
-            if (mounted) {
-              setState(() {
-                _myRecipesCount = payload.newRecord['total_recipes'] ?? 0;
-                _bookmarksCount = payload.newRecord['total_bookmarks'] ?? 0;
-                _followersCount = payload.newRecord['total_followers'] ?? 0;
-              });
-            }
-          },
-        )
-        .subscribe();
-  }
-
-  void _setupBannedListener() {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return;
-
-    _bannedChannel = supabase
-        .channel('profile_changes_$userId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'profiles',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: userId,
-          ),
-          callback: (payload) {
-            final isBanned = payload.newRecord['is_banned'];
-            if (isBanned == true) {
-              _handleBannedUser();
-            }
-          },
-        )
-        .subscribe();
-  }
-
-  Future<void> _handleBannedUser() async {
-    try {
-      await supabase.auth.signOut();
-      
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Akun Anda telah dinonaktifkan oleh administrator.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error saat menangani akun yang diblokir: $e');
-    }
-  }
-
   Future<void> _loadUserData() async {
     try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId != null) {
-        final response = await supabase
-            .from('profiles')
-            .select('avatar_url, username')
-            .eq('id', userId)
-            .single();
+      // Ambil userId dari ApiService (token-based auth)
+      final userId = ApiService.currentUserId;
+      if (userId == null) {
+        // Tidak ada sesi aktif, redirect ke login
         if (mounted) {
-          setState(() {
-            _avatarUrl = response['avatar_url'];
-            _username = response['username'];
-          });
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          );
         }
+        return;
+      }
+
+      _currentUserId = userId;
+
+      final profile = await UserClient.getProfile(userId);
+      if (mounted && profile != null) {
+        setState(() {
+          _avatarUrl = profile['avatar_url'];
+          _username = profile['username'];
+          _myRecipesCount = profile['total_recipes'] ?? 0;
+          _bookmarksCount = profile['total_bookmarks'] ?? 0;
+          _followersCount = profile['total_followers'] ?? 0;
+        });
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
@@ -178,70 +109,60 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Future<void> _loadUserStats() async {
     try {
-      final userId = supabase.auth.currentUser?.id;
-      if (userId != null) {
-        final response = await supabase
-            .from('profiles')
-            .select('total_recipes, total_bookmarks, total_followers')
-            .eq('id', userId)
-            .single();
+      final userId = ApiService.currentUserId;
+      if (userId == null) return;
 
-        if (mounted) {
-          setState(() {
-            _myRecipesCount = response['total_recipes'] ?? 0;
-            _bookmarksCount = response['total_bookmarks'] ?? 0;
-            _followersCount = response['total_followers'] ?? 0;
-          });
-        }
+      final profile = await UserClient.getProfile(userId);
+      if (mounted && profile != null) {
+        setState(() {
+          _myRecipesCount = profile['total_recipes'] ?? 0;
+          _bookmarksCount = profile['total_bookmarks'] ?? 0;
+          _followersCount = profile['total_followers'] ?? 0;
+        });
       }
     } catch (e) {
-      debugPrint('Error loading user stats from profiles: $e');
+      debugPrint('Error loading user stats: $e');
     }
   }
 
   Future<void> _loadPopularRecipes() async {
     setState(() => _isLoading = true);
-    
+
     try {
-      final response = await supabase
-          .from('recipes')
-          .select('''
-            *, 
-            profiles!recipes_user_id_fkey(username, avatar_url, role),
-            categories(id, name),
-            recipe_tags(tags(id, name))
-          ''')
-          .eq('status', 'approved')
-          .order('views_count', ascending: false)
-          .limit(20);
-      
+      final recipes = await RecipeClient.getRecipes(
+        status: 'approved',
+        orderBy: 'views_count',
+        orderDirection: 'desc',
+        limit: 20,
+      );
+
       if (mounted) {
-        final recipes = List<Map<String, dynamic>>.from(response);
-        
+        // Load ratings for each recipe
         for (var recipe in recipes) {
-          final ratingResponse = await supabase
-              .from('recipe_ratings')
-              .select('rating')
-              .eq('recipe_id', recipe['id']);
-          
-          if (ratingResponse.isNotEmpty) {
-            final total = ratingResponse.fold(0, (sum, r) => sum + (r['rating'] as int));
-            _recipeRatings[recipe['id']] = total / ratingResponse.length;
-          }
+          try {
+            final ratingData = await ApiService.get(
+              '/ratings/recipe/${recipe['id']}/average',
+            );
+            if (ratingData['success'] == true) {
+              final avg = ratingData['data']?['average_rating'];
+              if (avg != null) {
+                _recipeRatings[recipe['id'].toString()] =
+                    (avg as num).toDouble();
+              }
+            }
+          } catch (_) {}
         }
-        
+
         setState(() {
           _popularRecipes = recipes;
           _isLoading = false;
         });
-        
+
         _animationController.forward();
       }
     } catch (e) {
       debugPrint('Gagal memuat resep: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -263,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const CustomAppBar(),
+      appBar: CustomAppBar(userId: _currentUserId),
       body: _isLoading
           ? _buildLoadingState()
           : _popularRecipes.isEmpty
@@ -294,7 +215,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             child: const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryCoral),
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppTheme.primaryCoral),
                 strokeWidth: 3,
               ),
             ),
@@ -342,7 +264,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 child: Stack(
                   children: [
-                    // Decorative circles
                     Positioned(
                       top: -40,
                       right: -40,
@@ -367,7 +288,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                     ),
-                    // Content
                     Column(
                       children: [
                         Padding(
@@ -380,10 +300,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.25),
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.4),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.4),
                                         width: 2,
                                       ),
                                     ),
@@ -396,7 +318,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Halo, ${_username ?? 'Foodie'}!',
@@ -414,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                           'Selamat datang kembali di Savora',
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.white.withValues(alpha: 0.9),
+                                            color: Colors.white
+                                                .withValues(alpha: 0.9),
                                             fontWeight: FontWeight.w400,
                                           ),
                                         ),
@@ -424,7 +348,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              
                               Row(
                                 children: [
                                   Expanded(
@@ -455,7 +378,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ],
                           ),
                         ),
-                        
                         Container(
                           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                           padding: const EdgeInsets.all(18),
@@ -475,7 +397,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                                      color: Colors.white
+                                          .withValues(alpha: 0.25),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: const Icon(
@@ -490,7 +413,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white.withValues(alpha: 0.95),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.95),
                                       letterSpacing: 0.5,
                                     ),
                                   ),
@@ -514,7 +438,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     width: 3,
                                     height: 16,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.6),
                                       borderRadius: BorderRadius.circular(2),
                                     ),
                                   ),
@@ -524,7 +449,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       _getDailyQuoteAuthor(),
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.9),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -564,7 +490,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: AppTheme.cardGradient,
                       borderRadius: BorderRadius.circular(20),
@@ -609,7 +536,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     opacity: _animationController,
                     child: RecipeCard(
                       recipe: recipe,
-                      rating: _recipeRatings[recipe['id']],
+                      rating: _recipeRatings[recipe['id'].toString()],
+                      currentUserId: _currentUserId,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -630,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
-          
+
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -713,7 +641,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               },
             ),
             const SizedBox(height: 32),
-            
             Text(
               'Belum Ada Resep',
               style: TextStyle(
@@ -724,7 +651,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            
             Text(
               'Jadilah yang pertama membagikan\nresep lezat dan inspirasi kuliner!',
               style: AppTheme.bodyLarge.copyWith(
@@ -734,7 +660,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            
             Material(
               color: Colors.transparent,
               child: InkWell(

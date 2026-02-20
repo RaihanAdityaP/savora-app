@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../services/ai_service.dart';
+import '../services/ai_client.dart';
 import '../widgets/theme.dart';
 
 class AIAssistantScreen extends StatefulWidget {
@@ -174,8 +174,8 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     _scrollToBottom();
 
     try {
-      final aiService = AIService();
-      final response = await aiService.analyzeRecipeFromImage(_selectedImage!.path);
+      // CHANGED: static call via AIClient, no instance needed
+      final response = await AIClient.analyzeRecipeFromImage(_selectedImage!.path);
 
       if (mounted) {
         setState(() {
@@ -308,8 +308,8 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     _scrollToBottom();
 
     try {
-      final aiService = AIService();
-      final response = await aiService.askCookingQuestion(
+      // CHANGED: static call via AIClient, no instance needed
+      final response = await AIClient.askCookingQuestion(
         userMessage,
         widget.recipeContext ?? 'General cooking question',
       );
@@ -349,28 +349,18 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   }
 
   String _getErrorMessage(String error) {
-    if (error.contains('API key Groq tidak valid')) {
-      return '🔑 API key Groq tidak valid!\n\n'
-          'Pastikan Anda sudah:\n'
-          '1. Daftar di console.groq.com\n'
-          '2. Buat API key\n'
-          '3. Update API key di kode\n\n'
-          'Hubungi developer untuk bantuan.';
-    } else if (error.contains('Tidak ada koneksi internet')) {
-      return '📡 Tidak ada koneksi internet.\n\n'
-          'Pastikan Anda terhubung ke internet dan coba lagi.';
-    } else if (error.contains('Terlalu banyak permintaan')) {
-      return '⚠️ Terlalu banyak permintaan.\n\n'
-          'Tunggu sebentar (sekitar 1 menit) sebelum mencoba lagi.';
+    if (error.contains('API key') || error.contains('401')) {
+      return '🔑 Autentikasi gagal.\n\nHubungi developer untuk bantuan.';
+    } else if (error.contains('Tidak ada koneksi internet') || error.contains('SocketException')) {
+      return '📡 Tidak ada koneksi internet.\n\nPastikan Anda terhubung ke internet dan coba lagi.';
+    } else if (error.contains('Terlalu banyak permintaan') || error.contains('429')) {
+      return '⚠️ Terlalu banyak permintaan.\n\nTunggu sebentar (sekitar 1 menit) sebelum mencoba lagi.';
     } else if (error.contains('timeout')) {
-      return '⏱️ Koneksi timeout.\n\n'
-          'Server membutuhkan waktu terlalu lama untuk merespons. Coba lagi.';
-    } else if (error.contains('Server Groq sedang sibuk')) {
-      return '🔄 Server sedang sibuk.\n\n'
-          'Coba lagi dalam beberapa detik.';
+      return '⏱️ Koneksi timeout.\n\nServer membutuhkan waktu terlalu lama untuk merespons. Coba lagi.';
+    } else if (error.contains('busy') || error.contains('503')) {
+      return '🔄 Server sedang sibuk.\n\nCoba lagi dalam beberapa detik.';
     } else {
-      return '❌ Maaf, terjadi kesalahan.\n\n'
-          'Coba lagi dalam beberapa saat. Jika masalah berlanjut, '
+      return '❌ Maaf, terjadi kesalahan.\n\nCoba lagi dalam beberapa saat. Jika masalah berlanjut, '
           'hubungi support dengan kode error:\n\n$error';
     }
   }
@@ -378,8 +368,9 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   bool _isRetryableError(String error) {
     return error.contains('timeout') ||
            error.contains('Tidak ada koneksi internet') ||
+           error.contains('SocketException') ||
            error.contains('Gagal terhubung') ||
-           error.contains('Server Groq sedang sibuk');
+           error.contains('busy');
   }
 
   Future<void> _retryLastMessage() async {
@@ -407,14 +398,14 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     });
 
     try {
-      final aiService = AIService();
       String response;
       
-      // Check if it was an image analysis
       if (lastImageFile != null) {
-        response = await aiService.analyzeRecipeFromImage(lastImageFile.path);
+        // CHANGED: static call via AIClient
+        response = await AIClient.analyzeRecipeFromImage(lastImageFile.path);
       } else {
-        response = await aiService.askCookingQuestion(
+        // CHANGED: static call via AIClient
+        response = await AIClient.askCookingQuestion(
           lastUserMessage.text,
           widget.recipeContext ?? 'General cooking question',
         );
@@ -494,7 +485,7 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Chef AI', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('Powered by Groq ⚡', style: TextStyle(fontSize: 11, fontWeight: FontWeight.normal)),
+                Text('Powered by Groq', style: TextStyle(fontSize: 11, fontWeight: FontWeight.normal)),
               ],
             ),
           ],
@@ -815,52 +806,25 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // CHANGED: updated description
               const Text(
-                'Chef AI Savora adalah asisten memasak berbasis AI dengan teknologi Groq yang super cepat!',
+                'Chef AI Savora adalah asisten memasak berbasis AI yang terhubung ke Laravel backend.',
                 style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.bolt, color: Colors.green.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Powered by Groq - Inference tercepat di dunia!',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Fitur:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Fitur:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _buildInfoItem('💬', 'Chat interaktif tentang memasak'),
               _buildInfoItem('📸', 'Analisis foto makanan dengan AI'),
               _buildInfoItem('📖', 'Bantuan resep dan tips memasak'),
               _buildInfoItem('🔄', 'Saran variasi resep kreatif'),
-              _buildInfoItem('⚡', 'Respons super cepat (< 1 detik)'),
               _buildInfoItem('🇮🇩', 'Jawaban dalam Bahasa Indonesia'),
               const SizedBox(height: 16),
-              const Text(
-                'Cara Menggunakan:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Cara Menggunakan:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               _buildInfoItem('1.', 'Ketik pertanyaan atau klik ikon gambar'),
               _buildInfoItem('2.', 'Untuk foto: pilih kamera/galeri'),
-              _buildInfoItem('3.', 'Tunggu AI menganalisis (sangat cepat!)'),
+              _buildInfoItem('3.', 'Tunggu AI menganalisis'),
               _buildInfoItem('4.', 'Dapatkan jawaban lengkap dan detail'),
             ],
           ),
