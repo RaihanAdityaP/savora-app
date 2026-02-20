@@ -48,6 +48,11 @@ class RecipeController extends Controller
                 $filters['user_id'] = $request->input('user_id');
             }
 
+            // Difficulty filter
+            if ($request->has('difficulty')) {
+                $filters['difficulty'] = $request->input('difficulty');
+            }
+
             // Pagination
             $limit = $request->input('limit', 10);
             $offset = $request->input('offset', 0);
@@ -64,9 +69,30 @@ class RecipeController extends Controller
 
             $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
 
+            // Add rating info for each recipe
+            foreach ($recipes as &$recipe) {
+                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
+                $totalRatings = count($ratings);
+                $avgRating = 0;
+                
+                if ($totalRatings > 0) {
+                    $sum = array_sum(array_column($ratings, 'rating'));
+                    $avgRating = round($sum / $totalRatings, 1);
+                }
+
+                $recipe['rating_info'] = [
+                    'average' => $avgRating,
+                    'total' => $totalRatings,
+                ];
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $recipes,
+                'pagination' => [
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -83,7 +109,7 @@ class RecipeController extends Controller
     public function show($id)
     {
         try {
-            $columns = ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))', 'recipe_steps(*)'];
+            $columns = ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'];
             $recipes = $this->supabase->select('recipes', $columns, ['id' => $id]);
 
             if (empty($recipes)) {
@@ -93,9 +119,31 @@ class RecipeController extends Controller
                 ], 404);
             }
 
+            $recipe = $recipes[0];
+
+            // Get ratings info
+            $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $id]);
+            $totalRatings = count($ratings);
+            $avgRating = 0;
+            
+            if ($totalRatings > 0) {
+                $sum = array_sum(array_column($ratings, 'rating'));
+                $avgRating = round($sum / $totalRatings, 1);
+            }
+
+            $recipe['rating_info'] = [
+                'average' => $avgRating,
+                'total' => $totalRatings,
+            ];
+
+            // Increment views count
+            $this->supabase->update('recipes', [
+                'views_count' => ($recipe['views_count'] ?? 0) + 1
+            ], ['id' => $id]);
+
             return response()->json([
                 'success' => true,
-                'data' => $recipes[0],
+                'data' => $recipe,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -119,10 +167,13 @@ class RecipeController extends Controller
             'cooking_time' => 'nullable|integer',
             'servings' => 'nullable|integer',
             'difficulty' => 'nullable|in:mudah,sedang,sulit',
+            'calories' => 'nullable|integer',
             'ingredients' => 'required|array',
             'steps' => 'required|array',
             'tags' => 'nullable|array',
+            'tags.*' => 'integer',
             'image' => 'nullable|image|max:5120',
+            'video_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -142,8 +193,12 @@ class RecipeController extends Controller
                 'cooking_time' => $request->input('cooking_time'),
                 'servings' => $request->input('servings'),
                 'difficulty' => $request->input('difficulty', 'sedang'),
-                'ingredients' => $request->input('ingredients'),
+                'calories' => $request->input('calories'),
+                'ingredients' => json_encode($request->input('ingredients')),
+                'steps' => json_encode($request->input('steps')),
+                'video_url' => $request->input('video_url'),
                 'status' => 'pending', // Default pending approval
+                'views_count' => 0,
             ];
 
             // Handle image upload if present
@@ -160,16 +215,6 @@ class RecipeController extends Controller
             $recipe = $this->supabase->insert('recipes', $data);
             $recipeId = $recipe[0]['id'];
 
-            // Insert steps
-            $steps = $request->input('steps');
-            foreach ($steps as $index => $step) {
-                $this->supabase->insert('recipe_steps', [
-                    'recipe_id' => $recipeId,
-                    'step_number' => $index + 1,
-                    'description' => $step,
-                ]);
-            }
-
             // Insert tags if provided
             if ($request->has('tags')) {
                 $tags = $request->input('tags');
@@ -178,12 +223,20 @@ class RecipeController extends Controller
                         'recipe_id' => $recipeId,
                         'tag_id' => $tagId,
                     ]);
+
+                    // Increment tag usage count
+                    $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $tagId]);
+                    if (!empty($tagData)) {
+                        $this->supabase->update('tags', [
+                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1
+                        ], ['id' => $tagId]);
+                    }
                 }
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Recipe created successfully',
+                'message' => 'Recipe created successfully and pending approval',
                 'data' => $recipe[0],
             ], 201);
         } catch (Exception $e) {
@@ -207,10 +260,13 @@ class RecipeController extends Controller
             'cooking_time' => 'nullable|integer',
             'servings' => 'nullable|integer',
             'difficulty' => 'nullable|in:mudah,sedang,sulit',
+            'calories' => 'nullable|integer',
             'ingredients' => 'nullable|array',
             'steps' => 'nullable|array',
             'tags' => 'nullable|array',
+            'tags.*' => 'integer',
             'image' => 'nullable|image|max:5120',
+            'video_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -222,7 +278,15 @@ class RecipeController extends Controller
         }
 
         try {
-            $data = $request->only(['title', 'description', 'category_id', 'cooking_time', 'servings', 'difficulty', 'ingredients']);
+            $data = $request->only(['title', 'description', 'category_id', 'cooking_time', 'servings', 'difficulty', 'calories', 'video_url']);
+
+            if ($request->has('ingredients')) {
+                $data['ingredients'] = json_encode($request->input('ingredients'));
+            }
+
+            if ($request->has('steps')) {
+                $data['steps'] = json_encode($request->input('steps'));
+            }
 
             // Handle image upload if present
             if ($request->hasFile('image')) {
@@ -237,24 +301,19 @@ class RecipeController extends Controller
             // Update recipe
             $recipe = $this->supabase->update('recipes', $data, ['id' => $id]);
 
-            // Update steps if provided
-            if ($request->has('steps')) {
-                // Delete old steps
-                $this->supabase->delete('recipe_steps', ['recipe_id' => $id]);
-                
-                // Insert new steps
-                $steps = $request->input('steps');
-                foreach ($steps as $index => $step) {
-                    $this->supabase->insert('recipe_steps', [
-                        'recipe_id' => $id,
-                        'step_number' => $index + 1,
-                        'description' => $step,
-                    ]);
-                }
-            }
-
             // Update tags if provided
             if ($request->has('tags')) {
+                // Get old tags to decrement usage count
+                $oldTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
+                foreach ($oldTags as $oldTag) {
+                    $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $oldTag['tag_id']]);
+                    if (!empty($tagData) && $tagData[0]['usage_count'] > 0) {
+                        $this->supabase->update('tags', [
+                            'usage_count' => $tagData[0]['usage_count'] - 1
+                        ], ['id' => $oldTag['tag_id']]);
+                    }
+                }
+
                 // Delete old tags
                 $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
                 
@@ -265,6 +324,14 @@ class RecipeController extends Controller
                         'recipe_id' => $id,
                         'tag_id' => $tagId,
                     ]);
+
+                    // Increment tag usage count
+                    $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $tagId]);
+                    if (!empty($tagData)) {
+                        $this->supabase->update('tags', [
+                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1
+                        ], ['id' => $tagId]);
+                    }
                 }
             }
 
@@ -288,11 +355,21 @@ class RecipeController extends Controller
     public function destroy($id)
     {
         try {
+            // Get recipe tags to decrement usage count
+            $recipeTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
+            foreach ($recipeTags as $recipeTag) {
+                $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $recipeTag['tag_id']]);
+                if (!empty($tagData) && $tagData[0]['usage_count'] > 0) {
+                    $this->supabase->update('tags', [
+                        'usage_count' => $tagData[0]['usage_count'] - 1
+                    ], ['id' => $recipeTag['tag_id']]);
+                }
+            }
+
             // Delete related data first
-            $this->supabase->delete('recipe_steps', ['recipe_id' => $id]);
             $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
-            $this->supabase->delete('favorites', ['recipe_id' => $id]);
-            $this->supabase->delete('ratings', ['recipe_id' => $id]);
+            $this->supabase->delete('board_recipes', ['recipe_id' => $id]);
+            $this->supabase->delete('recipe_ratings', ['recipe_id' => $id]);
             
             // Delete recipe
             $this->supabase->delete('recipes', ['id' => $id]);
@@ -313,21 +390,29 @@ class RecipeController extends Controller
      * Approve recipe (admin only)
      * POST /api/recipes/{id}/approve
      */
-    public function approve($id)
+    public function approve(Request $request, $id)
     {
         try {
-            $recipe = $this->supabase->update('recipes', ['status' => 'approved'], ['id' => $id], true);
+            $moderatorId = $request->input('moderated_by');
+
+            $recipe = $this->supabase->update('recipes', [
+                'status' => 'approved',
+                'moderated_by' => $moderatorId,
+                'moderated_at' => date('Y-m-d H:i:s'),
+            ], ['id' => $id], true);
 
             // Send notification to recipe owner
-            $recipeData = $this->supabase->select('recipes', ['user_id'], ['id' => $id]);
+            $recipeData = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
+                $title = $recipeData[0]['title'];
                 
                 $this->supabase->insert('notifications', [
                     'user_id' => $userId,
                     'type' => 'recipe_approved',
                     'title' => 'Resep Disetujui',
-                    'message' => 'Resep Anda telah disetujui dan dipublikasikan!',
+                    'message' => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
+                    'related_entity_type' => 'recipe',
                     'related_entity_id' => $id,
                 ]);
             }
@@ -353,22 +438,27 @@ class RecipeController extends Controller
     {
         try {
             $reason = $request->input('reason', 'Tidak memenuhi standar');
+            $moderatorId = $request->input('moderated_by');
             
             $recipe = $this->supabase->update('recipes', [
                 'status' => 'rejected',
                 'rejection_reason' => $reason,
+                'moderated_by' => $moderatorId,
+                'moderated_at' => date('Y-m-d H:i:s'),
             ], ['id' => $id], true);
 
             // Send notification to recipe owner
-            $recipeData = $this->supabase->select('recipes', ['user_id'], ['id' => $id]);
+            $recipeData = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
+                $title = $recipeData[0]['title'];
                 
                 $this->supabase->insert('notifications', [
                     'user_id' => $userId,
                     'type' => 'recipe_rejected',
                     'title' => 'Resep Ditolak',
-                    'message' => "Resep Anda ditolak. Alasan: $reason",
+                    'message' => "Resep '{$title}' ditolak. Alasan: {$reason}",
+                    'related_entity_type' => 'recipe',
                     'related_entity_id' => $id,
                 ]);
             }
@@ -394,25 +484,56 @@ class RecipeController extends Controller
     {
         try {
             $query = $request->input('q', '');
+            $categoryId = $request->input('category_id');
+            $difficulty = $request->input('difficulty');
+            $limit = $request->input('limit', 20);
+
+            $filters = ['status' => 'approved'];
             
-            // For now, we'll use basic filtering
-            // In production, you might want to use full-text search
+            if ($categoryId) {
+                $filters['category_id'] = $categoryId;
+            }
+            
+            if ($difficulty) {
+                $filters['difficulty'] = $difficulty;
+            }
+
             $recipes = $this->supabase->select('recipes', 
-                ['*', 'profiles(*)', 'categories(*)'], 
-                ['status' => 'approved']
+                ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'], 
+                $filters,
+                ['limit' => $limit, 'order' => 'views_count.desc']
             );
 
-            // Filter by search query
+            // Filter by search query if provided
             if (!empty($query)) {
                 $recipes = array_filter($recipes, function($recipe) use ($query) {
                     return stripos($recipe['title'], $query) !== false || 
                            stripos($recipe['description'], $query) !== false;
                 });
+                $recipes = array_values($recipes);
+            }
+
+            // Add rating info
+            foreach ($recipes as &$recipe) {
+                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
+                $totalRatings = count($ratings);
+                $avgRating = 0;
+                
+                if ($totalRatings > 0) {
+                    $sum = array_sum(array_column($ratings, 'rating'));
+                    $avgRating = round($sum / $totalRatings, 1);
+                }
+
+                $recipe['rating_info'] = [
+                    'average' => $avgRating,
+                    'total' => $totalRatings,
+                ];
             }
 
             return response()->json([
                 'success' => true,
-                'data' => array_values($recipes),
+                'data' => $recipes,
+                'query' => $query,
             ]);
         } catch (Exception $e) {
             return response()->json([

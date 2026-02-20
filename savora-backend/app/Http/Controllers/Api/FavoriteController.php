@@ -18,21 +18,42 @@ class FavoriteController extends Controller
     }
 
     /**
-     * Get user's favorite recipes
-     * GET /api/v1/favorites/user/{userId}
+     * Get user's favorite recipes (from all boards)
+     * GET /api/favorites/user/{userId}
      */
     public function getUserFavorites($userId)
     {
         try {
-            $favorites = $this->supabase->select('favorites',
-                ['*, recipes(*, profiles(*), categories(*))'],
-                ['user_id' => $userId],
-                ['order' => 'created_at.desc']
+            // Get all user's boards
+            $boards = $this->supabase->select('recipe_boards',
+                ['id'],
+                ['user_id' => $userId]
             );
+
+            if (empty($boards)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                ]);
+            }
+
+            $boardIds = array_column($boards, 'id');
+            
+            // Get all recipes from all boards
+            $allBoardRecipes = $this->supabase->select('board_recipes',
+                ['*, recipes(*, profiles(*), categories(*))'],
+                [],
+                ['order' => 'added_at.desc']
+            );
+
+            // Filter by user's boards
+            $favorites = array_filter($allBoardRecipes, function($br) use ($boardIds) {
+                return in_array($br['board_id'], $boardIds);
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $favorites,
+                'data' => array_values($favorites),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -43,14 +64,15 @@ class FavoriteController extends Controller
     }
 
     /**
-     * Add recipe to favorites
-     * POST /api/v1/favorites
+     * Add recipe to default board (create default board if needed)
+     * POST /api/favorites
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|uuid',
             'recipe_id' => 'required|uuid',
+            'board_id' => 'nullable|uuid',
         ]);
 
         if ($validator->fails()) {
@@ -62,22 +84,46 @@ class FavoriteController extends Controller
         }
 
         try {
-            // Check if already favorited
-            $existing = $this->supabase->select('favorites', ['id'], [
-                'user_id' => $request->input('user_id'),
-                'recipe_id' => $request->input('recipe_id'),
+            $userId = $request->input('user_id');
+            $recipeId = $request->input('recipe_id');
+            $boardId = $request->input('board_id');
+
+            // If no board specified, use or create default board
+            if (!$boardId) {
+                $defaultBoards = $this->supabase->select('recipe_boards', 
+                    ['id'], 
+                    ['user_id' => $userId, 'name' => 'Favorit Saya']
+                );
+
+                if (empty($defaultBoards)) {
+                    // Create default board
+                    $board = $this->supabase->insert('recipe_boards', [
+                        'user_id' => $userId,
+                        'name' => 'Favorit Saya',
+                        'description' => 'Board favorit default',
+                    ]);
+                    $boardId = $board[0]['id'];
+                } else {
+                    $boardId = $defaultBoards[0]['id'];
+                }
+            }
+
+            // Check if already in board
+            $existing = $this->supabase->select('board_recipes', ['id'], [
+                'board_id' => $boardId,
+                'recipe_id' => $recipeId,
             ]);
 
             if (!empty($existing)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Recipe already in favorites',
+                    'message' => 'Recipe already in this board',
                 ], 400);
             }
 
-            $favorite = $this->supabase->insert('favorites', [
-                'user_id' => $request->input('user_id'),
-                'recipe_id' => $request->input('recipe_id'),
+            $favorite = $this->supabase->insert('board_recipes', [
+                'board_id' => $boardId,
+                'recipe_id' => $recipeId,
             ]);
 
             return response()->json([
@@ -94,13 +140,13 @@ class FavoriteController extends Controller
     }
 
     /**
-     * Remove recipe from favorites
-     * DELETE /api/v1/favorites
+     * Remove recipe from board
+     * DELETE /api/favorites
      */
     public function destroy(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid',
+            'board_id' => 'required|uuid',
             'recipe_id' => 'required|uuid',
         ]);
 
@@ -113,14 +159,14 @@ class FavoriteController extends Controller
         }
 
         try {
-            $this->supabase->delete('favorites', [
-                'user_id' => $request->input('user_id'),
+            $this->supabase->delete('board_recipes', [
+                'board_id' => $request->input('board_id'),
                 'recipe_id' => $request->input('recipe_id'),
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Recipe removed from favorites',
+                'message' => 'Recipe removed from board',
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -132,7 +178,7 @@ class FavoriteController extends Controller
 
     /**
      * Get user's recipe boards
-     * GET /api/v1/favorites/boards/{userId}
+     * GET /api/favorites/boards/{userId}
      */
     public function getBoards($userId)
     {
@@ -166,7 +212,7 @@ class FavoriteController extends Controller
 
     /**
      * Create new recipe board
-     * POST /api/v1/favorites/boards
+     * POST /api/favorites/boards
      */
     public function createBoard(Request $request)
     {
@@ -206,7 +252,7 @@ class FavoriteController extends Controller
 
     /**
      * Update recipe board
-     * PUT /api/v1/favorites/boards/{boardId}
+     * PUT /api/favorites/boards/{boardId}
      */
     public function updateBoard(Request $request, $boardId)
     {
@@ -242,7 +288,7 @@ class FavoriteController extends Controller
 
     /**
      * Delete recipe board
-     * DELETE /api/v1/favorites/boards/{boardId}
+     * DELETE /api/favorites/boards/{boardId}
      */
     public function deleteBoard($boardId)
     {
@@ -267,7 +313,7 @@ class FavoriteController extends Controller
 
     /**
      * Get recipes in a board
-     * GET /api/v1/favorites/boards/{boardId}/recipes
+     * GET /api/favorites/boards/{boardId}/recipes
      */
     public function getBoardRecipes($boardId)
     {
@@ -275,7 +321,7 @@ class FavoriteController extends Controller
             $boardRecipes = $this->supabase->select('board_recipes',
                 ['*, recipes(*, profiles(*), categories(*))'],
                 ['board_id' => $boardId],
-                ['order' => 'created_at.desc']
+                ['order' => 'added_at.desc']
             );
 
             return response()->json([
@@ -292,7 +338,7 @@ class FavoriteController extends Controller
 
     /**
      * Add recipe to board
-     * POST /api/v1/favorites/boards/{boardId}/recipes
+     * POST /api/favorites/boards/{boardId}/recipes
      */
     public function addRecipeToBoard(Request $request, $boardId)
     {
@@ -342,7 +388,7 @@ class FavoriteController extends Controller
 
     /**
      * Remove recipe from board
-     * DELETE /api/v1/favorites/boards/{boardId}/recipes/{recipeId}
+     * DELETE /api/favorites/boards/{boardId}/recipes/{recipeId}
      */
     public function removeRecipeFromBoard($boardId, $recipeId)
     {

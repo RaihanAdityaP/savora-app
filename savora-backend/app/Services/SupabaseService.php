@@ -35,6 +35,32 @@ class SupabaseService
     }
 
     /**
+     * Build filter string from filters array
+     */
+    private function buildFilters(array $filters): string
+    {
+        $query = '';
+        foreach ($filters as $column => $value) {
+            if (is_array($value)) {
+                $operator = $value['operator'] ?? 'eq';
+
+                if ($operator === 'in') {
+                    $values = implode(',', array_map(function($v) {
+                        return is_string($v) ? '"' . $v . '"' : $v;
+                    }, $value['values']));
+                    $query .= "&{$column}=in.({$values})";
+                } else {
+                    $val = $value['value'];
+                    $query .= "&{$column}={$operator}.{$val}";
+                }
+            } else {
+                $query .= "&{$column}=eq.{$value}";
+            }
+        }
+        return $query;
+    }
+
+    /**
      * SELECT query
      */
     public function select(string $table, array $columns = ['*'], array $filters = [], array $options = [])
@@ -43,18 +69,8 @@ class SupabaseService
             $columnsStr = implode(',', $columns);
             $url = "{$this->supabaseUrl}/rest/v1/{$table}?select={$columnsStr}";
             
-            // Add filters
-            foreach ($filters as $column => $value) {
-                if (is_array($value)) {
-                    $operator = $value['operator'] ?? 'eq';
-                    $val = $value['value'];
-                    $url .= "&{$column}={$operator}.{$val}";
-                } else {
-                    $url .= "&{$column}=eq.{$value}";
-                }
-            }
+            $url .= $this->buildFilters($filters);
             
-            // Add options (order, limit, etc.)
             if (isset($options['order'])) {
                 $url .= "&order={$options['order']}";
             }
@@ -109,19 +125,10 @@ class SupabaseService
     {
         try {
             $url = "{$this->supabaseUrl}/rest/v1/{$table}";
-            
-            // Add filters
-            $firstFilter = true;
-            foreach ($filters as $column => $value) {
-                $prefix = $firstFilter ? '?' : '&';
-                if (is_array($value)) {
-                    $operator = $value['operator'] ?? 'eq';
-                    $val = $value['value'];
-                    $url .= "{$prefix}{$column}={$operator}.{$val}";
-                } else {
-                    $url .= "{$prefix}{$column}=eq.{$value}";
-                }
-                $firstFilter = false;
+
+            $filterStr = $this->buildFilters($filters);
+            if (!empty($filterStr)) {
+                $url .= '?' . ltrim($filterStr, '&');
             }
 
             $response = Http::withHeaders($this->getHeaders($useServiceKey))
@@ -146,19 +153,10 @@ class SupabaseService
     {
         try {
             $url = "{$this->supabaseUrl}/rest/v1/{$table}";
-            
-            // Add filters
-            $firstFilter = true;
-            foreach ($filters as $column => $value) {
-                $prefix = $firstFilter ? '?' : '&';
-                if (is_array($value)) {
-                    $operator = $value['operator'] ?? 'eq';
-                    $val = $value['value'];
-                    $url .= "{$prefix}{$column}={$operator}.{$val}";
-                } else {
-                    $url .= "{$prefix}{$column}=eq.{$value}";
-                }
-                $firstFilter = false;
+
+            $filterStr = $this->buildFilters($filters);
+            if (!empty($filterStr)) {
+                $url .= '?' . ltrim($filterStr, '&');
             }
 
             $response = Http::withHeaders($this->getHeaders($useServiceKey))
