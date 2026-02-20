@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AIController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RatingController;
@@ -121,6 +122,24 @@ Route::prefix('ratings')->group(function () {
     });
 });
 
+// ─── COMMENTS ─────────────────────────────────────────────────────────────
+Route::prefix('comments')->group(function () {
+    // Read
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('recipe/{recipeId}', [CommentController::class, 'getRecipeComments']);
+        Route::get('recipe/{recipeId}/count', [CommentController::class, 'getCommentCount']);
+        Route::get('user/{userId}', [CommentController::class, 'getUserComments']);
+        Route::get('{id}', [CommentController::class, 'show']);
+    });
+
+    // Write — comment spam prevention
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/', [CommentController::class, 'store']);
+        Route::put('{id}', [CommentController::class, 'update']);
+        Route::delete('{id}', [CommentController::class, 'destroy']);
+    });
+});
+
 // ─── FAVORITES ────────────────────────────────────────────────────────────
 Route::prefix('favorites')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
@@ -142,11 +161,14 @@ Route::prefix('favorites')->group(function () {
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────
 Route::prefix('notifications')->group(function () {
+    // Read
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('user/{userId}', [NotificationController::class, 'getUserNotifications']);
         Route::get('user/{userId}/unread-count', [NotificationController::class, 'getUnreadCount']);
+        Route::get('devices/{userId}', [NotificationController::class, 'getUserDevices']);
     });
 
+    // Mark read / delete
     Route::middleware('throttle:30,1')->group(function () {
         Route::post('{id}/read', [NotificationController::class, 'markAsRead']);
         Route::post('user/{userId}/read-all', [NotificationController::class, 'markAllAsRead']);
@@ -157,7 +179,11 @@ Route::prefix('notifications')->group(function () {
     Route::post('send', [NotificationController::class, 'sendNotification'])
         ->middleware('throttle:10,1');
 
+    // Device registration
     Route::post('register-device', [NotificationController::class, 'registerDevice'])
+        ->middleware('throttle:5,1');
+
+    Route::delete('unregister-device', [NotificationController::class, 'unregisterDevice'])
         ->middleware('throttle:5,1');
 });
 
@@ -166,12 +192,13 @@ Route::prefix('admin')->middleware('throttle:30,1')->group(function () {
     Route::get('statistics', function () {
         $supabase = app(\App\Services\SupabaseService::class);
         try {
-            $totalUsers   = count($supabase->select('profiles', ['id']));
-            $bannedUsers  = count($supabase->select('profiles', ['id'], ['is_banned' => true]));
-            $totalRecipes = count($supabase->select('recipes', ['id']));
-            $pending      = count($supabase->select('recipes', ['id'], ['status' => 'pending']));
-            $totalTags    = count($supabase->select('tags', ['id']));
-            $pendingTags  = count($supabase->select('tags', ['id'], ['is_approved' => false]));
+            $totalUsers    = count($supabase->select('profiles', ['id']));
+            $bannedUsers   = count($supabase->select('profiles', ['id'], ['is_banned' => true]));
+            $totalRecipes  = count($supabase->select('recipes', ['id']));
+            $pending       = count($supabase->select('recipes', ['id'], ['status' => 'pending']));
+            $totalTags     = count($supabase->select('tags', ['id']));
+            $pendingTags   = count($supabase->select('tags', ['id'], ['is_approved' => false]));
+            $totalComments = count($supabase->select('comments', ['id']));
 
             return response()->json([
                 'success' => true,
@@ -182,6 +209,7 @@ Route::prefix('admin')->middleware('throttle:30,1')->group(function () {
                     'pending_recipes' => $pending,
                     'total_tags'      => $totalTags,
                     'pending_tags'    => $pendingTags,
+                    'total_comments'  => $totalComments,
                 ],
             ]);
         } catch (\Exception $e) {

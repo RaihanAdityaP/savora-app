@@ -22,7 +22,7 @@ class NotificationController extends Controller
 
     /**
      * Get user notifications
-     * GET /api/v1/notifications/user/{userId}
+     * GET /api/notifications/user/{userId}
      */
     public function getUserNotifications($userId)
     {
@@ -47,13 +47,13 @@ class NotificationController extends Controller
 
     /**
      * Mark notification as read
-     * POST /api/v1/notifications/{id}/read
+     * POST /api/notifications/{id}/read
      */
     public function markAsRead($id)
     {
         try {
             $this->supabase->update('notifications', 
-                ['is_read' => true, 'read_at' => date('Y-m-d H:i:s')],
+                ['is_read' => true],
                 ['id' => $id]
             );
 
@@ -71,13 +71,13 @@ class NotificationController extends Controller
 
     /**
      * Mark all notifications as read
-     * POST /api/v1/notifications/user/{userId}/read-all
+     * POST /api/notifications/user/{userId}/read-all
      */
     public function markAllAsRead($userId)
     {
         try {
             $this->supabase->update('notifications', 
-                ['is_read' => true, 'read_at' => date('Y-m-d H:i:s')],
+                ['is_read' => true],
                 ['user_id' => $userId, 'is_read' => false]
             );
 
@@ -95,7 +95,7 @@ class NotificationController extends Controller
 
     /**
      * Send notification to user
-     * POST /api/v1/notifications/send
+     * POST /api/notifications/send
      */
     public function sendNotification(Request $request)
     {
@@ -104,6 +104,7 @@ class NotificationController extends Controller
             'type' => 'required|string',
             'title' => 'required|string|max:200',
             'message' => 'required|string|max:500',
+            'related_entity_type' => 'nullable|string',
             'related_entity_id' => 'nullable|string',
         ]);
 
@@ -122,14 +123,15 @@ class NotificationController extends Controller
                 'type' => $request->input('type'),
                 'title' => $request->input('title'),
                 'message' => $request->input('message'),
+                'related_entity_type' => $request->input('related_entity_type'),
                 'related_entity_id' => $request->input('related_entity_id'),
                 'is_read' => false,
             ]);
 
-            // Send push notification if device token exists
+            // Send push notification if device tokens exist
             $deviceTokens = $this->supabase->select('device_tokens',
                 ['token'],
-                ['user_id' => $request->input('user_id')]
+                ['user_id' => $request->input('user_id'), 'is_active' => true]
             );
 
             if (!empty($deviceTokens)) {
@@ -139,12 +141,17 @@ class NotificationController extends Controller
                     $request->input('related_entity_id', '')
                 );
 
-                $this->notification->sendToMultipleDevices(
-                    $tokens,
-                    $request->input('title'),
-                    $request->input('message'),
-                    $payload
-                );
+                try {
+                    $this->notification->sendToMultipleDevices(
+                        $tokens,
+                        $request->input('title'),
+                        $request->input('message'),
+                        $payload
+                    );
+                } catch (Exception $e) {
+                    // Log but don't fail the notification creation
+                    \Log::warning('Failed to send push notification: ' . $e->getMessage());
+                }
             }
 
             return response()->json([
@@ -162,14 +169,15 @@ class NotificationController extends Controller
 
     /**
      * Register device token for push notifications
-     * POST /api/v1/notifications/register-device
+     * POST /api/notifications/register-device
      */
     public function registerDevice(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|uuid',
-            'device_token' => 'required|string',
+            'token' => 'required|string',
             'device_type' => 'nullable|string|in:android,ios',
+            'device_name' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -181,27 +189,106 @@ class NotificationController extends Controller
         }
 
         try {
+            $token = $request->input('token');
+            $userId = $request->input('user_id');
+
             // Check if token already exists
             $existing = $this->supabase->select('device_tokens',
-                ['id'],
-                [
-                    'user_id' => $request->input('user_id'),
-                    'token' => $request->input('device_token'),
-                ]
+                ['id', 'user_id'],
+                ['token' => $token]
             );
 
-            if (empty($existing)) {
-                // Insert new token
-                $this->supabase->insert('device_tokens', [
-                    'user_id' => $request->input('user_id'),
-                    'token' => $request->input('device_token'),
+            if (!empty($existing)) {
+                // Token exists, update it
+                $deviceToken = $this->supabase->update('device_tokens', [
+                    'user_id' => $userId,
                     'device_type' => $request->input('device_type', 'android'),
+                    'device_name' => $request->input('device_name'),
+                    'is_active' => true,
+                    'last_used_at' => date('Y-m-d H:i:s'),
+                ], ['token' => $token]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Device token updated successfully',
+                    'data' => $deviceToken,
                 ]);
+            } else {
+                // Insert new token
+                $deviceToken = $this->supabase->insert('device_tokens', [
+                    'user_id' => $userId,
+                    'token' => $token,
+                    'device_type' => $request->input('device_type', 'android'),
+                    'device_name' => $request->input('device_name'),
+                    'is_active' => true,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Device registered successfully',
+                    'data' => $deviceToken[0],
+                ], 201);
             }
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Unregister device token
+     * DELETE /api/notifications/unregister-device
+     */
+    public function unregisterDevice(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // Soft delete by marking as inactive
+            $this->supabase->update('device_tokens', [
+                'is_active' => false,
+            ], ['token' => $request->input('token')]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Device registered successfully',
+                'message' => 'Device unregistered successfully',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user's registered devices
+     * GET /api/notifications/devices/{userId}
+     */
+    public function getUserDevices($userId)
+    {
+        try {
+            $devices = $this->supabase->select('device_tokens',
+                ['*'],
+                ['user_id' => $userId, 'is_active' => true],
+                ['order' => 'last_used_at.desc']
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $devices,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -213,7 +300,7 @@ class NotificationController extends Controller
 
     /**
      * Get unread notification count
-     * GET /api/v1/notifications/user/{userId}/unread-count
+     * GET /api/notifications/user/{userId}/unread-count
      */
     public function getUnreadCount($userId)
     {
@@ -242,7 +329,7 @@ class NotificationController extends Controller
 
     /**
      * Delete notification
-     * DELETE /api/v1/notifications/{id}
+     * DELETE /api/notifications/{id}
      */
     public function destroy($id)
     {
