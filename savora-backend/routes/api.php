@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AIController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\FavoriteController;
@@ -11,9 +12,20 @@ use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\TagController;
 
+// ─── AUTH ─────────────────────────────────────────────────────────────────
+Route::prefix('auth')->group(function () {
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('token', [AuthController::class, 'exchangeToken']);
+    });
+
+    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
+        Route::get('me', [AuthController::class, 'me']);
+        Route::post('logout', [AuthController::class, 'logout']);
+    });
+});
+
 // ─── AI ───────────────────────────────────────────────────────────────────
-// AI paling mahal resource-nya, limit ketat
-Route::prefix('ai')->middleware('throttle:20,1')->group(function () {
+Route::prefix('ai')->middleware(['auth:sanctum', 'throttle:20,1'])->group(function () {
     Route::get('test', [AIController::class, 'testConnection']);
     Route::post('ask', [AIController::class, 'askCookingQuestion']);
     Route::post('analyze-image', [AIController::class, 'analyzeRecipeFromImage']);
@@ -24,22 +36,22 @@ Route::prefix('ai')->middleware('throttle:20,1')->group(function () {
 
 // ─── RECIPES ──────────────────────────────────────────────────────────────
 Route::prefix('recipes')->group(function () {
-    // Read = lebih longgar
+    // Public read
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/', [RecipeController::class, 'index']);
         Route::get('search', [RecipeController::class, 'search']);
         Route::get('{id}', [RecipeController::class, 'show']);
     });
 
-    // Write = lebih ketat
-    Route::middleware('throttle:10,1')->group(function () {
+    // Protected write
+    Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
         Route::post('/', [RecipeController::class, 'store']);
         Route::put('{id}', [RecipeController::class, 'update']);
         Route::delete('{id}', [RecipeController::class, 'destroy']);
     });
 
     // Admin moderation
-    Route::middleware('throttle:30,1')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
         Route::post('{id}/approve', [RecipeController::class, 'approve']);
         Route::post('{id}/reject', [RecipeController::class, 'reject']);
     });
@@ -47,24 +59,24 @@ Route::prefix('recipes')->group(function () {
 
 // ─── USERS ────────────────────────────────────────────────────────────────
 Route::prefix('users')->group(function () {
-    // Read
+    // Public read
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::get('{id}', [UserController::class, 'show']);
-        Route::get('{id}/is-following', [UserController::class, 'isFollowing']);
         Route::get('{id}/followers', [UserController::class, 'followers']);
         Route::get('{id}/following', [UserController::class, 'following']);
     });
 
-    // Write
-    Route::middleware('throttle:20,1')->group(function () {
+    // Protected read/write
+    Route::middleware(['auth:sanctum', 'throttle:20,1'])->group(function () {
+        Route::get('{id}/is-following', [UserController::class, 'isFollowing']);
         Route::put('{id}', [UserController::class, 'update']);
         Route::post('{id}/follow', [UserController::class, 'follow']);
         Route::post('{id}/unfollow', [UserController::class, 'unfollow']);
     });
 
-    // Admin only — tetap dibatasi mencegah abuse akun admin
-    Route::middleware('throttle:30,1')->group(function () {
+    // Admin only
+    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
         Route::post('{id}/ban', [UserController::class, 'ban']);
         Route::post('{id}/unban', [UserController::class, 'unban']);
         Route::post('{id}/toggle-premium', [UserController::class, 'togglePremium']);
@@ -79,7 +91,7 @@ Route::prefix('categories')->group(function () {
         Route::get('{id}/recipes', [CategoryController::class, 'recipes']);
     });
 
-    Route::middleware('throttle:15,1')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
         Route::post('/', [CategoryController::class, 'store']);
         Route::put('{id}', [CategoryController::class, 'update']);
         Route::delete('{id}', [CategoryController::class, 'destroy']);
@@ -96,7 +108,7 @@ Route::prefix('tags')->group(function () {
         Route::get('{id}/recipes', [TagController::class, 'recipes']);
     });
 
-    Route::middleware('throttle:15,1')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:15,1'])->group(function () {
         Route::post('/', [TagController::class, 'store']);
         Route::put('{id}', [TagController::class, 'update']);
         Route::delete('{id}', [TagController::class, 'destroy']);
@@ -114,8 +126,7 @@ Route::prefix('ratings')->group(function () {
         Route::get('user/{userId}/recipe/{recipeId}', [RatingController::class, 'getUserRecipeRating']);
     });
 
-    // Rating/review spam prevention
-    Route::middleware('throttle:10,1')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
         Route::post('/', [RatingController::class, 'store']);
         Route::put('{id}', [RatingController::class, 'update']);
         Route::delete('{id}', [RatingController::class, 'destroy']);
@@ -124,7 +135,6 @@ Route::prefix('ratings')->group(function () {
 
 // ─── COMMENTS ─────────────────────────────────────────────────────────────
 Route::prefix('comments')->group(function () {
-    // Read
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('recipe/{recipeId}', [CommentController::class, 'getRecipeComments']);
         Route::get('recipe/{recipeId}/count', [CommentController::class, 'getCommentCount']);
@@ -132,8 +142,7 @@ Route::prefix('comments')->group(function () {
         Route::get('{id}', [CommentController::class, 'show']);
     });
 
-    // Write — comment spam prevention
-    Route::middleware('throttle:20,1')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:20,1'])->group(function () {
         Route::post('/', [CommentController::class, 'store']);
         Route::put('{id}', [CommentController::class, 'update']);
         Route::delete('{id}', [CommentController::class, 'destroy']);
@@ -141,10 +150,11 @@ Route::prefix('comments')->group(function () {
 });
 
 // ─── FAVORITES ────────────────────────────────────────────────────────────
-Route::prefix('favorites')->group(function () {
+Route::prefix('favorites')->middleware('auth:sanctum')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
-        Route::get('user/{userId}', [FavoriteController::class, 'getUserFavorites']);
-        Route::get('boards/{userId}', [FavoriteController::class, 'getBoards']);
+        // CHANGED: Remove userId from URL, use auth user
+        Route::get('/', [FavoriteController::class, 'getUserFavorites']);
+        Route::get('boards', [FavoriteController::class, 'getBoards']);
         Route::get('boards/{boardId}/recipes', [FavoriteController::class, 'getBoardRecipes']);
     });
 
@@ -160,26 +170,23 @@ Route::prefix('favorites')->group(function () {
 });
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────
-Route::prefix('notifications')->group(function () {
-    // Read
+Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
-        Route::get('user/{userId}', [NotificationController::class, 'getUserNotifications']);
-        Route::get('user/{userId}/unread-count', [NotificationController::class, 'getUnreadCount']);
-        Route::get('devices/{userId}', [NotificationController::class, 'getUserDevices']);
+        // CHANGED: Remove userId from URL, use auth user
+        Route::get('/', [NotificationController::class, 'getUserNotifications']);
+        Route::get('unread-count', [NotificationController::class, 'getUnreadCount']);
+        Route::get('devices', [NotificationController::class, 'getUserDevices']);
     });
 
-    // Mark read / delete
     Route::middleware('throttle:30,1')->group(function () {
         Route::post('{id}/read', [NotificationController::class, 'markAsRead']);
-        Route::post('user/{userId}/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::post('read-all', [NotificationController::class, 'markAllAsRead']);
         Route::delete('{id}', [NotificationController::class, 'destroy']);
     });
 
-    // Send notification lebih ketat — bisa dipakai spam
     Route::post('send', [NotificationController::class, 'sendNotification'])
         ->middleware('throttle:10,1');
 
-    // Device registration
     Route::post('register-device', [NotificationController::class, 'registerDevice'])
         ->middleware('throttle:5,1');
 
@@ -188,7 +195,7 @@ Route::prefix('notifications')->group(function () {
 });
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────
-Route::prefix('admin')->middleware('throttle:30,1')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
     Route::get('statistics', function () {
         $supabase = app(\App\Services\SupabaseService::class);
         try {
