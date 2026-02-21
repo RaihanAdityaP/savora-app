@@ -959,7 +959,7 @@ savora://recipe/${widget.recipeId}
             child: Stack(
               children: [
                 _recipe!['image_url'] != null
-                    ? Image.network(_recipe!['image_url'], width: double.infinity, height: 280, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholderImage())
+                    ? Image.network(_recipe!['image_url'], width: double.infinity, height: 280, fit: BoxFit.cover, errorBuilder: (_, _, _) => _buildPlaceholderImage())
                     : _buildPlaceholderImage(),
                 Positioned(
                   bottom: 0, left: 0, right: 0,
@@ -1462,7 +1462,7 @@ savora://recipe/${widget.recipeId}
                                 Container(
                                   width: 36, height: 36,
                                   decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [Colors.grey.shade300, Colors.grey.shade400])),
-                                  child: ClipOval(child: avatarUrl != null ? Image.network(avatarUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 18, color: Colors.white)) : const Icon(Icons.person, size: 18, color: Colors.white)),
+                                  child: ClipOval(child: avatarUrl != null ? Image.network(avatarUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.person, size: 18, color: Colors.white)) : const Icon(Icons.person, size: 18, color: Colors.white)),
                                 ),
                                 const SizedBox(width: 10),
                                 Text(username, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
@@ -1473,8 +1473,11 @@ savora://recipe/${widget.recipeId}
                           if (canManageComment)
                             PopupMenuButton<String>(
                               onSelected: (value) {
-                                if (value == 'edit' && isCommentOwner) _showEditCommentDialog(comment['id'].toString(), comment['content']);
-                                else if (value == 'delete') _deleteComment(comment['id'].toString(), commentUserId);
+                                if (value == 'edit' && isCommentOwner) {
+                                   _showEditCommentDialog(comment['id'].toString(), comment['content']);
+                                } else if (value == 'delete') {
+                                  _deleteComment(comment['id'].toString(), commentUserId);
+                                }
                               },
                               itemBuilder: (_) => [
                                 if (isCommentOwner)

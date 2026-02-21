@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../utils/supabase_client.dart';
+import '../services/api_service.dart';
+import '../services/user_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
@@ -16,7 +17,8 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   final _usernameController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _bioController = TextEditingController();
@@ -43,7 +45,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Getter untuk warna tema berdasarkan role
   List<Color> get _primaryGradient {
     if (_isOwnProfile && _userRole == 'admin') {
       return AppTheme.getRoleGradient('admin');
@@ -52,16 +53,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Color get _primaryColor {
-    if (_isOwnProfile && _userRole == 'admin') {
-      return const Color(0xFFFFD700);
-    }
+    if (_isOwnProfile && _userRole == 'admin') return const Color(0xFFFFD700);
     return AppTheme.primaryCoral;
   }
 
   Color get _secondaryColor {
-    if (_isOwnProfile && _userRole == 'admin') {
-      return const Color(0xFFFFA500);
-    }
+    if (_isOwnProfile && _userRole == 'admin') return const Color(0xFFFFA500);
     return AppTheme.primaryOrange;
   }
 
@@ -71,10 +68,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color(0xFFFFD700), // Gold
-          Color(0xFFFFA500), // Orange
-          Color(0xFFFF8C00), // Dark Orange
-          Color(0xFFFFD700), // Gold
+          Color(0xFFFFD700),
+          Color(0xFFFFA500),
+          Color(0xFFFF8C00),
+          Color(0xFFFFD700),
         ],
       );
     }
@@ -84,18 +81,19 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _currentUserId = supabase.auth.currentUser?.id;
-    _isOwnProfile = widget.userId == null || widget.userId == _currentUserId;
+    _currentUserId = ApiService.currentUserId;
+    _isOwnProfile =
+        widget.userId == null || widget.userId == _currentUserId;
 
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 1000), vsync: this);
+    _fadeAnimation = CurvedAnimation(
+        parent: _animationController, curve: Curves.easeInOut);
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.2),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+    ).animate(CurvedAnimation(
+        parent: _animationController, curve: Curves.easeOutCubic));
 
     _loadProfile();
     _loadUserRecipes();
@@ -116,27 +114,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       final targetUserId = widget.userId ?? _currentUserId;
       if (targetUserId == null) return;
 
-      final response = await supabase
-          .from('profiles')
-          .select('username, full_name, bio, avatar_url, role, is_premium, total_followers, total_following')
-          .eq('id', targetUserId)
-          .single();
-
+      final profile = await UserClient.getProfile(targetUserId);
       if (!mounted) return;
 
-      setState(() {
-        _usernameController.text = response['username'] ?? '';
-        _fullNameController.text = response['full_name'] ?? '';
-        _bioController.text = response['bio'] ?? '';
-        _avatarUrl = response['avatar_url'];
-        _userRole = response['role'] ?? 'user';
-        _isPremium = response['is_premium'] ?? false;
-        _followerCount = response['total_followers'] ?? 0;
-        _followingCount = response['total_following'] ?? 0;
-        _isLoading = false;
-      });
-
-      _animationController.forward();
+      if (profile != null) {
+        setState(() {
+          _usernameController.text = profile['username'] ?? '';
+          _fullNameController.text = profile['full_name'] ?? '';
+          _bioController.text = profile['bio'] ?? '';
+          _avatarUrl = profile['avatar_url'];
+          _userRole = profile['role'] ?? 'user';
+          _isPremium = profile['is_premium'] ?? false;
+          _followerCount = profile['total_followers'] ?? 0;
+          _followingCount = profile['total_following'] ?? 0;
+          _isLoading = false;
+        });
+        _animationController.forward();
+      } else {
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
       if (mounted) {
         _showSnackBar('Gagal memuat profil: $e', isError: true);
@@ -150,30 +146,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       final targetUserId = widget.userId ?? _currentUserId;
       if (targetUserId == null) return;
 
-      final response = await supabase
-          .from('recipes')
-          .select('''
-            *, 
-            profiles!recipes_user_id_fkey(username, avatar_url, role),
-            categories(id, name),
-            recipe_tags(tags(id, name))
-          ''')
-          .eq('user_id', targetUserId)
-          .eq('status', 'approved')
-          .order('created_at', ascending: false);
-
+      final recipes = await UserClient.getUserRecipes(targetUserId);
       if (!mounted) return;
 
-      final recipes = List<Map<String, dynamic>>.from(response);
-
+      // Extract ratings from recipe data if available
       for (var recipe in recipes) {
-        final ratingResponse = await supabase
-            .from('recipe_ratings')
-            .select('rating')
-            .eq('recipe_id', recipe['id']);
-        if (ratingResponse.isNotEmpty) {
-          final total = ratingResponse.fold(0, (sum, r) => sum + (r['rating'] as int));
-          _recipeRatings[recipe['id']] = total / ratingResponse.length;
+        final avg = recipe['average_rating'];
+        if (avg != null) {
+          _recipeRatings[recipe['id']] = (avg as num).toDouble();
         }
       }
 
@@ -188,15 +168,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> _checkIfFollowing() async {
     if (_currentUserId == null || _isOwnProfile) return;
     try {
-      final response = await supabase
-          .from('follows')
-          .select()
-          .eq('follower_id', _currentUserId!)
-          .eq('following_id', widget.userId!)
-          .maybeSingle();
-      if (mounted) {
-        setState(() => _isFollowing = response != null);
-      }
+      final isFollowing = await UserClient.isFollowing(
+        targetUserId: widget.userId!,
+        myUserId: _currentUserId!,
+      );
+      if (mounted) setState(() => _isFollowing = isFollowing);
     } catch (e) {
       debugPrint('Error checking follow status: $e');
     }
@@ -206,32 +182,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     if (_currentUserId == null || _isOwnProfile) return;
     setState(() => _isFollowLoading = true);
     try {
+      bool success;
       if (_isFollowing) {
-        await supabase
-            .from('follows')
-            .delete()
-            .eq('follower_id', _currentUserId!)
-            .eq('following_id', widget.userId!);
-        if (mounted) {
+        success = await UserClient.unfollow(
+          targetUserId: widget.userId!,
+          followerId: _currentUserId!,
+        );
+        if (mounted && success) {
           setState(() => _isFollowing = false);
           _showSnackBar('Berhenti mengikuti', isError: false);
         }
       } else {
-        await supabase.from('follows').insert({
-          'follower_id': _currentUserId,
-          'following_id': widget.userId,
-        });
-        if (mounted) {
+        success = await UserClient.follow(
+          targetUserId: widget.userId!,
+          followerId: _currentUserId!,
+        );
+        if (mounted && success) {
           setState(() => _isFollowing = true);
           _showSnackBar('Berhasil mengikuti', isError: false);
         }
       }
-      await Future.delayed(const Duration(milliseconds: 300));
       await _loadProfile();
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Error: $e', isError: true);
-      }
+      if (mounted) _showSnackBar('Error: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isFollowLoading = false);
     }
@@ -249,24 +222,24 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       if (image == null) return;
 
       setState(() => _isUploadingImage = true);
-      final userId = supabase.auth.currentUser?.id;
+      final userId = _currentUserId;
       if (userId == null) return;
 
-      final bytes = await image.readAsBytes();
-      final fileExt = image.path.split('.').last;
-      final fileName = '$userId-${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-      final filePath = 'avatars/$fileName';
+      final updated = await UserClient.updateProfile(
+        userId: userId,
+        avatarPath: image.path,
+      );
 
-      await supabase.storage.from('profiles').uploadBinary(filePath, bytes);
-      final publicUrl = supabase.storage.from('profiles').getPublicUrl(filePath);
-
-      await supabase.from('profiles').update({'avatar_url': publicUrl}).eq('id', userId);
       if (mounted) {
         setState(() {
-          _avatarUrl = publicUrl;
+          _avatarUrl = updated?['avatar_url'] ?? _avatarUrl;
           _isUploadingImage = false;
         });
-        _showSnackBar('Foto profil berhasil diperbarui!', isError: false);
+        if (updated != null) {
+          _showSnackBar('Foto profil berhasil diperbarui!', isError: false);
+        } else {
+          _showSnackBar('Gagal mengunggah foto', isError: true);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -285,22 +258,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
     setState(() => _isSaving = true);
     try {
-      final userId = supabase.auth.currentUser?.id;
+      final userId = _currentUserId;
       if (userId == null) return;
 
-      await supabase.from('profiles').upsert({
-        'id': userId,
-        'username': _usernameController.text.trim(),
-        'full_name': _fullNameController.text.trim(),
-        'bio': _bioController.text.trim(),
-      });
+      final updated = await UserClient.updateProfile(
+        userId: userId,
+        username: _usernameController.text.trim(),
+        fullName: _fullNameController.text.trim(),
+        bio: _bioController.text.trim(),
+      );
+
       if (mounted) {
-        _showSnackBar('Profil berhasil diperbarui!', isError: false);
+        if (updated != null) {
+          _showSnackBar('Profil berhasil diperbarui!', isError: false);
+        } else {
+          _showSnackBar('Gagal menyimpan profil', isError: true);
+        }
       }
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Gagal menyimpan: $e', isError: true);
-      }
+      if (mounted) _showSnackBar('Gagal menyimpan: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -309,52 +285,47 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> _showFollowersList() async {
     try {
       final targetUserId = widget.userId ?? _currentUserId;
-      final response = await supabase
-          .from('follows')
-          .select('follower_id, profiles!follows_follower_id_fkey(username, avatar_url, full_name, is_banned, banned_reason)')
-          .eq('following_id', targetUserId!);
+      if (targetUserId == null) return;
 
+      final followers = await UserClient.getFollowers(targetUserId);
       if (!mounted) return;
 
       showModalBottomSheet(
         context: context,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        builder: (context) => _buildFollowListSheet('Pengikut', List<Map<String, dynamic>>.from(response), true),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        builder: (context) => _buildFollowListSheet(
+            'Pengikut', followers, true),
       );
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Error: $e', isError: true);
-      }
+      if (mounted) _showSnackBar('Error: $e', isError: true);
     }
   }
 
   Future<void> _showFollowingList() async {
     try {
       final targetUserId = widget.userId ?? _currentUserId;
-      final response = await supabase
-          .from('follows')
-          .select('following_id, profiles!follows_following_id_fkey(username, avatar_url, full_name, is_banned, banned_reason)')
-          .eq('follower_id', targetUserId!);
+      if (targetUserId == null) return;
 
+      final following = await UserClient.getFollowing(targetUserId);
       if (!mounted) return;
 
       showModalBottomSheet(
         context: context,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        builder: (context) => _buildFollowListSheet('Mengikuti', List<Map<String, dynamic>>.from(response), false),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        builder: (context) => _buildFollowListSheet(
+            'Mengikuti', following, false),
       );
     } catch (e) {
-      if (mounted) {
-        _showSnackBar('Error: $e', isError: true);
-      }
+      if (mounted) _showSnackBar('Error: $e', isError: true);
     }
   }
 
-  Widget _buildFollowListSheet(String title, List<Map<String, dynamic>> users, bool isFollowers) {
+  /// followers list dari Laravel:
+  /// [ { id, username, full_name, avatar_url, is_banned, banned_reason }, ... ]
+  Widget _buildFollowListSheet(
+      String title, List<Map<String, dynamic>> users, bool isFollowers) {
     if (users.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(32),
@@ -363,19 +334,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 40),
               Icon(Icons.people_outline, size: 64, color: Colors.grey.shade300),
               const SizedBox(height: 16),
               Text(
-                isFollowers ? 'Belum ada pengikut' : 'Belum mengikuti siapa pun',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w600),
+                isFollowers
+                    ? 'Belum ada pengikut'
+                    : 'Belum mengikuti siapa pun',
+                style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -389,13 +363,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 20),
           Text(title, style: AppTheme.headingMedium),
           const SizedBox(height: 20),
@@ -404,11 +376,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               shrinkWrap: true,
               itemCount: users.length,
               itemBuilder: (context, index) {
-                final user = users[index];
-                final profile = user['profiles'];
-                final userId = isFollowers ? user['follower_id'] : user['following_id'];
+                final profile = users[index];
+                final userId = profile['id'] as String?;
                 final isBanned = profile['is_banned'] == true;
-                final bannedReason = profile['banned_reason'] ?? 'Tidak disebutkan';
+                final bannedReason =
+                    profile['banned_reason'] ?? 'Tidak disebutkan';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -423,27 +395,34 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     leading: Container(
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: isBanned
-                            ? LinearGradient(colors: [Colors.red.shade300, Colors.red.shade400])
+                            ? LinearGradient(colors: [
+                                Colors.red.shade300,
+                                Colors.red.shade400
+                              ])
                             : LinearGradient(colors: _primaryGradient),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(2),
                         child: CircleAvatar(
                           backgroundColor: Colors.white,
-                          backgroundImage: profile['avatar_url'] != null && !isBanned
+                          backgroundImage: profile['avatar_url'] != null &&
+                                  !isBanned
                               ? NetworkImage(profile['avatar_url'])
                               : null,
                           child: profile['avatar_url'] == null || isBanned
                               ? Icon(
                                   isBanned ? Icons.block : Icons.person,
-                                  color: isBanned ? Colors.red.shade700 : Colors.grey.shade400,
+                                  color: isBanned
+                                      ? Colors.red.shade700
+                                      : Colors.grey.shade400,
                                 )
                               : null,
                         ),
@@ -452,19 +431,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     title: Text(
                       profile['username'] ?? 'Unknown',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isBanned ? Colors.red.shade700 : AppTheme.textPrimary,
-                      ),
+                          fontWeight: FontWeight.bold,
+                          color: isBanned
+                              ? Colors.red.shade700
+                              : AppTheme.textPrimary),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (profile['full_name'] != null)
-                          Text(profile['full_name'], style: AppTheme.bodySmall),
+                          Text(profile['full_name'],
+                              style: AppTheme.bodySmall),
                         if (isBanned)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(8),
@@ -472,17 +454,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             child: Text(
                               'Dibanned: $bannedReason',
                               style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
+                                  color: Colors.red.shade700,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600),
                             ),
                           ),
                       ],
                     ),
                     trailing: isBanned
                         ? null
-                        : Icon(Icons.arrow_forward_ios_rounded, size: 16, color: _primaryColor),
+                        : Icon(Icons.arrow_forward_ios_rounded,
+                            size: 16, color: _primaryColor),
                     onTap: isBanned
                         ? null
                         : () {
@@ -491,7 +473,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ProfileScreen(userId: userId),
+                                  builder: (context) =>
+                                      ProfileScreen(userId: userId),
                                 ),
                               );
                             }
@@ -513,14 +496,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         content: Row(
           children: [
             Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
+                isError
+                    ? Icons.error_outline
+                    : Icons.check_circle_outline,
+                color: Colors.white),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
+        backgroundColor:
+            isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -568,26 +553,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: _primaryColor.withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
+                    color: _primaryColor.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10)),
               ],
             ),
             child: const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 3,
-            ),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Memuat profil...',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text('Memuat profil...',
+              style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -600,10 +580,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           gradient: _headerGradient,
           boxShadow: [
             BoxShadow(
-              color: _primaryColor.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
+                color: _primaryColor.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10)),
           ],
         ),
         child: SafeArea(
@@ -621,14 +600,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: LinearGradient(
-                          colors: AppTheme.getRoleGradient(_userRole),
-                        ),
+                            colors: AppTheme.getRoleGradient(_userRole)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8)),
                         ],
                       ),
                     ),
@@ -636,16 +613,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       width: 110,
                       height: 110,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                      ),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3)),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(55),
                         child: _avatarUrl != null
                             ? Image.network(
                                 _avatarUrl!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => _buildDefaultAvatar(),
+                                errorBuilder: (_, _, _) =>
+                                    _buildDefaultAvatar(),
                               )
                             : _buildDefaultAvatar(),
                       ),
@@ -654,15 +631,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withValues(alpha: 0.6),
-                          ),
+                              shape: BoxShape.circle,
+                              color: Colors.black.withValues(alpha: 0.6)),
                           child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
-                            ),
-                          ),
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 3)),
                         ),
                       ),
                     if (_isOwnProfile)
@@ -670,25 +643,25 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         bottom: 0,
                         right: 0,
                         child: GestureDetector(
-                          onTap: _isUploadingImage ? null : _pickAndUploadImage,
+                          onTap:
+                              _isUploadingImage ? null : _pickAndUploadImage,
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: _primaryGradient),
+                              gradient:
+                                  LinearGradient(colors: _primaryGradient),
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
+                              border:
+                                  Border.all(color: Colors.white, width: 3),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8,
-                                ),
+                                    color:
+                                        Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8)
                               ],
                             ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                            child: const Icon(Icons.camera_alt_rounded,
+                                color: Colors.white, size: 16),
                           ),
                         ),
                       ),
@@ -701,45 +674,41 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           decoration: BoxDecoration(
                             gradient: AppTheme.adminGradient,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border:
+                                Border.all(color: Colors.white, width: 2),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                              ),
+                                  color:
+                                      Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 8)
                             ],
                           ),
-                          child: const Icon(
-                            Icons.verified_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                          child: const Icon(Icons.verified_rounded,
+                              color: Colors.white, size: 16),
                         ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // Username & Name
                 Text(
-                  _usernameController.text.isEmpty ? 'Unknown' : _usernameController.text,
+                  _usernameController.text.isEmpty
+                      ? 'Unknown'
+                      : _usernameController.text,
                   style: AppTheme.headingLarge,
                 ),
                 if (_fullNameController.text.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(
-                    _fullNameController.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
+                  Text(_fullNameController.text,
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.9))),
                 ],
                 const SizedBox(height: 12),
 
-                // Role Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: AppTheme.getRoleGradient(_userRole)
@@ -748,9 +717,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      width: 1.5,
-                    ),
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 1.5),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -768,17 +736,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       Text(
                         AppTheme.getRoleLabel(_userRole),
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5),
                       ),
                     ],
                   ),
                 ),
 
-                // Bio
                 if (_bioController.text.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -787,71 +753,71 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1.5),
                     ),
                     child: Text(
                       _bioController.text,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.95),
-                        fontSize: 14,
-                        height: 1.5,
-                      ),
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontSize: 14,
+                          height: 1.5),
                     ),
                   ),
                 ],
                 const SizedBox(height: 20),
 
-                // Stats
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem('Resep', _userRecipes.length.toString()),
+                    _buildStatItem(
+                        'Resep', _userRecipes.length.toString()),
                     Container(
-                      width: 1,
-                      height: 40,
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
+                        width: 1,
+                        height: 40,
+                        color: Colors.white.withValues(alpha: 0.3)),
                     GestureDetector(
                       onTap: _showFollowersList,
-                      child: _buildStatItem('Pengikut', _followerCount.toString()),
+                      child: _buildStatItem(
+                          'Pengikut', _followerCount.toString()),
                     ),
                     Container(
-                      width: 1,
-                      height: 40,
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
+                        width: 1,
+                        height: 40,
+                        color: Colors.white.withValues(alpha: 0.3)),
                     GestureDetector(
                       onTap: _showFollowingList,
-                      child: _buildStatItem('Mengikuti', _followingCount.toString()),
+                      child: _buildStatItem(
+                          'Mengikuti', _followingCount.toString()),
                     ),
                   ],
                 ),
 
-                // Action Button
                 if (!_isOwnProfile) ...[
                   const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
                     height: 52,
                     decoration: BoxDecoration(
-                      gradient: _isFollowing ? null : LinearGradient(colors: _primaryGradient),
-                      color: _isFollowing ? Colors.white.withValues(alpha: 0.2) : null,
+                      gradient: _isFollowing
+                          ? null
+                          : LinearGradient(colors: _primaryGradient),
+                      color: _isFollowing
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : null,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 1.5,
-                      ),
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 1.5),
                       boxShadow: _isFollowing
                           ? null
                           : [
                               BoxShadow(
-                                color: _primaryColor.withValues(alpha: 0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
+                                  color:
+                                      _primaryColor.withValues(alpha: 0.4),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6))
                             ],
                     ),
                     child: Material(
@@ -865,21 +831,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
+                                      strokeWidth: 2.5, color: Colors.white))
                               : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      _isFollowing ? Icons.person_remove_rounded : Icons.person_add_rounded,
+                                      _isFollowing
+                                          ? Icons.person_remove_rounded
+                                          : Icons.person_add_rounded,
                                       color: Colors.white,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _isFollowing ? 'Berhenti Mengikuti' : 'Ikuti',
+                                      _isFollowing
+                                          ? 'Berhenti Mengikuti'
+                                          : 'Ikuti',
                                       style: AppTheme.buttonText,
                                     ),
                                   ],
@@ -910,23 +878,20 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFFD700).withValues(alpha: 0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8)),
                 ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AdminDashboardScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const AdminDashboardScreen()),
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -935,50 +900,37 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                              color: Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(14)),
                           child: const Icon(
-                            Icons.dashboard_customize_rounded,
-                            color: Colors.white,
-                            size: 28,
-                          ),
+                              Icons.dashboard_customize_rounded,
+                              color: Colors.white,
+                              size: 28),
                         ),
                         const SizedBox(width: 16),
                         const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Dashboard Admin',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              Text('Dashboard Admin',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
                               SizedBox(height: 4),
-                              Text(
-                                'Kelola sistem dan pengguna',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                ),
-                              ),
+                              Text('Kelola sistem dan pengguna',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 13)),
                             ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle),
+                          child: const Icon(Icons.arrow_forward_ios_rounded,
+                              color: Colors.white, size: 16),
                         ),
                       ],
                     ),
@@ -998,10 +950,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   height: 24,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: _primaryGradient,
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
+                        colors: _primaryGradient,
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1015,15 +966,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 color: AppTheme.cardBackground,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _primaryColor.withValues(alpha: 0.2),
-                  width: 2,
-                ),
+                    color: _primaryColor.withValues(alpha: 0.2), width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: _primaryColor.withValues(alpha: 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
+                      color: _primaryColor.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2))
                 ],
               ),
               padding: const EdgeInsets.all(20),
@@ -1041,7 +989,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     controller: _fullNameController,
                     label: 'Nama Lengkap',
                     icon: Icons.person_outline_rounded,
-                    iconColor: _userRole == 'admin' ? const Color(0xFFFFA500) : AppTheme.primaryTeal,
+                    iconColor: _userRole == 'admin'
+                        ? const Color(0xFFFFA500)
+                        : AppTheme.primaryTeal,
                   ),
                   const SizedBox(height: 16),
                   _buildModernTextField(
@@ -1062,10 +1012,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: _primaryColor.withValues(alpha: 0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
+                      color: _primaryColor.withValues(alpha: 0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8))
                 ],
               ),
               child: Material(
@@ -1079,16 +1028,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             width: 24,
                             height: 24,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
+                                color: Colors.white, strokeWidth: 2.5))
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.save_rounded, color: Colors.white),
+                              const Icon(Icons.save_rounded,
+                                  color: Colors.white),
                               const SizedBox(width: 12),
-                              Text('Simpan Perubahan', style: AppTheme.buttonText),
+                              Text('Simpan Perubahan',
+                                  style: AppTheme.buttonText),
                             ],
                           ),
                   ),
@@ -1106,10 +1054,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 height: 24,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: _primaryGradient,
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                      colors: _primaryGradient,
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1121,38 +1068,35 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      _primaryColor.withValues(alpha: 0.1),
-                      _secondaryColor.withValues(alpha: 0.1),
-                    ],
-                  ),
+                  gradient: LinearGradient(colors: [
+                    _primaryColor.withValues(alpha: 0.1),
+                    _secondaryColor.withValues(alpha: 0.1),
+                  ]),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _primaryColor.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
+                      color: _primaryColor.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Text(
                   '${_userRecipes.length}',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: _primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+                      fontSize: 13,
+                      color: _primaryColor,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          // Recipes List or Empty State
           if (_userRecipes.isEmpty)
             AppTheme.buildEmptyState(
               icon: Icons.restaurant_menu_rounded,
-              title: _isOwnProfile ? 'Belum ada resep' : 'Pengguna ini belum memiliki resep',
+              title: _isOwnProfile
+                  ? 'Belum ada resep'
+                  : 'Pengguna ini belum memiliki resep',
               subtitle: _isOwnProfile
                   ? 'Mulai berbagi resep favorit Anda!'
                   : 'Tunggu hingga mereka membagikan kreasi kuliner',
@@ -1166,9 +1110,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DetailScreen(
-                        recipeId: recipe['id'].toString(),
-                      ),
+                      builder: (context) =>
+                          DetailScreen(recipeId: recipe['id'].toString()),
                     ),
                   ).then((_) {
                     if (mounted) _loadUserRecipes();
@@ -1185,10 +1128,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: AppTheme.getRoleGradient(_userRole),
-        ),
-      ),
+          gradient:
+              LinearGradient(colors: AppTheme.getRoleGradient(_userRole))),
       child: const Icon(Icons.person_rounded, size: 50, color: Colors.white),
     );
   }
@@ -1196,23 +1137,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Widget _buildStatItem(String label, String value) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white)),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withValues(alpha: 0.9),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -1230,36 +1165,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         controller: controller,
         maxLines: maxLines,
         style: TextStyle(
-          fontSize: 15,
-          color: Colors.grey.shade800,
-          fontWeight: FontWeight.w500,
-        ),
+            fontSize: 15,
+            color: Colors.grey.shade800,
+            fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.grey.shade600,
-            fontWeight: FontWeight.w500,
-          ),
+              color: Colors.grey.shade600, fontWeight: FontWeight.w500),
           prefixIcon: Padding(
             padding: EdgeInsets.only(top: maxLines > 1 ? 12 : 0),
             child: Icon(icon, color: iconColor, size: 22),
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: iconColor, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: iconColor, width: 2)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           alignLabelWithHint: maxLines > 1,
         ),
       ),

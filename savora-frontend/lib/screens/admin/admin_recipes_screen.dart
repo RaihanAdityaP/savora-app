@@ -300,7 +300,7 @@ class _AdminRecipesScreenState extends State<AdminRecipesScreen>
                           height: 180,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               _buildPlaceholder(),
                         )
                       : _buildPlaceholder(),

@@ -18,10 +18,10 @@ class ApiService {
   //
   // Contoh pengisian:
   //   Android Emulator  → 'http://10.0.2.2:8000/api/v1'
-  //   HP via USB/WiFi   → 'http://192.168.1.5:8000/api/v1'  ← ganti IP
+  //   HP via USB/WiFi   → 'http://192.168.1.9:8000/api/v1'  ← ganti IP
   //   Production        → 'https://api.savora.com/api/v1'   ← ganti domain
   // ─────────────────────────────────────────────
-  static const String _baseUrlDebug = 'http://10.0.2.2:8000/api/v1';
+  static const String _baseUrlDebug = 'http://192.168.1.9:8000/api/v1';
   static const String _baseUrlProd = 'https://api.savora.com/api/v1';
 
   static String get _baseUrl => kDebugMode ? _baseUrlDebug : _baseUrlProd;
