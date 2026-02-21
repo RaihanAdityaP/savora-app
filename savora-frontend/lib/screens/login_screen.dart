@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/auth_client.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../widgets/theme.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
@@ -52,39 +54,37 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
     try {
-      // Panggil endpoint Google OAuth di Laravel backend
-      final response = await ApiService.post('/auth/google', {});
+      final response = await AuthClient.signInWithGoogle();
 
       if (response['success'] == true) {
-        final token = response['data']?['token'] as String?;
-        final userId = response['data']?['user']?['id']?.toString();
-
-        if (token == null) throw Exception('Token tidak diterima dari server');
-
-        ApiService.setToken(token);
-        if (userId != null) ApiService.setCurrentUserId(userId);
-
-        // Cek apakah akun di-banned
-        final isBanned = response['data']?['user']?['is_banned'] == true;
+        // Check if banned
+        final isBanned = response['user']?['is_banned'] == true;
         if (isBanned) {
           ApiService.clearToken();
-          final reason = response['data']?['user']?['banned_reason'] ??
-              'Tidak disebutkan';
-          final bannedAt = response['data']?['user']?['banned_at'];
+          final reason = response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+          final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
         }
 
         if (mounted) {
           Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomeScreen()));
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
         }
-      } else {
-        throw Exception(
-            response['message'] ?? 'Google Sign In gagal');
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        String errorMsg = e.message;
+        if (errorMsg.contains('Email not confirmed')) {
+          errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
+        }
+        _showSnackBar(errorMsg, isError: true);
       }
     } catch (e) {
-      if (mounted) _showSnackBar('Google Sign In gagal: $e', isError: true);
+      if (mounted) {
+        _showSnackBar('Google Sign In gagal: ${e.toString()}', isError: true);
+      }
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
     }
@@ -95,50 +95,50 @@ class _LoginScreenState extends State<LoginScreen>
       _showSnackBar('Email dan password harus diisi!', isError: true);
       return;
     }
+
     setState(() => _isLoading = true);
     try {
-      final response = await ApiService.post('/auth/login', {
-        'email': _emailController.text.trim(),
-        'password': _passwordController.text,
-      });
+      final response = await AuthClient.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
       if (response['success'] == true) {
-        final token = response['data']?['token'] as String?;
-        final userId = response['data']?['user']?['id']?.toString();
-
-        if (token == null) throw Exception('Token tidak diterima dari server');
-
-        // Cek apakah akun di-banned
-        final isBanned = response['data']?['user']?['is_banned'] == true;
+        // Check if banned
+        final isBanned = response['user']?['is_banned'] == true;
         if (isBanned) {
-          final reason = response['data']?['user']?['banned_reason'] ??
-              'Tidak disebutkan';
-          final bannedAt = response['data']?['user']?['banned_at'];
+          ApiService.clearToken();
+          final reason = response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+          final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
         }
 
-        ApiService.setToken(token);
-        if (userId != null) ApiService.setCurrentUserId(userId);
-
         if (mounted) {
           Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const HomeScreen()));
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
         }
-      } else {
-        throw Exception(response['message'] ?? 'Login gagal');
       }
-    } catch (e) {
+    } on AuthException catch (e) {
       if (!mounted) return;
-      String errorMsg = e.toString().replaceFirst('Exception: ', '');
+      String errorMsg = e.message;
+
       if (errorMsg.contains('Invalid login credentials') ||
           errorMsg.contains('email or password')) {
         errorMsg = 'Email atau password salah';
-      } else if (errorMsg.contains('not verified') ||
-          errorMsg.contains('Email not confirmed')) {
+      } else if (errorMsg.contains('Email not confirmed')) {
         errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
-      } else if (errorMsg.contains('timeout')) {
+      }
+      _showSnackBar(errorMsg, isError: true);
+    } catch (e) {
+      if (!mounted) return;
+      String errorMsg = e.toString().replaceFirst('Exception: ', '');
+
+      if (errorMsg.contains('timeout')) {
         errorMsg = 'Koneksi timeout. Cek internet Anda.';
+      } else if (errorMsg.contains('Token exchange failed')) {
+        errorMsg = 'Gagal menghubungkan ke server. Coba lagi.';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
@@ -235,22 +235,33 @@ class _LoginScreenState extends State<LoginScreen>
                   final email = emailController.text.trim();
                   if (email.isEmpty) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('Email harus diisi!')));
+                      const SnackBar(content: Text('Email harus diisi!')),
+                    );
                     return;
                   }
                   Navigator.pop(dialogContext);
+
                   try {
-                    await ApiService.post(
-                        '/auth/resend-verification', {'email': email});
+                    final success = await AuthClient.resendVerificationEmail(email);
                     if (mounted) {
-                      _showSnackBar(
+                      if (success) {
+                        _showSnackBar(
                           'Email verifikasi telah dikirim ke $email',
-                          isError: false);
+                          isError: false,
+                        );
+                      } else {
+                        _showSnackBar(
+                          'Gagal mengirim email verifikasi',
+                          isError: true,
+                        );
+                      }
                     }
                   } catch (e) {
                     if (mounted) {
-                      _showSnackBar('Gagal mengirim email: ${e.toString()}',
-                          isError: true);
+                      _showSnackBar(
+                        'Gagal mengirim email: ${e.toString()}',
+                        isError: true,
+                      );
                     }
                   }
                 },
@@ -353,9 +364,12 @@ class _LoginScreenState extends State<LoginScreen>
       final dateTime = DateTime.parse(dateTimeStr);
       final now = DateTime.now();
       final difference = now.difference(dateTime);
-      if (difference.inDays > 0) return '${difference.inDays} hari yang lalu';
-      if (difference.inHours > 0)
+      if (difference.inDays > 0) {
+        return '${difference.inDays} hari yang lalu';
+      }
+      if (difference.inHours > 0) {
         return '${difference.inHours} jam yang lalu';
+      }
       return '${difference.inMinutes} menit yang lalu';
     } catch (e) {
       return dateTimeStr;

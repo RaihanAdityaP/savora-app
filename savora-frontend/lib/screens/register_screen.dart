@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_client.dart';
 import '../widgets/theme.dart';
 import 'login_screen.dart';
 
@@ -61,76 +62,76 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
     setState(() => _isLoading = true);
     try {
-      final response = await ApiService.post('/auth/register', {
-        'username': _usernameController.text.trim(),
-        'full_name': _fullNameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'password': _passwordController.text,
-      });
-
+      final response = await AuthClient.register(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        username: _usernameController.text.trim(),
+        fullName: _fullNameController.text.trim(),
+      );
       if (response['success'] == true) {
-        if (mounted) _showSuccessDialog();
-      } else {
-        final message = response['message'] ?? 'Register gagal';
-        if (message.toString().contains('already registered') ||
-            message.toString().contains('already exists') ||
-            message.toString().contains('taken')) {
-          _showResendVerificationDialog();
-          return;
+        if (mounted) {
+          _showSuccessDialog();
         }
-        _showSnackBar(message.toString(), isError: true);
       }
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      String errorMsg = e.message;
+      if (errorMsg.contains('already registered') ||
+          errorMsg.contains('already exists') ||
+          errorMsg.contains('User already registered')) {
+        _showResendVerificationDialog();
+        return;
+      } else if (errorMsg.contains('Password')) {
+        errorMsg = 'Password minimal 6 karakter';
+      }
+      _showSnackBar(errorMsg, isError: true);
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
-      if (errorMsg.contains('already registered') ||
-          errorMsg.contains('already exists')) {
+      if (errorMsg.contains('timeout')) {
+        errorMsg = 'Koneksi timeout. Cek internet Anda.';
+      } else if (errorMsg.contains('already registered')) {
         _showResendVerificationDialog();
         return;
-      } else if (errorMsg.contains('timeout')) {
-        errorMsg = 'Koneksi timeout. Cek internet Anda.';
-      } else if (errorMsg.contains('Password') ||
-          errorMsg.contains('password')) {
-        errorMsg = 'Password minimal 6 karakter';
-      } else {
-        errorMsg = 'Terjadi kesalahan: $errorMsg';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _resendVerificationEmail() async {
     setState(() => _isLoading = true);
     try {
-      final response = await ApiService.post('/auth/resend-verification', {
-        'email': _emailController.text.trim(),
-      });
-
+      final success = await AuthClient.resendVerificationEmail(
+        _emailController.text.trim(),
+      );
       if (mounted) {
-        if (response['success'] == true) {
+        if (success) {
           _showSnackBar(
-              'Email verifikasi telah dikirim ulang ke ${_emailController.text}',
-              isError: false);
+            'Email verifikasi telah dikirim ulang ke ${_emailController.text}',
+            isError: false,
+          );
         } else {
-          String message = response['message'] ?? 'Gagal mengirim email';
-          if (message.contains('rate') || message.contains('limit')) {
-            message =
-                'Terlalu banyak permintaan. Tunggu 1-2 menit sebelum mencoba lagi.';
-          }
-          _showSnackBar(message, isError: true);
+          _showSnackBar(
+            'Gagal mengirim email. Coba lagi nanti.',
+            isError: true,
+          );
         }
       }
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
-      if (errorMsg.contains('429') || errorMsg.contains('rate')) {
+      if (errorMsg.contains('rate') || errorMsg.contains('limit')) {
         errorMsg = 'Terlalu banyak permintaan. Tunggu beberapa menit.';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
