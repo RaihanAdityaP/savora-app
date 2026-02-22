@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:app_links/app_links.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/detail_screen.dart';
@@ -8,7 +10,6 @@ import 'screens/searching_screen.dart';
 import 'services/api_service.dart';
 import 'services/notification_service.dart';
 
-// Global navigator key untuk navigation dari notification dan deep link
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
@@ -16,12 +17,22 @@ Future<void> main() async {
 
   debugPrint('Starting Savora app...');
 
-  // Initialize notification service (local notifications only)
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+  debugPrint('Supabase initialized');
+
+  // Initialize notification service
   debugPrint('Initializing notification service...');
   await NotificationService().initialize();
   debugPrint('Notification service initialized');
 
-  // Test koneksi ke Laravel backend (opsional, hanya untuk debug)
+  // Test koneksi ke Laravel backend (hanya untuk debug)
   if (const bool.fromEnvironment('dart.vm.product') == false) {
     final connected = await ApiService.healthCheck();
     debugPrint('Laravel backend connected: $connected');
@@ -46,7 +57,6 @@ class _MyAppState extends State<MyApp> {
     _handleIncomingDeepLinks();
   }
 
-  // 1. Handle deep link saat app DIBUKA dari nol
   Future<void> _handleInitialDeepLink() async {
     try {
       final appLinks = AppLinks();
@@ -59,7 +69,6 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  // 2. Handle deep link saat app sedang berjalan (foreground)
   void _handleIncomingDeepLinks() {
     final appLinks = AppLinks();
     appLinks.uriLinkStream.listen(
@@ -73,7 +82,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  // 3. Router function khusus deep link
   void _navigateByUri(Uri uri) {
     if (uri.scheme != 'savora') return;
 
@@ -121,14 +129,12 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.orange,
         useMaterial3: true,
       ),
-      // Cek token dari ApiService untuk menentukan layar awal
       home: ApiService.hasToken ? const HomeScreen() : const LoginScreen(),
       onGenerateRoute: (settings) {
         debugPrint('Route requested: ${settings.name}');
 
         final uri = Uri.parse(settings.name ?? '');
 
-        // Handle deep link: savora://recipe/RECIPE_ID
         if (uri.scheme == 'savora' && uri.host == 'recipe') {
           final recipeId =
               uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
@@ -139,7 +145,6 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Handle deep link: savora://profile/USER_ID
         if (uri.scheme == 'savora' && uri.host == 'profile') {
           final userId =
               uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
@@ -150,21 +155,18 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Handle deep link: savora://search
         if (uri.scheme == 'savora' && uri.host == 'search') {
           return MaterialPageRoute(
             builder: (context) => const SearchingScreen(),
           );
         }
 
-        // Handle deep link: savora://home
         if (uri.scheme == 'savora' && uri.host == 'home') {
           return MaterialPageRoute(
             builder: (context) => const HomeScreen(),
           );
         }
 
-        // Handle route dari notification
         if (settings.name == '/recipe') {
           final recipeId = settings.arguments as String?;
           if (recipeId != null) {
@@ -181,7 +183,6 @@ class _MyAppState extends State<MyApp> {
           }
         }
 
-        // Default route
         return MaterialPageRoute(builder: (context) => const HomeScreen());
       },
     );

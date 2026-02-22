@@ -45,3 +45,4 @@ flutter:
     - assets/images/logo.png
     - assets/icon/logo.png
     - assets/images/googlelogo.png
+    - .env
