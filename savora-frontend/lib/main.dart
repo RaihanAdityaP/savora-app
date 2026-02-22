@@ -21,9 +21,20 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
 
   // Initialize Supabase
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+  if (supabaseUrl == null ||
+      supabaseUrl.isEmpty ||
+      supabaseAnonKey == null ||
+      supabaseAnonKey.isEmpty) {
+    throw Exception(
+      'SUPABASE_URL / SUPABASE_ANON_KEY belum di-set di file .env',
+    );
+  }
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
   debugPrint('Supabase initialized');
 

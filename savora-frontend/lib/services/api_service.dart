@@ -26,6 +26,34 @@ class ApiService {
 
   static String get _baseUrl => kDebugMode ? _baseUrlDebug : _baseUrlProd;
 
+  static List<String> get _baseUrlCandidates {
+    final primary = _baseUrl;
+    if (primary.endsWith('/v1')) {
+      return [primary, primary.substring(0, primary.length - 3)];
+    }
+    return [primary];
+  }
+
+  static Uri _buildUri(String baseUrl, String endpoint) {
+    return Uri.parse('$baseUrl$endpoint');
+  }
+
+  static String _originFromBaseUrl(String baseUrl) {
+    final uri = Uri.parse(baseUrl);
+    return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+  }
+
+  static bool _isRouteNotFoundResponse(http.Response response) {
+    if (response.statusCode != 404) return false;
+    try {
+      final decoded = json.decode(response.body) as Map<String, dynamic>;
+      final message = decoded['message']?.toString().toLowerCase() ?? '';
+      return message.contains('route') && message.contains('could not be found');
+    } catch (_) {
+      return false;
+    }
+  }
+
   static const Duration _timeout = Duration(seconds: 30);
 
   // Token & userId disimpan di memori
@@ -66,14 +94,28 @@ class ApiService {
   // ─────────────────────────────────────────────
   static Future<Map<String, dynamic>> get(String endpoint) async {
     try {
-      debugPrint('[API] GET $_baseUrl$endpoint');
+      late http.Response response;
 
-      final response = await http
-          .get(Uri.parse('$_baseUrl$endpoint'), headers: _buildHeaders())
-          .timeout(_timeout);
+      for (var i = 0; i < _baseUrlCandidates.length; i++) {
+        final base = _baseUrlCandidates[i];
+        debugPrint('[API] GET $base$endpoint');
 
-      debugPrint('[API] Status: ${response.statusCode}');
-      return _handleResponse(response);
+        response = await http
+            .get(_buildUri(base, endpoint), headers: _buildHeaders())
+            .timeout(_timeout);
+
+        debugPrint('[API] Status: ${response.statusCode}');
+
+        final isLastAttempt = i == _baseUrlCandidates.length - 1;
+        if (!isLastAttempt && _isRouteNotFoundResponse(response)) {
+          debugPrint('[API] Route not found on $base, retrying fallback base URL...');
+          continue;
+        }
+
+        return _handleResponse(response);
+      }
+
+      throw Exception('Unexpected request flow for GET $endpoint');
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
     } on SocketException {
@@ -92,18 +134,32 @@ class ApiService {
     Map<String, dynamic> data,
   ) async {
     try {
-      debugPrint('[API] POST $_baseUrl$endpoint');
+      late http.Response response;
 
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl$endpoint'),
-            headers: _buildHeaders(),
-            body: json.encode(data),
-          )
-          .timeout(_timeout);
+      for (var i = 0; i < _baseUrlCandidates.length; i++) {
+        final base = _baseUrlCandidates[i];
+        debugPrint('[API] POST $base$endpoint');
 
-      debugPrint('[API] Status: ${response.statusCode}');
-      return _handleResponse(response);
+        response = await http
+            .post(
+              _buildUri(base, endpoint),
+              headers: _buildHeaders(),
+              body: json.encode(data),
+            )
+            .timeout(_timeout);
+
+        debugPrint('[API] Status: ${response.statusCode}');
+
+        final isLastAttempt = i == _baseUrlCandidates.length - 1;
+        if (!isLastAttempt && _isRouteNotFoundResponse(response)) {
+          debugPrint('[API] Route not found on $base, retrying fallback base URL...');
+          continue;
+        }
+
+        return _handleResponse(response);
+      }
+
+      throw Exception('Unexpected request flow for POST $endpoint');
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
     } on SocketException {
@@ -217,8 +273,11 @@ class ApiService {
   // ─────────────────────────────────────────────
   static Future<bool> healthCheck() async {
     try {
-      final response = await get('/health');
-      return response['success'] == true;
+      final origin = _originFromBaseUrl(_baseUrl);
+      final response = await http
+          .get(Uri.parse('$origin/up'), headers: _buildHeaders())
+          .timeout(_timeout);
+      return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
       return false;
     }
