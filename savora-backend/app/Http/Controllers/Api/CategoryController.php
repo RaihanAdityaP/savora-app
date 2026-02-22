@@ -24,16 +24,16 @@ class CategoryController extends Controller
     public function index()
     {
         try {
-            $categories = $this->supabase->select('categories', 
-                ['*'], 
+            $categories = $this->supabase->select('categories',
+                ['*'],
                 [],
                 ['order' => 'name.asc']
             );
 
             // Add recipe count for each category
             foreach ($categories as &$category) {
-                $recipes = $this->supabase->select('recipes', 
-                    ['id'], 
+                $recipes = $this->supabase->select('recipes',
+                    ['id'],
                     ['category_id' => $category['id'], 'status' => 'approved']
                 );
                 $category['recipe_count'] = count($recipes);
@@ -97,9 +97,9 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:100',
-            'description' => 'nullable|string|max:500',
-            'icon' => 'nullable|string|max:50',
+            'name'     => 'required|string|max:100',
+            // 'description' removed — not a column in the categories schema
+            'icon_url' => 'nullable|string|max:500', // schema column is icon_url
         ]);
 
         if ($validator->fails()) {
@@ -112,10 +112,9 @@ class CategoryController extends Controller
 
         try {
             $category = $this->supabase->insert('categories', [
-                'name' => $request->input('name'),
-                'description' => $request->input('description'),
-                'icon' => $request->input('icon'),
-            ], true); // use service key for admin operations
+                'name'     => $request->input('name'),
+                'icon_url' => $request->input('icon_url'), // was 'icon' — fixed to match schema
+            ], true);
 
             return response()->json([
                 'success' => true,
@@ -137,9 +136,9 @@ class CategoryController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string|max:100',
-            'description' => 'nullable|string|max:500',
-            'icon' => 'nullable|string|max:50',
+            'name'     => 'nullable|string|max:100',
+            // 'description' removed — not a column in the categories schema
+            'icon_url' => 'nullable|string|max:500', // schema column is icon_url
         ]);
 
         if ($validator->fails()) {
@@ -151,8 +150,9 @@ class CategoryController extends Controller
         }
 
         try {
-            $data = $request->only(['name', 'description', 'icon']);
-            
+            // Only pass columns that actually exist in the schema
+            $data = $request->only(['name', 'icon_url']); // was ['name', 'description', 'icon'] — fixed
+
             $category = $this->supabase->update('categories', $data, ['id' => $id], true);
 
             return response()->json([
@@ -177,7 +177,7 @@ class CategoryController extends Controller
         try {
             // Check if category has recipes
             $recipes = $this->supabase->select('recipes', ['id'], ['category_id' => $id]);
-            
+
             if (!empty($recipes)) {
                 return response()->json([
                     'success' => false,
@@ -206,18 +206,28 @@ class CategoryController extends Controller
     public function recipes(Request $request, $id)
     {
         try {
-            $limit = $request->input('limit', 10);
-            $offset = $request->input('offset', 0);
-            $orderBy = $request->input('order_by', 'created_at');
-            $orderDirection = $request->input('order_direction', 'desc');
+            $limit          = $request->input('limit', 10);
+            $offset         = $request->input('offset', 0);
+
+            // Guard order params against invalid values (prevents PostgREST 500)
+            $allowedOrderBy = ['created_at', 'updated_at', 'views_count', 'title'];
+            $orderBy        = $request->input('order_by', 'created_at');
+            if (!in_array($orderBy, $allowedOrderBy, true)) {
+                $orderBy = 'created_at';
+            }
+
+            $orderDirection = strtolower($request->input('order_direction', 'desc'));
+            if (!in_array($orderDirection, ['asc', 'desc'], true)) {
+                $orderDirection = 'desc';
+            }
 
             $recipes = $this->supabase->select('recipes',
                 ['*', 'profiles(*)', 'recipe_tags(tags(*))'],
                 ['category_id' => $id, 'status' => 'approved'],
                 [
-                    'order' => "{$orderBy}.{$orderDirection}",
-                    'limit' => $limit,
-                    'offset' => $offset
+                    'order'  => "{$orderBy}.{$orderDirection}",
+                    'limit'  => $limit,
+                    'offset' => $offset,
                 ]
             );
 

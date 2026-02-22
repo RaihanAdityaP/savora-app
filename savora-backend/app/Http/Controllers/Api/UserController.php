@@ -72,14 +72,32 @@ class UserController extends Controller
 
             $user = $users[0];
 
-            $followers = $this->supabase->select('followers', ['id'], ['following_id' => $id]);
-            $user['followers_count'] = count($followers);
+            // Keep profile endpoint resilient even if supporting tables/views are unavailable.
+            $user['followers_count'] = 0;
+            $user['following_count'] = 0;
+            $user['recipes_count'] = 0;
 
-            $following = $this->supabase->select('followers', ['id'], ['follower_id' => $id]);
-            $user['following_count'] = count($following);
+            try {
+                // Schema table name is 'follows', not 'followers'
+                $followers = $this->supabase->select('follows', ['id'], ['following_id' => $id]);
+                $user['followers_count'] = count($followers);
+            } catch (Exception $e) {
+                // keep default value
+            }
 
-            $recipes = $this->supabase->select('recipes', ['id'], ['user_id' => $id, 'status' => 'approved']);
-            $user['recipes_count'] = count($recipes);
+            try {
+                $following = $this->supabase->select('follows', ['id'], ['follower_id' => $id]);
+                $user['following_count'] = count($following);
+            } catch (Exception $e) {
+                // keep default value
+            }
+
+            try {
+                $recipes = $this->supabase->select('recipes', ['id'], ['user_id' => $id, 'status' => 'approved']);
+                $user['recipes_count'] = count($recipes);
+            } catch (Exception $e) {
+                // keep default value
+            }
 
             return response()->json([
                 'success' => true,
@@ -166,7 +184,8 @@ class UserController extends Controller
         try {
             $followerId = $request->input('follower_id');
 
-            $existing = $this->supabase->select('followers', ['id'], [
+            // Schema table name is 'follows'
+            $existing = $this->supabase->select('follows', ['id'], [
                 'follower_id' => $followerId,
                 'following_id' => $id,
             ]);
@@ -178,7 +197,7 @@ class UserController extends Controller
                 ], 400);
             }
 
-            $this->supabase->insert('followers', [
+            $this->supabase->insert('follows', [
                 'follower_id' => $followerId,
                 'following_id' => $id,
             ]);
@@ -188,6 +207,7 @@ class UserController extends Controller
                 'type' => 'new_follower',
                 'title' => 'Follower Baru',
                 'message' => 'Seseorang mulai mengikuti Anda!',
+                'related_entity_type' => 'profile',
                 'related_entity_id' => $followerId,
             ]);
 
@@ -224,7 +244,8 @@ class UserController extends Controller
         try {
             $followerId = $request->input('follower_id');
 
-            $this->supabase->delete('followers', [
+            // Schema table name is 'follows'
+            $this->supabase->delete('follows', [
                 'follower_id' => $followerId,
                 'following_id' => $id,
             ]);
@@ -262,7 +283,8 @@ class UserController extends Controller
         try {
             $followerId = $request->input('follower_id');
 
-            $existing = $this->supabase->select('followers', ['id'], [
+            // Schema table name is 'follows'
+            $existing = $this->supabase->select('follows', ['id'], [
                 'follower_id' => $followerId,
                 'following_id' => $id,
             ]);
@@ -288,8 +310,9 @@ class UserController extends Controller
     public function followers($id)
     {
         try {
-            $followers = $this->supabase->select('followers',
-                ['*, profiles!followers_follower_id_fkey(*)'],
+            // Schema table name is 'follows'; FK hint updated accordingly
+            $followers = $this->supabase->select('follows',
+                ['*, profiles!follows_follower_id_fkey(*)'],
                 ['following_id' => $id]
             );
 
@@ -312,8 +335,9 @@ class UserController extends Controller
     public function following($id)
     {
         try {
-            $following = $this->supabase->select('followers',
-                ['*, profiles!followers_following_id_fkey(*)'],
+            // Schema table name is 'follows'; FK hint updated accordingly
+            $following = $this->supabase->select('follows',
+                ['*, profiles!follows_following_id_fkey(*)'],
                 ['follower_id' => $id]
             );
 
@@ -362,11 +386,16 @@ class UserController extends Controller
      * Ban user (admin only)
      * POST /api/v1/users/{id}/ban
      */
-    public function ban($id)
+    public function ban(Request $request, $id)
     {
         try {
             $this->supabase->update('profiles',
-                ['is_banned' => true],
+                [
+                    'is_banned'     => true,
+                    'banned_reason' => $request->input('reason'),
+                    'banned_at'     => date('Y-m-d H:i:s'),
+                    'banned_by'     => $request->input('banned_by'),
+                ],
                 ['id' => $id],
                 true
             );
@@ -391,7 +420,12 @@ class UserController extends Controller
     {
         try {
             $this->supabase->update('profiles',
-                ['is_banned' => false],
+                [
+                    'is_banned'     => false,
+                    'banned_reason' => null,
+                    'banned_at'     => null,
+                    'banned_by'     => null,
+                ],
                 ['id' => $id],
                 true
             );

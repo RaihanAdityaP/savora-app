@@ -209,6 +209,7 @@ class _CustomAppBarState extends State<CustomAppBar>
       child: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leadingWidth: widget.showBackButton ? kToolbarHeight : 140,
         leading: widget.showBackButton
             ? Padding(
                 padding: const EdgeInsets.all(8),

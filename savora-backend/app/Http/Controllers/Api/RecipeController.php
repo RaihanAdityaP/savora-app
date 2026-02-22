@@ -59,25 +59,43 @@ class RecipeController extends Controller
             $options['limit'] = $limit;
             $options['offset'] = $offset;
 
-            // Ordering
+            // Ordering (guard invalid client params to avoid 500 from PostgREST)
+            $allowedOrderBy = ['created_at', 'updated_at', 'views_count', 'title'];
             $orderBy = $request->input('order_by', 'created_at');
-            $orderDirection = $request->input('order_direction', 'desc');
+            if (!in_array($orderBy, $allowedOrderBy, true)) {
+                $orderBy = 'created_at';
+            }
+
+            $orderDirection = strtolower($request->input('order_direction', 'desc'));
+            if (!in_array($orderDirection, ['asc', 'desc'], true)) {
+                $orderDirection = 'desc';
+            }
+
             $options['order'] = "{$orderBy}.{$orderDirection}";
 
-            // Select with relationships
+            // Try relational select first; fallback to plain rows if relation config differs in DB
             $columns = ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'];
+            try {
+                $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
+            } catch (Exception $e) {
+                $recipes = $this->supabase->select('recipes', ['*'], $filters, $options);
+            }
 
-            $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
-
-            // Add rating info for each recipe
+            // Add rating info for each recipe (non-fatal if ratings table/view is unavailable)
             foreach ($recipes as &$recipe) {
-                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
-                $totalRatings = count($ratings);
+                $totalRatings = 0;
                 $avgRating = 0;
-                
-                if ($totalRatings > 0) {
-                    $sum = array_sum(array_column($ratings, 'rating'));
-                    $avgRating = round($sum / $totalRatings, 1);
+
+                try {
+                    $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
+                    $totalRatings = count($ratings);
+
+                    if ($totalRatings > 0) {
+                        $sum = array_sum(array_column($ratings, 'rating'));
+                        $avgRating = round($sum / $totalRatings, 1);
+                    }
+                } catch (Exception $e) {
+                    // keep default rating info when ratings query fails
                 }
 
                 $recipe['rating_info'] = [
@@ -125,7 +143,7 @@ class RecipeController extends Controller
             $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $id]);
             $totalRatings = count($ratings);
             $avgRating = 0;
-            
+
             if ($totalRatings > 0) {
                 $sum = array_sum(array_column($ratings, 'rating'));
                 $avgRating = round($sum / $totalRatings, 1);
@@ -206,7 +224,7 @@ class RecipeController extends Controller
                 $image = $request->file('image');
                 $imageName = Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $imagePath = "recipes/{$imageName}";
-                
+
                 $this->supabase->uploadFile('recipe-images', $imagePath, file_get_contents($image->getRealPath()), $image->getMimeType());
                 $data['image_url'] = $this->supabase->getPublicUrl('recipe-images', $imagePath);
             }
@@ -293,7 +311,7 @@ class RecipeController extends Controller
                 $image = $request->file('image');
                 $imageName = Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $imagePath = "recipes/{$imageName}";
-                
+
                 $this->supabase->uploadFile('recipe-images', $imagePath, file_get_contents($image->getRealPath()), $image->getMimeType());
                 $data['image_url'] = $this->supabase->getPublicUrl('recipe-images', $imagePath);
             }
@@ -316,7 +334,7 @@ class RecipeController extends Controller
 
                 // Delete old tags
                 $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
-                
+
                 // Insert new tags
                 $tags = $request->input('tags');
                 foreach ($tags as $tagId) {
@@ -355,7 +373,7 @@ class RecipeController extends Controller
     public function destroy($id)
     {
         try {
-            // Get recipe tags to decrement usage count
+            // Decrement usage_count for all tags attached to this recipe
             $recipeTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
             foreach ($recipeTags as $recipeTag) {
                 $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $recipeTag['tag_id']]);
@@ -366,12 +384,15 @@ class RecipeController extends Controller
                 }
             }
 
-            // Delete related data first
+            // Delete all child records that have FK → recipes.id before deleting the recipe
             $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
             $this->supabase->delete('board_recipes', ['recipe_id' => $id]);
+            $this->supabase->delete('collection_recipes', ['recipe_id' => $id]);
             $this->supabase->delete('recipe_ratings', ['recipe_id' => $id]);
-            
-            // Delete recipe
+            $this->supabase->delete('comments', ['recipe_id' => $id]);
+            $this->supabase->delete('menu_plans', ['recipe_id' => $id]);
+
+            // Finally delete the recipe itself
             $this->supabase->delete('recipes', ['id' => $id]);
 
             return response()->json([
@@ -406,7 +427,7 @@ class RecipeController extends Controller
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
                 $title = $recipeData[0]['title'];
-                
+
                 $this->supabase->insert('notifications', [
                     'user_id' => $userId,
                     'type' => 'recipe_approved',
@@ -439,7 +460,7 @@ class RecipeController extends Controller
         try {
             $reason = $request->input('reason', 'Tidak memenuhi standar');
             $moderatorId = $request->input('moderated_by');
-            
+
             $recipe = $this->supabase->update('recipes', [
                 'status' => 'rejected',
                 'rejection_reason' => $reason,
@@ -452,7 +473,7 @@ class RecipeController extends Controller
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
                 $title = $recipeData[0]['title'];
-                
+
                 $this->supabase->insert('notifications', [
                     'user_id' => $userId,
                     'type' => 'recipe_rejected',
@@ -489,25 +510,25 @@ class RecipeController extends Controller
             $limit = $request->input('limit', 20);
 
             $filters = ['status' => 'approved'];
-            
+
             if ($categoryId) {
                 $filters['category_id'] = $categoryId;
             }
-            
+
             if ($difficulty) {
                 $filters['difficulty'] = $difficulty;
             }
 
-            $recipes = $this->supabase->select('recipes', 
-                ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'], 
+            $recipes = $this->supabase->select('recipes',
+                ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'],
                 $filters,
                 ['limit' => $limit, 'order' => 'views_count.desc']
             );
 
             // Filter by search query if provided
             if (!empty($query)) {
-                $recipes = array_filter($recipes, function($recipe) use ($query) {
-                    return stripos($recipe['title'], $query) !== false || 
+                $recipes = array_filter($recipes, function ($recipe) use ($query) {
+                    return stripos($recipe['title'], $query) !== false ||
                            stripos($recipe['description'], $query) !== false;
                 });
                 $recipes = array_values($recipes);
@@ -518,7 +539,7 @@ class RecipeController extends Controller
                 $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
                 $totalRatings = count($ratings);
                 $avgRating = 0;
-                
+
                 if ($totalRatings > 0) {
                     $sum = array_sum(array_column($ratings, 'rating'));
                     $avgRating = round($sum / $totalRatings, 1);
