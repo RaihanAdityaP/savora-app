@@ -10,7 +10,7 @@ class NotificationClient {
   ) async {
     try {
       final response =
-          await ApiService.get('/notifications/user/$userId');
+          await ApiService.get('/notifications');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -26,7 +26,7 @@ class NotificationClient {
   static Future<int> getUnreadCount(String userId) async {
     try {
       final response = await ApiService.get(
-        '/notifications/user/$userId/unread-count',
+        '/notifications/unread-count',
       );
       if (response['success'] == true) {
         return response['data']?['count'] ?? 0;
@@ -54,7 +54,7 @@ class NotificationClient {
   static Future<bool> markAllAsRead(String userId) async {
     try {
       final response = await ApiService.post(
-        '/notifications/user/$userId/read-all',
+        '/notifications/user/read-all',
         {},
       );
       return response['success'] == true;

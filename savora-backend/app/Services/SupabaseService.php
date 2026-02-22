@@ -8,252 +8,342 @@ use Exception;
 
 class SupabaseService
 {
-    private $supabaseUrl;
-    private $supabaseKey;
-    private $supabaseServiceKey;
+    private string $supabaseUrl;
+    private string $supabaseKey;
+    private string $supabaseServiceKey;
 
     public function __construct()
     {
-        $this->supabaseUrl = env('SUPABASE_URL');
-        $this->supabaseKey = env('SUPABASE_KEY');
+        $this->supabaseUrl        = env('SUPABASE_URL');
+        $this->supabaseKey        = env('SUPABASE_KEY');
         $this->supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
     }
 
-    /**
-     * Get base headers for Supabase REST API
-     */
-    private function getHeaders(bool $useServiceKey = false): array
+    // ─────────────────────────────────────────────
+    // HEADERS
+    // Default: service key (bypass RLS) untuk server-side requests
+    // Set $useServiceKey = false hanya jika perlu enforce RLS per-user
+    // ─────────────────────────────────────────────
+    private function getHeaders(bool $useServiceKey = true): array
     {
         $key = $useServiceKey ? $this->supabaseServiceKey : $this->supabaseKey;
-        
+
         return [
-            'apikey' => $key,
+            'apikey'        => $key,
             'Authorization' => 'Bearer ' . $key,
-            'Content-Type' => 'application/json',
-            'Prefer' => 'return=representation',
+            'Content-Type'  => 'application/json',
+            'Prefer'        => 'return=representation',
         ];
     }
 
-    /**
-     * Build filter string from filters array
-     */
+    // ─────────────────────────────────────────────
+    // BUILD FILTER STRING
+    // ─────────────────────────────────────────────
     private function buildFilters(array $filters): string
     {
         $query = '';
+
         foreach ($filters as $column => $value) {
             if (is_array($value)) {
                 $operator = $value['operator'] ?? 'eq';
 
                 if ($operator === 'in') {
-                    $values = implode(',', array_map(function($v) {
+                    $values = implode(',', array_map(function ($v) {
                         return is_string($v) ? '"' . $v . '"' : $v;
                     }, $value['values']));
                     $query .= "&{$column}=in.({$values})";
+                } elseif ($operator === 'like') {
+                    $val    = $value['value'];
+                    $query .= "&{$column}=like.{$val}";
+                } elseif ($operator === 'ilike') {
+                    $val    = $value['value'];
+                    $query .= "&{$column}=ilike.{$val}";
+                } elseif ($operator === 'is') {
+                    $val    = $value['value'];
+                    $query .= "&{$column}=is.{$val}";
                 } else {
-                    $val = $value['value'];
+                    $val    = $value['value'];
                     $query .= "&{$column}={$operator}.{$val}";
                 }
             } else {
                 $query .= "&{$column}=eq.{$value}";
             }
         }
+
         return $query;
     }
 
-    /**
-     * SELECT query
-     */
-    public function select(string $table, array $columns = ['*'], array $filters = [], array $options = [])
-    {
+    // ─────────────────────────────────────────────
+    // SELECT
+    // ─────────────────────────────────────────────
+    public function select(
+        string $table,
+        array $columns = ['*'],
+        array $filters = [],
+        array $options = [],
+        bool $useServiceKey = true
+    ): array {
         try {
             $columnsStr = implode(',', $columns);
-            $url = "{$this->supabaseUrl}/rest/v1/{$table}?select={$columnsStr}";
-            
+            $url        = "{$this->supabaseUrl}/rest/v1/{$table}?select={$columnsStr}";
+
             $url .= $this->buildFilters($filters);
-            
-            if (isset($options['order'])) {
-                $url .= "&order={$options['order']}";
-            }
-            if (isset($options['limit'])) {
-                $url .= "&limit={$options['limit']}";
-            }
-            if (isset($options['offset'])) {
-                $url .= "&offset={$options['offset']}";
-            }
 
-            $response = Http::withHeaders($this->getHeaders())->get($url);
+            if (isset($options['order']))  $url .= "&order={$options['order']}";
+            if (isset($options['limit']))  $url .= "&limit={$options['limit']}";
+            if (isset($options['offset'])) $url .= "&offset={$options['offset']}";
+
+            $response = Http::withHeaders($this->getHeaders($useServiceKey))->get($url);
 
             if ($response->successful()) {
-                return $response->json();
-            } else {
-                Log::error('Supabase SELECT error: ' . $response->body());
-                throw new Exception('Database query failed');
+                return $response->json() ?? [];
             }
+
+            Log::error("Supabase SELECT error [{$table}]: " . $response->body());
+            throw new Exception('Database query failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase SELECT exception: ' . $e->getMessage());
+            Log::error("Supabase SELECT exception [{$table}]: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * INSERT query
-     */
-    public function insert(string $table, array $data, bool $useServiceKey = false)
-    {
+    // ─────────────────────────────────────────────
+    // COUNT
+    // ─────────────────────────────────────────────
+    public function count(
+        string $table,
+        array $filters = [],
+        bool $useServiceKey = true
+    ): int {
         try {
-            $url = "{$this->supabaseUrl}/rest/v1/{$table}";
+            $url = "{$this->supabaseUrl}/rest/v1/{$table}?select=id";
+            $url .= $this->buildFilters($filters);
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))
-                ->post($url, $data);
+            $response = Http::withHeaders(array_merge(
+                $this->getHeaders($useServiceKey),
+                ['Prefer' => 'count=exact']
+            ))->head($url);
 
             if ($response->successful()) {
-                return $response->json();
-            } else {
-                Log::error('Supabase INSERT error: ' . $response->body());
-                throw new Exception('Database insert failed: ' . $response->body());
+                return (int) ($response->header('Content-Range')
+                    ? explode('/', $response->header('Content-Range'))[1] ?? 0
+                    : 0);
             }
+
+            Log::error("Supabase COUNT error [{$table}]: " . $response->body());
+            throw new Exception('Database count failed');
+
         } catch (Exception $e) {
-            Log::error('Supabase INSERT exception: ' . $e->getMessage());
+            Log::error("Supabase COUNT exception [{$table}]: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * UPDATE query
-     */
-    public function update(string $table, array $data, array $filters, bool $useServiceKey = false)
-    {
+    // ─────────────────────────────────────────────
+    // INSERT
+    // ─────────────────────────────────────────────
+    public function insert(
+        string $table,
+        array $data,
+        bool $useServiceKey = true
+    ): array {
+        try {
+            $url      = "{$this->supabaseUrl}/rest/v1/{$table}";
+            $response = Http::withHeaders($this->getHeaders($useServiceKey))->post($url, $data);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            Log::error("Supabase INSERT error [{$table}]: " . $response->body());
+            throw new Exception('Database insert failed: ' . $response->body());
+
+        } catch (Exception $e) {
+            Log::error("Supabase INSERT exception [{$table}]: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // UPSERT
+    // ─────────────────────────────────────────────
+    public function upsert(
+        string $table,
+        array $data,
+        string $onConflict = 'id',
+        bool $useServiceKey = true
+    ): array {
         try {
             $url = "{$this->supabaseUrl}/rest/v1/{$table}";
 
+            $response = Http::withHeaders(array_merge(
+                $this->getHeaders($useServiceKey),
+                ['Prefer' => "resolution=merge-duplicates,return=representation"]
+            ))->post($url . "?on_conflict={$onConflict}", $data);
+
+            if ($response->successful()) {
+                return $response->json() ?? [];
+            }
+
+            Log::error("Supabase UPSERT error [{$table}]: " . $response->body());
+            throw new Exception('Database upsert failed: ' . $response->body());
+
+        } catch (Exception $e) {
+            Log::error("Supabase UPSERT exception [{$table}]: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────
+    public function update(
+        string $table,
+        array $data,
+        array $filters,
+        bool $useServiceKey = true
+    ): array {
+        try {
+            $url       = "{$this->supabaseUrl}/rest/v1/{$table}";
             $filterStr = $this->buildFilters($filters);
+
             if (!empty($filterStr)) {
                 $url .= '?' . ltrim($filterStr, '&');
             }
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))
-                ->patch($url, $data);
+            $response = Http::withHeaders($this->getHeaders($useServiceKey))->patch($url, $data);
 
             if ($response->successful()) {
-                return $response->json();
-            } else {
-                Log::error('Supabase UPDATE error: ' . $response->body());
-                throw new Exception('Database update failed');
+                return $response->json() ?? [];
             }
+
+            Log::error("Supabase UPDATE error [{$table}]: " . $response->body());
+            throw new Exception('Database update failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase UPDATE exception: ' . $e->getMessage());
+            Log::error("Supabase UPDATE exception [{$table}]: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * DELETE query
-     */
-    public function delete(string $table, array $filters, bool $useServiceKey = false)
-    {
+    // ─────────────────────────────────────────────
+    // DELETE
+    // ─────────────────────────────────────────────
+    public function delete(
+        string $table,
+        array $filters,
+        bool $useServiceKey = true
+    ): bool {
         try {
-            $url = "{$this->supabaseUrl}/rest/v1/{$table}";
-
+            $url       = "{$this->supabaseUrl}/rest/v1/{$table}";
             $filterStr = $this->buildFilters($filters);
+
             if (!empty($filterStr)) {
                 $url .= '?' . ltrim($filterStr, '&');
             }
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))
-                ->delete($url);
+            $response = Http::withHeaders($this->getHeaders($useServiceKey))->delete($url);
 
             if ($response->successful()) {
                 return true;
-            } else {
-                Log::error('Supabase DELETE error: ' . $response->body());
-                throw new Exception('Database delete failed');
             }
+
+            Log::error("Supabase DELETE error [{$table}]: " . $response->body());
+            throw new Exception('Database delete failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase DELETE exception: ' . $e->getMessage());
+            Log::error("Supabase DELETE exception [{$table}]: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * RPC (Remote Procedure Call)
-     */
-    public function rpc(string $functionName, array $params = [], bool $useServiceKey = false)
-    {
+    // ─────────────────────────────────────────────
+    // RPC (Remote Procedure Call)
+    // ─────────────────────────────────────────────
+    public function rpc(
+        string $functionName,
+        array $params = [],
+        bool $useServiceKey = true
+    ): mixed {
         try {
-            $url = "{$this->supabaseUrl}/rest/v1/rpc/{$functionName}";
-
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))
-                ->post($url, $params);
+            $url      = "{$this->supabaseUrl}/rest/v1/rpc/{$functionName}";
+            $response = Http::withHeaders($this->getHeaders($useServiceKey))->post($url, $params);
 
             if ($response->successful()) {
                 return $response->json();
-            } else {
-                Log::error('Supabase RPC error: ' . $response->body());
-                throw new Exception('RPC call failed');
             }
+
+            Log::error("Supabase RPC error [{$functionName}]: " . $response->body());
+            throw new Exception('RPC call failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase RPC exception: ' . $e->getMessage());
+            Log::error("Supabase RPC exception [{$functionName}]: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * Upload file to Supabase Storage
-     */
-    public function uploadFile(string $bucket, string $path, $fileContent, string $contentType = 'image/jpeg')
-    {
+    // ─────────────────────────────────────────────
+    // STORAGE — UPLOAD FILE
+    // ─────────────────────────────────────────────
+    public function uploadFile(
+        string $bucket,
+        string $path,
+        mixed $fileContent,
+        string $contentType = 'image/jpeg'
+    ): array {
         try {
             $url = "{$this->supabaseUrl}/storage/v1/object/{$bucket}/{$path}";
 
             $response = Http::withHeaders([
-                'apikey' => $this->supabaseKey,
-                'Authorization' => 'Bearer ' . $this->supabaseKey,
-                'Content-Type' => $contentType,
-            ])->send('POST', $url, [
-                'body' => $fileContent
-            ]);
+                'apikey'        => $this->supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
+                'Content-Type'  => $contentType,
+            ])->send('POST', $url, ['body' => $fileContent]);
 
             if ($response->successful()) {
-                return $response->json();
-            } else {
-                Log::error('Supabase Storage upload error: ' . $response->body());
-                throw new Exception('File upload failed');
+                return $response->json() ?? [];
             }
+
+            Log::error("Supabase Storage upload error [{$bucket}/{$path}]: " . $response->body());
+            throw new Exception('File upload failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase Storage exception: ' . $e->getMessage());
+            Log::error("Supabase Storage upload exception: " . $e->getMessage());
             throw $e;
         }
     }
 
-    /**
-     * Get public URL for a file
-     */
+    // ─────────────────────────────────────────────
+    // STORAGE — GET PUBLIC URL
+    // ─────────────────────────────────────────────
     public function getPublicUrl(string $bucket, string $path): string
     {
         return "{$this->supabaseUrl}/storage/v1/object/public/{$bucket}/{$path}";
     }
 
-    /**
-     * Delete file from storage
-     */
-    public function deleteFile(string $bucket, string $path)
+    // ─────────────────────────────────────────────
+    // STORAGE — DELETE FILE
+    // ─────────────────────────────────────────────
+    public function deleteFile(string $bucket, string $path): bool
     {
         try {
             $url = "{$this->supabaseUrl}/storage/v1/object/{$bucket}/{$path}";
 
             $response = Http::withHeaders([
-                'apikey' => $this->supabaseKey,
-                'Authorization' => 'Bearer ' . $this->supabaseKey,
+                'apikey'        => $this->supabaseServiceKey,
+                'Authorization' => 'Bearer ' . $this->supabaseServiceKey,
             ])->delete($url);
 
             if ($response->successful()) {
                 return true;
-            } else {
-                Log::error('Supabase Storage delete error: ' . $response->body());
-                throw new Exception('File delete failed');
             }
+
+            Log::error("Supabase Storage delete error [{$bucket}/{$path}]: " . $response->body());
+            throw new Exception('File delete failed: ' . $response->body());
+
         } catch (Exception $e) {
-            Log::error('Supabase Storage delete exception: ' . $e->getMessage());
+            Log::error("Supabase Storage delete exception: " . $e->getMessage());
             throw $e;
         }
     }

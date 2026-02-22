@@ -13,7 +13,7 @@ class FavoriteClient {
     String userId,
   ) async {
     try {
-      final response = await ApiService.get('/favorites/user/$userId');
+      final response = await ApiService.get('/favorites');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -66,7 +66,7 @@ class FavoriteClient {
   /// Get semua board milik user
   static Future<List<Map<String, dynamic>>> getBoards(String userId) async {
     try {
-      final response = await ApiService.get('/favorites/boards/$userId');
+      final response = await ApiService.get('/favorites/boards');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();
