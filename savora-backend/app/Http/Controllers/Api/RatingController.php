@@ -24,7 +24,7 @@ class RatingController extends Controller
     public function getRecipeRatings($recipeId)
     {
         try {
-            $ratings = $this->supabase->select('ratings',
+            $ratings = $this->supabase->select('recipe_ratings',
                 ['*, profiles(id, username, avatar_url)'],
                 ['recipe_id' => $recipeId],
                 ['order' => 'created_at.desc']
@@ -63,7 +63,7 @@ class RatingController extends Controller
     public function getAverageRating($recipeId)
     {
         try {
-            $ratings = $this->supabase->select('ratings',
+            $ratings = $this->supabase->select('recipe_ratings',
                 ['rating'],
                 ['recipe_id' => $recipeId]
             );
@@ -115,14 +115,14 @@ class RatingController extends Controller
 
         try {
             // Check if user already rated this recipe
-            $existing = $this->supabase->select('ratings', ['id'], [
+            $existing = $this->supabase->select('recipe_ratings', ['id'], [
                 'user_id' => $request->input('user_id'),
                 'recipe_id' => $request->input('recipe_id'),
             ]);
 
             if (!empty($existing)) {
                 // Update existing rating
-                $rating = $this->supabase->update('ratings', [
+                $rating = $this->supabase->update('recipe_ratings', [
                     'rating' => $request->input('rating'),
                     'comment' => $request->input('comment'),
                 ], [
@@ -137,7 +137,7 @@ class RatingController extends Controller
                 ]);
             } else {
                 // Create new rating
-                $rating = $this->supabase->insert('ratings', [
+                $rating = $this->supabase->insert('recipe_ratings', [
                     'user_id' => $request->input('user_id'),
                     'recipe_id' => $request->input('recipe_id'),
                     'rating' => $request->input('rating'),
@@ -179,7 +179,7 @@ class RatingController extends Controller
 
         try {
             $data = $request->only(['rating', 'comment']);
-            $rating = $this->supabase->update('ratings', $data, ['id' => $id]);
+            $rating = $this->supabase->update('recipe_ratings', $data, ['id' => $id]);
 
             return response()->json([
                 'success' => true,
@@ -201,7 +201,7 @@ class RatingController extends Controller
     public function destroy($id)
     {
         try {
-            $this->supabase->delete('ratings', ['id' => $id]);
+            $this->supabase->delete('recipe_ratings', ['id' => $id]);
 
             return response()->json([
                 'success' => true,
@@ -222,7 +222,7 @@ class RatingController extends Controller
     public function getUserRecipeRating($userId, $recipeId)
     {
         try {
-            $ratings = $this->supabase->select('ratings', ['*'], [
+            $ratings = $this->supabase->select('recipe_ratings', ['*'], [
                 'user_id' => $userId,
                 'recipe_id' => $recipeId,
             ]);
@@ -253,7 +253,7 @@ class RatingController extends Controller
     public function getUserRatings($userId)
     {
         try {
-            $ratings = $this->supabase->select('ratings',
+            $ratings = $this->supabase->select('recipe_ratings',
                 ['*, recipes(id, title, image_url)'],
                 ['user_id' => $userId],
                 ['order' => 'created_at.desc']
@@ -278,7 +278,7 @@ class RatingController extends Controller
     public function getRecipeRatingStats($recipeId)
     {
         try {
-            $ratings = $this->supabase->select('ratings',
+            $ratings = $this->supabase->select('recipe_ratings',
                 ['rating'],
                 ['recipe_id' => $recipeId]
             );

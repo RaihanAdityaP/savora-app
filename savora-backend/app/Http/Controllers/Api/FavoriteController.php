@@ -21,9 +21,16 @@ class FavoriteController extends Controller
      * Get user's favorite recipes (from all boards)
      * GET /api/favorites/user/{userId}
      */
-    public function getUserFavorites($userId)
+    public function getUserFavorites(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             // Get all user's boards
             $boards = $this->supabase->select('recipe_boards',
                 ['id'],
@@ -180,9 +187,16 @@ class FavoriteController extends Controller
      * Get user's recipe boards
      * GET /api/favorites/boards/{userId}
      */
-    public function getBoards($userId)
+    public function getBoards(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             $boards = $this->supabase->select('recipe_boards',
                 ['*'],
                 ['user_id' => $userId],

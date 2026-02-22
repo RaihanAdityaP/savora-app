@@ -24,9 +24,16 @@ class NotificationController extends Controller
      * Get user notifications
      * GET /api/notifications/user/{userId}
      */
-    public function getUserNotifications($userId)
+    public function getUserNotifications(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             $notifications = $this->supabase->select('notifications', 
                 ['*'], 
                 ['user_id' => $userId],
@@ -73,9 +80,16 @@ class NotificationController extends Controller
      * Mark all notifications as read
      * POST /api/notifications/user/{userId}/read-all
      */
-    public function markAllAsRead($userId)
+    public function markAllAsRead(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             $this->supabase->update('notifications', 
                 ['is_read' => true],
                 ['user_id' => $userId, 'is_read' => false]
@@ -277,9 +291,16 @@ class NotificationController extends Controller
      * Get user's registered devices
      * GET /api/notifications/devices/{userId}
      */
-    public function getUserDevices($userId)
+    public function getUserDevices(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             $devices = $this->supabase->select('device_tokens',
                 ['*'],
                 ['user_id' => $userId, 'is_active' => true],
@@ -302,9 +323,16 @@ class NotificationController extends Controller
      * Get unread notification count
      * GET /api/notifications/user/{userId}/unread-count
      */
-    public function getUnreadCount($userId)
+    public function getUnreadCount(Request $request)
     {
         try {
+            $userId = $request->user()?->id;
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
             $notifications = $this->supabase->select('notifications',
                 ['id'],
                 [
