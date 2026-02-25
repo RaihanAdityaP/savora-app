@@ -74,7 +74,7 @@ class RecipeController extends Controller
             $options['order'] = "{$orderBy}.{$orderDirection}";
 
             // Try relational select first; fallback to plain rows if relation config differs in DB
-            $columns = ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'];
+            $columns = ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'];
             try {
                 $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
             } catch (Exception $e) {
@@ -127,7 +127,7 @@ class RecipeController extends Controller
     public function show($id)
     {
         try {
-            $columns = ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'];
+            $columns = ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'];
             $recipes = $this->supabase->select('recipes', $columns, ['id' => $id]);
 
             if (empty($recipes)) {
@@ -520,7 +520,7 @@ class RecipeController extends Controller
             }
 
             $recipes = $this->supabase->select('recipes',
-                ['*', 'profiles(*)', 'categories(*)', 'recipe_tags(tags(*))'],
+                ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
                 $filters,
                 ['limit' => $limit, 'order' => 'views_count.desc']
             );
@@ -563,4 +563,79 @@ class RecipeController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Increment recipe views explicitly
+     * POST /api/v1/recipes/{id}/view
+     */
+    public function incrementView($id)
+    {
+        try {
+            $recipes = $this->supabase->select('recipes', ['id', 'views_count'], ['id' => $id]);
+
+            if (empty($recipes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recipe not found',
+                ], 404);
+            }
+
+            $currentViews = (int) ($recipes[0]['views_count'] ?? 0);
+            $this->supabase->update('recipes', [
+                'views_count' => $currentViews + 1,
+            ], ['id' => $id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Recipe view incremented',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get tags attached to a recipe
+     * GET /api/v1/recipes/{id}/tags
+     */
+    public function getRecipeTags($id)
+    {
+        try {
+            $recipeTags = $this->supabase->select('recipe_tags',
+                ['tag_id'],
+                ['recipe_id' => $id]
+            );
+
+            if (empty($recipeTags)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                ]);
+            }
+
+            $tagIds = array_values(array_unique(array_column($recipeTags, 'tag_id')));
+            $tags = [];
+
+            foreach ($tagIds as $tagId) {
+                $tag = $this->supabase->select('tags', ['id', 'name', 'slug'], ['id' => $tagId]);
+                if (!empty($tag)) {
+                    $tags[] = $tag[0];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $tags,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

@@ -111,6 +111,16 @@ class UserController extends Controller
         }
     }
 
+
+    /**
+     * Get single user profile (alias)
+     * GET /api/v1/users/{id}/profile
+     */
+    public function profile($id)
+    {
+        return $this->show($id);
+    }
+
     /**
      * Update user profile
      * PUT /api/v1/users/{id}

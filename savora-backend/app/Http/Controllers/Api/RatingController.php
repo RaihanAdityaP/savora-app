@@ -315,4 +315,22 @@ class RatingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get authenticated user's rating for a recipe
+     * GET /api/v1/ratings/recipe/{recipeId}/user
+     */
+    public function getMyRecipeRating(Request $request, $recipeId)
+    {
+        try {
+            $userId = $this->getSupabaseUserIdFromRequest($request);
+            return $this->getUserRecipeRating($userId, $recipeId);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

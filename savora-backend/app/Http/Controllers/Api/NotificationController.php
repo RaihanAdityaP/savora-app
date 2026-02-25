@@ -27,13 +27,7 @@ class NotificationController extends Controller
     public function getUserNotifications(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $notifications = $this->supabase->select('notifications', 
                 ['*'], 
                 ['user_id' => $userId],
@@ -83,13 +77,7 @@ class NotificationController extends Controller
     public function markAllAsRead(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $this->supabase->update('notifications', 
                 ['is_read' => true],
                 ['user_id' => $userId, 'is_read' => false]
@@ -294,13 +282,7 @@ class NotificationController extends Controller
     public function getUserDevices(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $devices = $this->supabase->select('device_tokens',
                 ['*'],
                 ['user_id' => $userId, 'is_active' => true],
@@ -326,13 +308,7 @@ class NotificationController extends Controller
     public function getUnreadCount(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $notifications = $this->supabase->select('notifications',
                 ['id'],
                 [

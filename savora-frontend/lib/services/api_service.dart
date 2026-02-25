@@ -21,7 +21,7 @@ class ApiService {
   //   HP via USB/WiFi   → 'http://192.168.1.9:8000/api/v1'  ← ganti IP
   //   Production        → 'https://api.savora.com/api/v1'   ← ganti domain
   // ─────────────────────────────────────────────
-  static const String _baseUrlDebug = 'http://192.168.1.9:8000/api/v1';
+  static const String _baseUrlDebug = 'http://10.66.50.140:8000/api/v1';
   static const String _baseUrlProd = 'https://api.savora.com/api/v1';
 
   static String get _baseUrl => kDebugMode ? _baseUrlDebug : _baseUrlProd;

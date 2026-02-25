@@ -164,7 +164,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     try {
       final userId = ApiService.currentUserId;
       if (userId != null) {
-        final response = await ApiService.get('/boards/check?recipe_id=${widget.recipeId}');
+        final response = await ApiService.get('/favorites/check?recipe_id=${widget.recipeId}');
         if (!mounted) return;
         setState(() => _isFavorite = response['data']?['is_saved'] == true);
       }

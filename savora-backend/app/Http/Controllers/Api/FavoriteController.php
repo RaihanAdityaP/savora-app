@@ -24,13 +24,7 @@ class FavoriteController extends Controller
     public function getUserFavorites(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             // Get all user's boards
             $boards = $this->supabase->select('recipe_boards',
                 ['id'],
@@ -48,7 +42,7 @@ class FavoriteController extends Controller
             
             // Get all recipes from all boards
             $allBoardRecipes = $this->supabase->select('board_recipes',
-                ['*, recipes(*, profiles(*), categories(*))'],
+                ['*, recipes(*, profiles!recipes_user_id_fkey(*), categories(*))'],
                 [],
                 ['order' => 'added_at.desc']
             );
@@ -190,13 +184,7 @@ class FavoriteController extends Controller
     public function getBoards(Request $request)
     {
         try {
-            $userId = $request->user()?->id;
-            if (!$userId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $boards = $this->supabase->select('recipe_boards',
                 ['*'],
                 ['user_id' => $userId],
@@ -333,7 +321,7 @@ class FavoriteController extends Controller
     {
         try {
             $boardRecipes = $this->supabase->select('board_recipes',
-                ['*, recipes(*, profiles(*), categories(*))'],
+                ['*, recipes(*, profiles!recipes_user_id_fkey(*), categories(*))'],
                 ['board_id' => $boardId],
                 ['order' => 'added_at.desc']
             );
@@ -423,4 +411,65 @@ class FavoriteController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Check whether a recipe is already saved by authenticated user
+     * GET /api/v1/favorites/check?recipe_id={uuid}
+     */
+    public function checkSaved(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'recipe_id' => 'required|uuid',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $userId = $this->getSupabaseUserIdFromRequest($request);
+
+            $boards = $this->supabase->select('recipe_boards',
+                ['id'],
+                ['user_id' => $userId]
+            );
+
+            if (empty($boards)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => ['is_saved' => false],
+                ]);
+            }
+
+            $boardIds = array_column($boards, 'id');
+            $saved = false;
+
+            foreach ($boardIds as $boardId) {
+                $existing = $this->supabase->select('board_recipes', ['id'], [
+                    'board_id' => $boardId,
+                    'recipe_id' => $request->input('recipe_id'),
+                ]);
+
+                if (!empty($existing)) {
+                    $saved = true;
+                    break;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => ['is_saved' => $saved],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }

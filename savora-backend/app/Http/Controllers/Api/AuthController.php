@@ -51,8 +51,15 @@ class AuthController extends Controller
             [
                 'name' => $userData['email'],
                 'password' => bcrypt(str()->random(32)), // Random password
+                'supabase_user_id' => $userData['user_id'],
             ]
         );
+
+        // Keep mapping updated for existing users created before this field existed
+        if ($user->supabase_user_id !== $userData['user_id']) {
+            $user->supabase_user_id = $userData['user_id'];
+            $user->save();
+        }
 
         // Create Sanctum token
         $token = $user->createToken('api-token')->plainTextToken;

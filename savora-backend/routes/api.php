@@ -41,6 +41,7 @@ Route::prefix('recipes')->group(function () {
         Route::get('/', [RecipeController::class, 'index']);
         Route::get('search', [RecipeController::class, 'search']);
         Route::get('{id}', [RecipeController::class, 'show']);
+        Route::get('{id}/tags', [RecipeController::class, 'getRecipeTags']);
     });
 
     // Protected write
@@ -48,6 +49,7 @@ Route::prefix('recipes')->group(function () {
         Route::post('/', [RecipeController::class, 'store']);
         Route::put('{id}', [RecipeController::class, 'update']);
         Route::delete('{id}', [RecipeController::class, 'destroy']);
+        Route::post('{id}/view', [RecipeController::class, 'incrementView']);
     });
 
     // Admin moderation
@@ -63,6 +65,7 @@ Route::prefix('users')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/', [UserController::class, 'index']);
         Route::get('{id}', [UserController::class, 'show']);
+        Route::get('{id}/profile', [UserController::class, 'profile']);
         Route::get('{id}/followers', [UserController::class, 'followers']);
         Route::get('{id}/following', [UserController::class, 'following']);
     });
@@ -124,6 +127,7 @@ Route::prefix('ratings')->group(function () {
         Route::get('recipe/{recipeId}/stats', [RatingController::class, 'getRecipeRatingStats']);
         Route::get('user/{userId}', [RatingController::class, 'getUserRatings']);
         Route::get('user/{userId}/recipe/{recipeId}', [RatingController::class, 'getUserRecipeRating']);
+        Route::middleware('auth:sanctum')->get('recipe/{recipeId}/user', [RatingController::class, 'getMyRecipeRating']);
     });
 
     Route::middleware(['auth:sanctum', 'throttle:10,1'])->group(function () {
@@ -156,6 +160,7 @@ Route::prefix('favorites')->middleware('auth:sanctum')->group(function () {
         Route::get('/', [FavoriteController::class, 'getUserFavorites']);
         Route::get('boards', [FavoriteController::class, 'getBoards']);
         Route::get('boards/{boardId}/recipes', [FavoriteController::class, 'getBoardRecipes']);
+        Route::get('check', [FavoriteController::class, 'checkSaved']);
     });
 
     Route::middleware('throttle:20,1')->group(function () {
