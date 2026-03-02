@@ -9,7 +9,7 @@ class UserClient {
     try {
       final response = await ApiService.get('/users/$userId');
       if (response['success'] == true) {
-        return Map<String, dynamic>.from(response['data']);
+        return _unwrapMapResponse(response['data']);
       }
       return null;
     } catch (e) {
@@ -38,9 +38,11 @@ class UserClient {
           '/users/$userId',
           avatarPath,
           fields: fields,
+          method: 'PUT',
+          fileField: 'avatar',
         );
         if (response['success'] == true) {
-          return Map<String, dynamic>.from(response['data']);
+          return _unwrapMapResponse(response['data']);
         }
         return null;
       }
@@ -52,7 +54,7 @@ class UserClient {
       };
       final response = await ApiService.put('/users/$userId', data);
       if (response['success'] == true) {
-        return Map<String, dynamic>.from(response['data']);
+        return _unwrapMapResponse(response['data']);
       }
       return null;
     } catch (e) {
@@ -117,7 +119,7 @@ class UserClient {
       final response = await ApiService.get('/users/$userId/followers');
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return list.map((e) => Map<String, dynamic>.from(e)).toList();
+        return list.map((e) => _normalizeFollowUser(e)).toList();
       }
       return [];
     } catch (e) {
@@ -132,7 +134,7 @@ class UserClient {
       final response = await ApiService.get('/users/$userId/following');
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return list.map((e) => Map<String, dynamic>.from(e)).toList();
+        return list.map((e) => _normalizeFollowUser(e)).toList();
       }
       return [];
     } catch (e) {
@@ -162,4 +164,25 @@ class UserClient {
       return [];
     }
   }
+
+
+  static Map<String, dynamic>? _unwrapMapResponse(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(data);
+    }
+    if (data is List && data.isNotEmpty && data.first is Map) {
+      return Map<String, dynamic>.from(data.first as Map);
+    }
+    return null;
+  }
+
+  static Map<String, dynamic> _normalizeFollowUser(dynamic row) {
+    final item = Map<String, dynamic>.from(row as Map);
+    final profile = item['profiles'];
+    if (profile is Map) {
+      return Map<String, dynamic>.from(profile);
+    }
+    return item;
+  }
+
 }

@@ -30,37 +30,70 @@ class RecipeController extends Controller
         try {
             $filters = [];
             $options = [];
+            $searchQuery = trim((string) $request->input('search', ''));
 
-            // Status filter (approved, pending, rejected)
-            if ($request->has('status')) {
-                $filters['status'] = $request->input('status');
-            } else {
+            // Status filter (approved, pending, rejected, or all)
+            $status = $request->input('status');
+            if ($status === null || $status === '') {
                 $filters['status'] = 'approved'; // Default only approved
+            } elseif ($status !== 'all') {
+                $filters['status'] = $status;
             }
 
             // Category filter
-            if ($request->has('category_id')) {
+            if ($request->filled('category_id')) {
                 $filters['category_id'] = $request->input('category_id');
             }
 
             // User filter
-            if ($request->has('user_id')) {
+            if ($request->filled('user_id')) {
                 $filters['user_id'] = $request->input('user_id');
             }
 
             // Difficulty filter
-            if ($request->has('difficulty')) {
+            if ($request->filled('difficulty')) {
                 $filters['difficulty'] = $request->input('difficulty');
             }
 
+            // Tag filter (resolve recipe ids first to avoid join-filter mismatch)
+            if ($request->filled('tag_id')) {
+                $taggedRecipeRows = $this->supabase->select(
+                    'recipe_tags',
+                    ['recipe_id'],
+                    ['tag_id' => (int) $request->input('tag_id')]
+                );
+
+                $taggedRecipeIds = array_values(array_unique(array_column($taggedRecipeRows, 'recipe_id')));
+
+                if (empty($taggedRecipeIds)) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [],
+                        'pagination' => [
+                            'limit' => (int) $request->input('limit', 10),
+                            'offset' => (int) $request->input('offset', 0),
+                        ],
+                    ]);
+                }
+
+                $filters['id'] = [
+                    'operator' => 'in',
+                    'values' => $taggedRecipeIds,
+                ];
+            }
+
             // Pagination
-            $limit = $request->input('limit', 10);
-            $offset = $request->input('offset', 0);
-            $options['limit'] = $limit;
-            $options['offset'] = $offset;
+            $limit = (int) $request->input('limit', 10);
+            $offset = (int) $request->input('offset', 0);
+
+            // If search is active, fetch first then filter in PHP, then apply pagination.
+            if ($searchQuery === '') {
+                $options['limit'] = $limit;
+                $options['offset'] = $offset;
+            }
 
             // Ordering (guard invalid client params to avoid 500 from PostgREST)
-            $allowedOrderBy = ['created_at', 'updated_at', 'views_count', 'title'];
+            $allowedOrderBy = ['created_at', 'updated_at', 'views_count', 'title', 'calories', 'cooking_time'];
             $orderBy = $request->input('order_by', 'created_at');
             if (!in_array($orderBy, $allowedOrderBy, true)) {
                 $orderBy = 'created_at';
@@ -79,6 +112,22 @@ class RecipeController extends Controller
                 $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
             } catch (Exception $e) {
                 $recipes = $this->supabase->select('recipes', ['*'], $filters, $options);
+            }
+
+            // Search by title/description/ingredients content.
+            if ($searchQuery !== '') {
+                $needle = strtolower($searchQuery);
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($needle) {
+                    $title = strtolower((string) ($recipe['title'] ?? ''));
+                    $description = strtolower((string) ($recipe['description'] ?? ''));
+                    $ingredients = strtolower(json_encode($recipe['ingredients'] ?? ''));
+
+                    return str_contains($title, $needle)
+                        || str_contains($description, $needle)
+                        || str_contains($ingredients, $needle);
+                }));
+
+                $recipes = array_slice($recipes, $offset, $limit);
             }
 
             // Add rating info for each recipe (non-fatal if ratings table/view is unavailable)
@@ -177,6 +226,10 @@ class RecipeController extends Controller
      */
     public function store(Request $request)
     {
+        $this->normalizeArrayInput($request, 'ingredients');
+        $this->normalizeArrayInput($request, 'steps');
+        $this->normalizeArrayInput($request, 'tags', true);
+
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|uuid',
             'title' => 'required|string|max:200',
@@ -563,6 +616,49 @@ class RecipeController extends Controller
             ], 500);
         }
     }
+
+    private function normalizeArrayInput(Request $request, string $field, bool $castToInt = false): void
+    {
+        if (!$request->has($field)) {
+            return;
+        }
+
+        $value = $request->input($field);
+        if (is_array($value)) {
+            return;
+        }
+
+        $parsed = null;
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                $parsed = [];
+            } else {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded)) {
+                    $parsed = $decoded;
+                } else {
+                    $parsed = array_map('trim', explode(',', $trimmed));
+                }
+            }
+        }
+
+        if (!is_array($parsed)) {
+            return;
+        }
+
+        if ($castToInt) {
+            $parsed = array_values(array_filter(array_map(function ($item) {
+                if (is_numeric($item)) {
+                    return (int) $item;
+                }
+                return null;
+            }, $parsed), fn ($item) => $item !== null));
+        }
+
+        $request->merge([$field => $parsed]);
+    }
+
 
     /**
      * Increment recipe views explicitly

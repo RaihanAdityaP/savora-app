@@ -49,28 +49,49 @@ class SupabaseService
 
                 if ($operator === 'in') {
                     $values = implode(',', array_map(function ($v) {
-                        return is_string($v) ? '"' . $v . '"' : $v;
+                        if (is_string($v)) {
+                            return '"' . rawurlencode($v) . '"';
+                        }
+
+                        if (is_bool($v)) {
+                            return $v ? 'true' : 'false';
+                        }
+
+                        return $v;
                     }, $value['values']));
                     $query .= "&{$column}=in.({$values})";
                 } elseif ($operator === 'like') {
-                    $val    = $value['value'];
+                    $val    = rawurlencode((string) $value['value']);
                     $query .= "&{$column}=like.{$val}";
                 } elseif ($operator === 'ilike') {
-                    $val    = $value['value'];
+                    $val    = rawurlencode((string) $value['value']);
                     $query .= "&{$column}=ilike.{$val}";
                 } elseif ($operator === 'is') {
-                    $val    = $value['value'];
+                    $val    = $this->formatFilterValue($value['value']);
                     $query .= "&{$column}=is.{$val}";
                 } else {
-                    $val    = $value['value'];
+                    $val    = $this->formatFilterValue($value['value']);
                     $query .= "&{$column}={$operator}.{$val}";
                 }
             } else {
-                $query .= "&{$column}=eq.{$value}";
+                $query .= "&{$column}=eq." . $this->formatFilterValue($value);
             }
         }
 
         return $query;
+    }
+
+    private function formatFilterValue($value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_null($value)) {
+            return 'null';
+        }
+
+        return rawurlencode((string) $value);
     }
 
     // ─────────────────────────────────────────────

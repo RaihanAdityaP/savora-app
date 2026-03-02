@@ -1,5 +1,6 @@
 import 'api_service.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 
 /// Client untuk operasi Recipe via REST API
 /// Menggantikan direct Supabase access
@@ -113,8 +114,9 @@ class RecipeClient {
             'title': title,
             'description': description,
             'category_id': categoryId.toString(),
-            'ingredients': ingredients.join(','),
-            'steps': steps.join(','),
+            'ingredients': jsonEncode(ingredients),
+            'steps': jsonEncode(steps),
+            if (tags != null) 'tags': jsonEncode(tags),
             if (cookingTime != null) 'cooking_time': cookingTime.toString(),
             if (servings != null) 'servings': servings.toString(),
             if (difficulty != null) 'difficulty': difficulty,

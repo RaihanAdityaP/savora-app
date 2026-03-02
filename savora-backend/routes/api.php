@@ -68,6 +68,7 @@ Route::prefix('users')->group(function () {
         Route::get('{id}/profile', [UserController::class, 'profile']);
         Route::get('{id}/followers', [UserController::class, 'followers']);
         Route::get('{id}/following', [UserController::class, 'following']);
+        Route::get('{id}/recipes', [UserController::class, 'recipes']);
     });
 
     // Protected read/write

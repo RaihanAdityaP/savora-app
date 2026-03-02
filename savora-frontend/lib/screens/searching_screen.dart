@@ -126,7 +126,7 @@ class _SearchingScreenState extends State<SearchingScreen>
     });
     try {
       // Build query params
-      String endpoint = '/recipes?status=approved&limit=50';
+      String endpoint = '/recipes?status=all&limit=50';
 
       if (_lastSearchQuery.isNotEmpty) {
         endpoint += '&search=${Uri.encodeComponent(_lastSearchQuery)}';

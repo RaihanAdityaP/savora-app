@@ -237,12 +237,14 @@ class ApiService {
     String endpoint,
     String filePath, {
     Map<String, String>? fields,
+    String method = 'POST',
+    String fileField = 'image',
   }) async {
     try {
-      debugPrint('[API] UPLOAD $_baseUrl$endpoint');
+      debugPrint('[API] ${method.toUpperCase()} UPLOAD $_baseUrl$endpoint');
 
       final request = http.MultipartRequest(
-        'POST',
+        method.toUpperCase(),
         Uri.parse('$_baseUrl$endpoint'),
       );
       if (_authToken != null) {
@@ -250,7 +252,7 @@ class ApiService {
       }
       request.headers['Accept'] = 'application/json';
       request.files.add(
-          await http.MultipartFile.fromPath('image', filePath));
+          await http.MultipartFile.fromPath(fileField, filePath));
       if (fields != null) request.fields.addAll(fields);
 
       final streamed = await request.send().timeout(_timeout);
