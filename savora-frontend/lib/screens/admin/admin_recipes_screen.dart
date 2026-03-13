@@ -103,17 +103,18 @@ class _AdminRecipesScreenState extends State<AdminRecipesScreen>
   }
 
   void _showRecipePreview(Map<String, dynamic> recipe) {
-    showBottomSheet(
+    showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A1A),
+      isScrollControlled: true,
       builder: (ctx) => _RecipePreviewSheet(
         recipe: recipe,
         onApprove: () {
-          Navigator.pop(ctx);
+          Navigator.of(ctx).pop();
           _moderateRecipe(recipe['id'], 'approved');
         },
         onReject: () {
-          Navigator.pop(ctx);
+          Navigator.of(ctx).pop();
           _moderateRecipe(recipe['id'], 'rejected');
         },
       ),

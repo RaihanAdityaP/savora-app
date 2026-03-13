@@ -79,15 +79,15 @@ class UserController extends Controller
 
             try {
                 // Schema table name is 'follows', not 'followers'
-                $followers = $this->supabase->select('follows', ['id'], ['following_id' => $id]);
-                $user['followers_count'] = count($followers);
+                $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $id]);
+                $user['followers_count'] = count(array_unique(array_column($followers, 'follower_id')));
             } catch (Exception $e) {
                 // keep default value
             }
 
             try {
-                $following = $this->supabase->select('follows', ['id'], ['follower_id' => $id]);
-                $user['following_count'] = count($following);
+                $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $id]);
+                $user['following_count'] = count(array_unique(array_column($following, 'following_id')));
             } catch (Exception $e) {
                 // keep default value
             }
@@ -212,14 +212,24 @@ class UserController extends Controller
                 'following_id' => $id,
             ]);
 
-            $this->supabase->insert('notifications', [
+            $existingNotification = $this->supabase->select('notifications', ['id'], [
                 'user_id' => $id,
                 'type' => 'new_follower',
-                'title' => 'Follower Baru',
-                'message' => 'Seseorang mulai mengikuti Anda!',
                 'related_entity_type' => 'profile',
                 'related_entity_id' => $followerId,
+                'is_read' => false,
             ]);
+
+            if (empty($existingNotification)) {
+                $this->supabase->insert('notifications', [
+                    'user_id' => $id,
+                    'type' => 'new_follower',
+                    'title' => 'Follower Baru',
+                    'message' => 'Seseorang mulai mengikuti Anda!',
+                    'related_entity_type' => 'profile',
+                    'related_entity_id' => $followerId,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -326,9 +336,17 @@ class UserController extends Controller
                 ['following_id' => $id]
             );
 
+            $uniqueFollowers = [];
+            foreach ($followers as $row) {
+                $followerId = $row['follower_id'] ?? null;
+                if ($followerId && !isset($uniqueFollowers[$followerId])) {
+                    $uniqueFollowers[$followerId] = $row;
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => $followers,
+                'data' => array_values($uniqueFollowers),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -351,9 +369,17 @@ class UserController extends Controller
                 ['follower_id' => $id]
             );
 
+            $uniqueFollowing = [];
+            foreach ($following as $row) {
+                $followingId = $row['following_id'] ?? null;
+                if ($followingId && !isset($uniqueFollowing[$followingId])) {
+                    $uniqueFollowing[$followingId] = $row;
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => $following,
+                'data' => array_values($uniqueFollowing),
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -375,7 +401,7 @@ class UserController extends Controller
             $offset = $request->input('offset', 0);
 
             $recipes = $this->supabase->select('recipes',
-                ['*', 'categories(*)', 'recipe_tags(tags(*))'],
+                ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
                 ['user_id' => $id, 'status' => $status],
                 ['order' => 'created_at.desc', 'limit' => $limit, 'offset' => $offset]
             );

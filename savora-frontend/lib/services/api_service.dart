@@ -21,13 +21,23 @@ class ApiService {
   //   HP via USB/WiFi   → 'http://192.168.1.9:8000/api/v1'  ← ganti IP
   //   Production        → 'https://api.savora.com/api/v1'   ← ganti domain
   // ─────────────────────────────────────────────
-  static const String _baseUrlDebug = 'http://10.66.50.140:8000/api/v1';
+  static const String _configuredBaseUrl =
+      String.fromEnvironment('API_BASE_URL', defaultValue: '');
+  static const String _baseUrlDebug = 'http://192.168.1.14:8000/api/v1';
   static const String _baseUrlProd = 'https://api.savora.com/api/v1';
 
-  static String get _baseUrl => kDebugMode ? _baseUrlDebug : _baseUrlProd;
+  static String get _baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl;
+    }
+    return kDebugMode ? _baseUrlDebug : _baseUrlProd;
+  }
+
+  static String get activeBaseUrl => _normalizeBaseUrl(_baseUrl);
+  static List<String> get activeBaseUrlCandidates => List.unmodifiable(_baseUrlCandidates);
 
   static List<String> get _baseUrlCandidates {
-    final primary = _baseUrl;
+    final primary = _normalizeBaseUrl(_baseUrl);
     if (primary.endsWith('/v1')) {
       return [primary, primary.substring(0, primary.length - 3)];
     }
@@ -35,7 +45,8 @@ class ApiService {
   }
 
   static Uri _buildUri(String baseUrl, String endpoint) {
-    return Uri.parse('$baseUrl$endpoint');
+    final normalized = _normalizeBaseUrl(baseUrl);
+    return Uri.parse('$normalized$endpoint');
   }
 
   static String _originFromBaseUrl(String baseUrl) {
@@ -55,6 +66,32 @@ class ApiService {
   }
 
   static const Duration _timeout = Duration(seconds: 30);
+
+  static String _normalizeBaseUrl(String value) {
+    return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
+  }
+
+  static String _socketExceptionMessage(SocketException e) {
+    final raw = e.message.toLowerCase();
+
+    if (raw.contains('failed host lookup') || raw.contains('name or service not known')) {
+      return 'Server API tidak ditemukan. Cek IP/domain API backend.';
+    }
+
+    if (raw.contains('connection refused')) {
+      return 'Server API menolak koneksi. Pastikan backend sedang berjalan.';
+    }
+
+    if (raw.contains('network is unreachable')) {
+      return 'Jaringan tidak bisa menjangkau server API.';
+    }
+
+    if (raw.contains('cleartext') || raw.contains('not permitted')) {
+      return 'Koneksi HTTP diblokir. Gunakan HTTPS atau aktifkan cleartext traffic di Android.';
+    }
+
+    return 'Gagal terhubung ke server API. Periksa URL backend dan jaringan.';
+  }
 
   // Token & userId disimpan di memori
   static String? _authToken;
@@ -118,8 +155,9 @@ class ApiService {
       throw Exception('Unexpected request flow for GET $endpoint');
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
+    } on SocketException catch (e) {
+      final candidates = _baseUrlCandidates.join(' | ');
+      throw Exception('${_socketExceptionMessage(e)} (Base URL: $candidates)');
     } catch (e) {
       debugPrint('[API] GET Error: $e');
       rethrow;
@@ -162,8 +200,9 @@ class ApiService {
       throw Exception('Unexpected request flow for POST $endpoint');
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
+    } on SocketException catch (e) {
+      final candidates = _baseUrlCandidates.join(' | ');
+      throw Exception('${_socketExceptionMessage(e)} (Base URL: $candidates)');
     } catch (e) {
       debugPrint('[API] POST Error: $e');
       rethrow;
@@ -182,7 +221,7 @@ class ApiService {
 
       final response = await http
           .put(
-            Uri.parse('$_baseUrl$endpoint'),
+            _buildUri(_baseUrl, endpoint),
             headers: _buildHeaders(),
             body: json.encode(data),
           )
@@ -192,8 +231,9 @@ class ApiService {
       return _handleResponse(response);
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
+    } on SocketException catch (e) {
+      final candidates = _baseUrlCandidates.join(' | ');
+      throw Exception('${_socketExceptionMessage(e)} (Base URL: $candidates)');
     } catch (e) {
       debugPrint('[API] PUT Error: $e');
       rethrow;
@@ -211,7 +251,7 @@ class ApiService {
       debugPrint('[API] DELETE $_baseUrl$endpoint');
 
       final request =
-          http.Request('DELETE', Uri.parse('$_baseUrl$endpoint'));
+          http.Request('DELETE', _buildUri(_baseUrl, endpoint));
       request.headers.addAll(_buildHeaders());
       if (body != null) request.body = json.encode(body);
 
@@ -222,8 +262,9 @@ class ApiService {
       return _handleResponse(response);
     } on TimeoutException {
       throw Exception('Request timeout. Cek koneksi internet kamu.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
+    } on SocketException catch (e) {
+      final candidates = _baseUrlCandidates.join(' | ');
+      throw Exception('${_socketExceptionMessage(e)} (Base URL: $candidates)');
     } catch (e) {
       debugPrint('[API] DELETE Error: $e');
       rethrow;
@@ -245,7 +286,7 @@ class ApiService {
 
       final request = http.MultipartRequest(
         method.toUpperCase(),
-        Uri.parse('$_baseUrl$endpoint'),
+        _buildUri(_baseUrl, endpoint),
       );
       if (_authToken != null) {
         request.headers['Authorization'] = 'Bearer $_authToken';
@@ -262,8 +303,9 @@ class ApiService {
       return _handleResponse(response);
     } on TimeoutException {
       throw Exception('Upload timeout. Cek koneksi internet kamu.');
-    } on SocketException {
-      throw Exception('Tidak ada koneksi internet.');
+    } on SocketException catch (e) {
+      final candidates = _baseUrlCandidates.join(' | ');
+      throw Exception('${_socketExceptionMessage(e)} (Base URL: $candidates)');
     } catch (e) {
       debugPrint('[API] UPLOAD Error: $e');
       rethrow;
@@ -275,7 +317,7 @@ class ApiService {
   // ─────────────────────────────────────────────
   static Future<bool> healthCheck() async {
     try {
-      final origin = _originFromBaseUrl(_baseUrl);
+      final origin = _originFromBaseUrl(_normalizeBaseUrl(_baseUrl));
       final response = await http
           .get(Uri.parse('$origin/up'), headers: _buildHeaders())
           .timeout(_timeout);

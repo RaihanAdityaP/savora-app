@@ -54,7 +54,7 @@ class NotificationClient {
   static Future<bool> markAllAsRead(String userId) async {
     try {
       final response = await ApiService.post(
-        '/notifications/user/read-all',
+        '/notifications/read-all',
         {},
       );
       return response['success'] == true;
@@ -74,7 +74,7 @@ class NotificationClient {
     try {
       final response = await ApiService.post('/notifications/register-device', {
         'user_id': userId,
-        'device_token': deviceToken,
+        'token': deviceToken,
         'device_type': deviceType,
       });
       return response['success'] == true;

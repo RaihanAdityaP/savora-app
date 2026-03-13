@@ -38,9 +38,10 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       final response = await ApiService.get('/notifications');
       if (mounted) {
         final notifs = List<Map<String, dynamic>>.from(response['data'] ?? []);
+        final deduped = _dedupeNotifications(notifs);
         setState(() {
-          _notifications = notifs;
-          _unreadCount = notifs.where((n) => n['is_read'] == false).length;
+          _notifications = deduped;
+          _unreadCount = deduped.where((n) => n['is_read'] == false).length;
           _isLoading = false;
         });
         _animationController.forward(from: 0);
@@ -53,9 +54,30 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     }
   }
 
+  List<Map<String, dynamic>> _dedupeNotifications(List<Map<String, dynamic>> notifications) {
+    final seen = <String>{};
+    final deduped = <Map<String, dynamic>>[];
+
+    for (final notification in notifications) {
+      final key = [
+        notification['type']?.toString() ?? '',
+        notification['related_entity_type']?.toString() ?? '',
+        notification['related_entity_id']?.toString() ?? '',
+        notification['title']?.toString() ?? '',
+        notification['message']?.toString() ?? '',
+      ].join('|');
+
+      if (seen.add(key)) {
+        deduped.add(notification);
+      }
+    }
+
+    return deduped;
+  }
+
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await ApiService.put('/notifications/$notificationId/read', {});
+      await ApiService.post('/notifications/$notificationId/read', {});
       _loadNotifications();
     } catch (e) {
       debugPrint('Error marking notification as read: $e');
@@ -64,7 +86,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
 
   Future<void> _markAllAsRead() async {
     try {
-      await ApiService.put('/notifications/read-all', {});
+      await ApiService.post('/notifications/read-all', {});
       _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -84,14 +106,42 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(children: [Icon(Icons.delete_sweep, color: Colors.red, size: 28), SizedBox(width: 8), Text('Hapus Semua Notifikasi')]),
+        title: Row(
+          children: const [
+            Icon(Icons.delete_sweep, color: Colors.red, size: 28),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Hapus Semua Notifikasi',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         content: const Text('Apakah Anda yakin ingin menghapus semua notifikasi?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            child: const Text('Hapus Semua'),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Hapus Semua'),
+              ),
+            ],
           ),
         ],
       ),
@@ -112,6 +162,12 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
+  }
+
+  String _normalizeRelatedId(dynamic rawId) {
+    final value = rawId?.toString().trim() ?? '';
+    if (value.isEmpty) return '';
+    return value.replaceAll('"', '').replaceAll("'", '');
   }
 
   Future<void> _deleteNotification(String notificationId) async {
@@ -136,17 +192,17 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     if (!notification['is_read']) _markAsRead(notification['id'].toString());
 
     final type = notification['type'] ?? '';
-    final relatedId = notification['related_entity_id'];
-    if (relatedId == null) return;
+    final relatedId = _normalizeRelatedId(notification['related_entity_id']);
+    if (relatedId.isEmpty) return;
 
     switch (type) {
       case 'new_follower':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: relatedId.toString())));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: relatedId)));
         break;
       case 'new_recipe_from_following':
       case 'recipe_approved':
       case 'recipe_rejected':
-        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(recipeId: relatedId.toString())));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(recipeId: relatedId)));
         break;
       default:
         break;

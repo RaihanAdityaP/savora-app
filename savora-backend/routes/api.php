@@ -187,6 +187,7 @@ Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
     Route::middleware('throttle:30,1')->group(function () {
         Route::post('{id}/read', [NotificationController::class, 'markAsRead']);
         Route::post('read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::delete('/', [NotificationController::class, 'destroyAll']);
         Route::delete('{id}', [NotificationController::class, 'destroy']);
     });
 

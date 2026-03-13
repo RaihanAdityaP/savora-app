@@ -119,7 +119,7 @@ class UserClient {
       final response = await ApiService.get('/users/$userId/followers');
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return list.map((e) => _normalizeFollowUser(e)).toList();
+        return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
       }
       return [];
     } catch (e) {
@@ -134,7 +134,7 @@ class UserClient {
       final response = await ApiService.get('/users/$userId/following');
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return list.map((e) => _normalizeFollowUser(e)).toList();
+        return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
       }
       return [];
     } catch (e) {
@@ -183,6 +183,21 @@ class UserClient {
       return Map<String, dynamic>.from(profile);
     }
     return item;
+  }
+
+  static List<Map<String, dynamic>> _dedupeFollowUsers(
+      List<Map<String, dynamic>> users) {
+    final seen = <String>{};
+    final deduped = <Map<String, dynamic>>[];
+
+    for (final user in users) {
+      final id = user['id']?.toString();
+      if (id != null && seen.add(id)) {
+        deduped.add(user);
+      }
+    }
+
+    return deduped;
   }
 
 }

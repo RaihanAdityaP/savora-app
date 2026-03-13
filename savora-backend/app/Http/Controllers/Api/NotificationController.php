@@ -332,6 +332,28 @@ class NotificationController extends Controller
     }
 
     /**
+     * Delete all notifications for authenticated user
+     * DELETE /api/notifications
+     */
+    public function destroyAll(Request $request)
+    {
+        try {
+            $userId = $this->getSupabaseUserIdFromRequest($request);
+            $this->supabase->delete('notifications', ['user_id' => $userId]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications deleted successfully',
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Delete notification
      * DELETE /api/notifications/{id}
      */

@@ -148,7 +148,14 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     } catch (e) {
       if (!mounted) return;
       setState(() { _isLoading = false; _recipe = null; });
-      _showSnackBar('Error loading recipe', isError: true);
+      final error = e.toString().toLowerCase();
+      if (error.contains('recipe not found') ||
+          error.contains('resep tidak ditemukan') ||
+          error.contains('404')) {
+        _showSnackBar('Resep tidak ditemukan atau sudah dihapus.', isError: true);
+      } else {
+        _showSnackBar('Error loading recipe: ${e.toString().replaceFirst('Exception: ', '')}', isError: true);
+      }
     }
   }
 

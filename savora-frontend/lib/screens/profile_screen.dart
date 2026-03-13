@@ -125,8 +125,8 @@ class _ProfileScreenState extends State<ProfileScreen>
           _avatarUrl = profile['avatar_url'];
           _userRole = profile['role'] ?? 'user';
           _isPremium = profile['is_premium'] ?? false;
-          _followerCount = profile['total_followers'] ?? 0;
-          _followingCount = profile['total_following'] ?? 0;
+          _followerCount = ((profile['followers_count'] ?? profile['total_followers']) as num?)?.toInt() ?? 0;
+          _followingCount = ((profile['following_count'] ?? profile['total_following']) as num?)?.toInt() ?? 0;
           _isLoading = false;
         });
         _animationController.forward();

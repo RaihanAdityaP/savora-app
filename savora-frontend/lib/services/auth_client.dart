@@ -69,9 +69,17 @@ class AuthClient {
       debugPrint('AuthClient: Got Supabase token, exchanging...');
 
       // 2. Exchange Supabase JWT for Sanctum token
-      final exchangeResponse = await ApiService.post('/auth/token', {
-        'supabase_token': supabaseToken,
-      });
+      Map<String, dynamic> exchangeResponse;
+      try {
+        exchangeResponse = await ApiService.post('/auth/token', {
+          'supabase_token': supabaseToken,
+        });
+      } catch (e) {
+        final detail = e.toString().replaceFirst('Exception: ', '');
+        throw Exception(
+          'Login to Supabase succeeded, but the Laravel backend cannot be accessed. Details: $detail',
+        );
+      }
 
       if (exchangeResponse['success'] != true) {
         throw Exception(exchangeResponse['message'] ?? 'Token exchange failed');

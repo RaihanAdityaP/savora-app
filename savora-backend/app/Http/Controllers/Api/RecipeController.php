@@ -481,14 +481,24 @@ class RecipeController extends Controller
                 $userId = $recipeData[0]['user_id'];
                 $title = $recipeData[0]['title'];
 
-                $this->supabase->insert('notifications', [
+                $existingNotification = $this->supabase->select('notifications', ['id'], [
                     'user_id' => $userId,
                     'type' => 'recipe_approved',
-                    'title' => 'Resep Disetujui',
-                    'message' => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
                     'related_entity_type' => 'recipe',
                     'related_entity_id' => $id,
+                    'is_read' => false,
                 ]);
+
+                if (empty($existingNotification)) {
+                    $this->supabase->insert('notifications', [
+                        'user_id' => $userId,
+                        'type' => 'recipe_approved',
+                        'title' => 'Resep Disetujui',
+                        'message' => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
+                        'related_entity_type' => 'recipe',
+                        'related_entity_id' => $id,
+                    ]);
+                }
             }
 
             return response()->json([
