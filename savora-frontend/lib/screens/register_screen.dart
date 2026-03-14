@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_client.dart';
 import '../widgets/theme.dart';
+import '../widgets/privacy_modal.dart';
+import '../widgets/terms_modal.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -17,8 +19,14 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  // Single consent checkbox — matches Next.js version
+  bool _agreedToTerms = false;
+
+  bool get _canRegister => _agreedToTerms;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -32,10 +40,10 @@ class _RegisterScreenState extends State<RegisterScreen>
         duration: const Duration(milliseconds: 1800), vsync: this);
     _fadeAnimation = CurvedAnimation(
         parent: _animationController, curve: Curves.easeInOut);
-    _slideAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.4), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _animationController, curve: Curves.easeOutCubic));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+            CurvedAnimation(
+                parent: _animationController, curve: Curves.easeOutCubic));
     _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
         CurvedAnimation(
             parent: _animationController, curve: Curves.elasticOut));
@@ -52,7 +60,30 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  // ─────────────────────────────────────────────
+  // OPEN MODALS
+  // ─────────────────────────────────────────────
+
+  Future<void> _openPrivacyModal() async {
+    await PrivacyModal.show(context);
+  }
+
+  Future<void> _openTermsModal() async {
+    await TermsModal.show(context);
+  }
+
+  // ─────────────────────────────────────────────
+  // REGISTER
+  // ─────────────────────────────────────────────
+
   Future<void> _signUp() async {
+    if (!_canRegister) {
+      _showSnackBar(
+        'Anda harus menyetujui Syarat & Ketentuan dan Kebijakan Privasi terlebih dahulu.',
+        isError: true,
+      );
+      return;
+    }
     if (_usernameController.text.isEmpty ||
         _fullNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -69,9 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         fullName: _fullNameController.text.trim(),
       );
       if (response['success'] == true) {
-        if (mounted) {
-          _showSuccessDialog();
-        }
+        if (mounted) _showSuccessDialog();
       }
     } on AuthException catch (e) {
       if (!mounted) return;
@@ -96,18 +125,15 @@ class _RegisterScreenState extends State<RegisterScreen>
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _resendVerificationEmail() async {
     setState(() => _isLoading = true);
     try {
-      final success = await AuthClient.resendVerificationEmail(
-        _emailController.text.trim(),
-      );
+      final success =
+          await AuthClient.resendVerificationEmail(_emailController.text.trim());
       if (mounted) {
         if (success) {
           _showSnackBar(
@@ -115,10 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             isError: false,
           );
         } else {
-          _showSnackBar(
-            'Gagal mengirim email. Coba lagi nanti.',
-            isError: true,
-          );
+          _showSnackBar('Gagal mengirim email. Coba lagi nanti.', isError: true);
         }
       }
     } catch (e) {
@@ -129,9 +152,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -139,7 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
@@ -147,30 +169,25 @@ class _RegisterScreenState extends State<RegisterScreen>
               decoration: BoxDecoration(
                 gradient: AppTheme.accentGradient,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppTheme.primaryCoral.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4))
-                ],
               ),
-              child:
-                  const Icon(Icons.email_rounded, color: Colors.white, size: 24),
+              child: const Icon(Icons.email_rounded,
+                  color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
             const Expanded(
                 child: Text('Email Sudah Terdaftar',
-                    style:
-                        TextStyle(fontSize: 19, fontWeight: FontWeight.bold))),
+                    style: TextStyle(
+                        fontSize: 19, fontWeight: FontWeight.bold))),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Email ${_emailController.text} sudah terdaftar.',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(
+                'Email ${_emailController.text} sudah terdaftar.',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 16),
             const Text(
                 'Kemungkinan Anda belum verifikasi email. Kirim ulang email verifikasi?',
@@ -180,47 +197,29 @@ class _RegisterScreenState extends State<RegisterScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-                foregroundColor: Colors.grey.shade600,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-            child: const Text('Batal',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text('Batal',
+                style: TextStyle(color: Colors.grey.shade600)),
           ),
           Container(
             decoration: BoxDecoration(
               gradient: AppTheme.accentGradient,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                    color: AppTheme.primaryCoral.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4))
-              ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(dialogContext);
-                  _resendVerificationEmail();
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text('Kirim Ulang',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15)),
-                    ],
-                  ),
-                ),
+            child: TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _resendVerificationEmail();
+              },
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('Kirim Ulang',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
           ),
@@ -234,7 +233,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
@@ -243,19 +243,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                 gradient: LinearGradient(
                     colors: [Colors.green.shade400, Colors.green.shade600]),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4))
-                ],
               ),
               child: const Icon(Icons.check_circle_rounded,
                   color: Colors.white, size: 28),
             ),
             const SizedBox(width: 14),
             const Text('Berhasil!',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    fontSize: 22, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -303,12 +298,6 @@ class _RegisterScreenState extends State<RegisterScreen>
             decoration: BoxDecoration(
               gradient: AppTheme.accentGradient,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                    color: AppTheme.primaryCoral.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4))
-              ],
             ),
             child: TextButton(
               onPressed: () {
@@ -354,6 +343,10 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
+  // ─────────────────────────────────────────────
+  // BUILD
+  // ─────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -368,6 +361,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Back button
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
@@ -377,12 +371,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                           border: Border.all(
                               color: Colors.white.withValues(alpha: 0.5),
                               width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5))
-                          ],
                         ),
                         child: IconButton(
                             icon: const Icon(Icons.arrow_back_rounded,
@@ -391,6 +379,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                     ),
                     const SizedBox(height: 28),
+
+                    // Logo
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
@@ -398,8 +388,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         height: 110,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)],
-                          ),
+                              colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)]),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -413,25 +402,23 @@ class _RegisterScreenState extends State<RegisterScreen>
                         padding: const EdgeInsets.all(4),
                         child: Container(
                           decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
+                              color: Colors.white, shape: BoxShape.circle),
                           child: ClipOval(
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                Icons.restaurant_rounded,
-                                size: 55,
-                                color: Color(0xFF2B6CB0),
-                              ),
+                              errorBuilder: (_, _, _) => const Icon(
+                                  Icons.restaurant_rounded,
+                                  size: 55,
+                                  color: Color(0xFF2B6CB0)),
                             ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // Heading
                     SlideTransition(
                       position: _slideAnimation,
                       child: Column(
@@ -445,53 +432,33 @@ class _RegisterScreenState extends State<RegisterScreen>
                               border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.4),
                                   width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5))
-                              ],
                             ),
-                            child: Text('BERGABUNG',
+                            child: const Text('BERGABUNG',
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 4,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.3),
-                                          blurRadius: 8)
-                                    ])),
+                                    color: Colors.white)),
                           ),
                           const SizedBox(height: 16),
-                          Text('Buat Akun',
+                          const Text('Buat Akun',
                               style: TextStyle(
                                   fontSize: 46,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
-                                  letterSpacing: -1,
-                                  shadows: [
-                                    Shadow(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 5))
-                                  ])),
+                                  letterSpacing: -1)),
                           const SizedBox(height: 10),
                           Text('Mulai Petualangan Kuliner Anda',
-                              textAlign: TextAlign.center,
                               style: TextStyle(
                                   fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.95),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5)),
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 42),
+
+                    // Form card
                     SlideTransition(
                       position: _slideAnimation,
                       child: Container(
@@ -509,65 +476,88 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                         child: Column(
                           children: [
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _usernameController,
                                 hint: 'Username',
                                 icon: Icons.person_outline_rounded,
                                 color: AppTheme.primaryCoral),
                             const SizedBox(height: 18),
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _fullNameController,
                                 hint: 'Nama Lengkap',
                                 icon: Icons.badge_outlined,
                                 color: AppTheme.primaryTeal),
                             const SizedBox(height: 18),
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _emailController,
                                 hint: 'Email Address',
                                 icon: Icons.email_outlined,
                                 color: AppTheme.primaryYellow,
                                 keyboardType: TextInputType.emailAddress),
                             const SizedBox(height: 18),
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _passwordController,
-                                hint: 'Password',
+                                hint: 'Password (min. 6 karakter)',
                                 icon: Icons.lock_outline_rounded,
                                 color: AppTheme.primaryOrange,
                                 isPassword: true),
-                            const SizedBox(height: 30),
-                            Container(
-                              width: double.infinity,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.orangeGradient,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: AppTheme.primaryOrange
-                                          .withValues(alpha: 0.5),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 10))
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _isLoading ? null : _signUp,
+                            const SizedBox(height: 20),
+
+                            // ── Consent checkbox ──
+                            _buildConsentSection(),
+
+                            const SizedBox(height: 24),
+
+                            // Register button
+                            AnimatedOpacity(
+                              opacity: _canRegister ? 1.0 : 0.5,
+                              duration: const Duration(milliseconds: 250),
+                              child: Container(
+                                width: double.infinity,
+                                height: 58,
+                                decoration: BoxDecoration(
+                                  gradient: _canRegister
+                                      ? AppTheme.orangeGradient
+                                      : const LinearGradient(colors: [
+                                          Colors.grey,
+                                          Colors.grey,
+                                        ]),
                                   borderRadius: BorderRadius.circular(16),
-                                  child: Center(
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            height: 26,
-                                            width: 26,
-                                            child: CircularProgressIndicator(
-                                                strokeWidth: 3,
-                                                color: Colors.white))
-                                        : const Text('DAFTAR SEKARANG',
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 2,
-                                                color: Colors.white)),
+                                  boxShadow: _canRegister
+                                      ? [
+                                          BoxShadow(
+                                              color: AppTheme.primaryOrange
+                                                  .withValues(alpha: 0.5),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10))
+                                        ]
+                                      : [],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: (_isLoading || !_canRegister)
+                                        ? null
+                                        : _signUp,
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Center(
+                                      child: _isLoading
+                                          ? const SizedBox(
+                                              height: 26,
+                                              width: 26,
+                                              child:
+                                                  CircularProgressIndicator(
+                                                      strokeWidth: 3,
+                                                      color: Colors.white))
+                                          : const Text(
+                                              'DAFTAR SEKARANG',
+                                              style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 2,
+                                                  color: Colors.white),
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -577,6 +567,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // Login link
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 22, vertical: 18),
@@ -586,12 +578,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                         border: Border.all(
                             color: Colors.white.withValues(alpha: 0.4),
                             width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5))
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -628,7 +614,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                                           fontWeight: FontWeight.bold)),
                                   SizedBox(width: 6),
                                   Icon(Icons.arrow_forward_rounded,
-                                      color: AppTheme.primaryCoral, size: 18),
+                                      color: AppTheme.primaryCoral,
+                                      size: 18),
                                 ],
                               ),
                             ),
@@ -646,7 +633,104 @@ class _RegisterScreenState extends State<RegisterScreen>
     );
   }
 
-  Widget _buildModernTextField({
+  // ─────────────────────────────────────────────
+  // CONSENT SECTION — single checkbox, inline links
+  // ─────────────────────────────────────────────
+
+  Widget _buildConsentSection() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Animated checkbox
+        GestureDetector(
+          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 22,
+            height: 22,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: _agreedToTerms
+                  ? const Color(0xFFE76F51)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: _agreedToTerms
+                    ? const Color(0xFFE76F51)
+                    : Colors.grey.shade400,
+                width: 2,
+              ),
+              boxShadow: _agreedToTerms
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFE76F51).withValues(alpha: 0.35),
+                        blurRadius: 6,
+                      )
+                    ]
+                  : [],
+            ),
+            child: _agreedToTerms
+                ? const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 15)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // Inline label with tappable links
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+                height: 1.5,
+              ),
+              children: [
+                const TextSpan(text: 'Dengan mendaftar, Anda menyetujui '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: GestureDetector(
+                    onTap: _openTermsModal,
+                    child: const Text(
+                      'Syarat & Ketentuan',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFE76F51),
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Color(0xFFE76F51),
+                      ),
+                    ),
+                  ),
+                ),
+                const TextSpan(text: ' dan '),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.middle,
+                  child: GestureDetector(
+                    onTap: _openPrivacyModal,
+                    child: const Text(
+                      'Kebijakan Privasi',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF2A9D8F),
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                        decorationColor: Color(0xFF2A9D8F),
+                      ),
+                    ),
+                  ),
+                ),
+                const TextSpan(text: ' kami.'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -659,12 +743,6 @@ class _RegisterScreenState extends State<RegisterScreen>
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200, width: 2),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
       ),
       child: TextField(
         controller: controller,

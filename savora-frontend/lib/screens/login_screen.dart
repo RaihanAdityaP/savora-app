@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../services/auth_client.dart'; 
-import 'package:supabase_flutter/supabase_flutter.dart'; 
+import '../services/auth_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/theme.dart';
+import '../widgets/privacy_modal.dart';
+import '../widgets/terms_modal.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
 
@@ -33,10 +35,10 @@ class _LoginScreenState extends State<LoginScreen>
         duration: const Duration(milliseconds: 1800), vsync: this);
     _fadeAnimation = CurvedAnimation(
         parent: _animationController, curve: Curves.easeInOut);
-    _slideAnimation = Tween<Offset>(
-            begin: const Offset(0, 0.4), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _animationController, curve: Curves.easeOutCubic));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
+            CurvedAnimation(
+                parent: _animationController, curve: Curves.easeOutCubic));
     _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
         CurvedAnimation(
             parent: _animationController, curve: Curves.elasticOut));
@@ -55,32 +57,23 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isGoogleLoading = true);
     try {
       final response = await AuthClient.signInWithGoogle();
-
       if (response['success'] == true) {
-        // Check if banned
         final isBanned = response['user']?['is_banned'] == true;
         if (isBanned) {
           ApiService.clearToken();
-          final reason = response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+          final reason =
+              response['user']?['banned_reason'] ?? 'Tidak disebutkan';
           final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
         }
-
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
+              MaterialPageRoute(builder: (_) => const HomeScreen()));
         }
       }
     } on AuthException catch (e) {
-      if (mounted) {
-        String errorMsg = e.message;
-        if (errorMsg.contains('Email not confirmed')) {
-          errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
-        }
-        _showSnackBar(errorMsg, isError: true);
-      }
+      if (mounted) _showSnackBar(e.message, isError: true);
     } catch (e) {
       if (mounted) {
         _showSnackBar('Google Sign In gagal: ${e.toString()}', isError: true);
@@ -95,37 +88,31 @@ class _LoginScreenState extends State<LoginScreen>
       _showSnackBar('Email dan password harus diisi!', isError: true);
       return;
     }
-
     setState(() => _isLoading = true);
     try {
       final response = await AuthClient.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
       if (response['success'] == true) {
-        // Check if banned
         final isBanned = response['user']?['is_banned'] == true;
         if (isBanned) {
           ApiService.clearToken();
-          final reason = response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+          final reason =
+              response['user']?['banned_reason'] ?? 'Tidak disebutkan';
           final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
         }
-
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
+              MaterialPageRoute(builder: (_) => const HomeScreen()));
         }
       }
     } on AuthException catch (e) {
       if (!mounted) return;
       String errorMsg = e.message;
-
-      if (errorMsg.contains('Invalid login credentials') ||
-          errorMsg.contains('email or password')) {
+      if (errorMsg.contains('Invalid login credentials')) {
         errorMsg = 'Email atau password salah';
       } else if (errorMsg.contains('Email not confirmed')) {
         errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
@@ -134,11 +121,8 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
-
       if (errorMsg.contains('timeout')) {
         errorMsg = 'Koneksi timeout. Cek internet Anda.';
-      } else if (errorMsg.contains('Token exchange failed')) {
-        errorMsg = 'Gagal menghubungkan ke server. Coba lagi.';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
@@ -151,57 +135,47 @@ class _LoginScreenState extends State<LoginScreen>
     await showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: AppTheme.accentGradient,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppTheme.primaryCoral.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4))
-                ],
-              ),
-              child:
-                  const Icon(Icons.email_rounded, color: Colors.white, size: 24),
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.email_rounded,
+                  color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
             const Expanded(
                 child: Text('Verifikasi Email',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold))),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-                'Masukkan email Anda untuk mengirim ulang link verifikasi:',
-                style: TextStyle(fontSize: 14, height: 1.5)),
+                'Masukkan email Anda untuk mengirim ulang link verifikasi:'),
             const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade200, width: 1.5),
-              ),
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: Colors.grey.shade200, width: 1.5)),
               child: TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(fontSize: 15),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Email',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  prefixIcon: const Icon(Icons.email_outlined,
+                  prefixIcon: Icon(Icons.email_outlined,
                       color: AppTheme.primaryCoral, size: 22),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
               ),
             ),
@@ -210,78 +184,46 @@ class _LoginScreenState extends State<LoginScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-                foregroundColor: Colors.grey.shade600,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-            child: const Text('Batal',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text('Batal',
+                style: TextStyle(color: Colors.grey.shade600)),
           ),
           Container(
             decoration: BoxDecoration(
-              gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                    color: AppTheme.primaryCoral.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4))
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () async {
-                  final email = emailController.text.trim();
-                  if (email.isEmpty) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Email harus diisi!')),
-                    );
-                    return;
-                  }
-                  Navigator.pop(dialogContext);
-
-                  try {
-                    final success = await AuthClient.resendVerificationEmail(email);
-                    if (mounted) {
-                      if (success) {
-                        _showSnackBar(
-                          'Email verifikasi telah dikirim ke $email',
-                          isError: false,
-                        );
-                      } else {
-                        _showSnackBar(
-                          'Gagal mengirim email verifikasi',
-                          isError: true,
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      _showSnackBar(
-                        'Gagal mengirim email: ${e.toString()}',
-                        isError: true,
-                      );
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(12)),
+            child: TextButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) return;
+                Navigator.pop(dialogContext);
+                try {
+                  final success =
+                      await AuthClient.resendVerificationEmail(email);
+                  if (mounted) {
+                    if (success) {
+                      _showSnackBar('Email verifikasi dikirim ke $email',
+                          isError: false);
+                    } else {
+                      _showSnackBar('Gagal mengirim email verifikasi',
+                          isError: true);
                     }
                   }
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text('Kirim',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15)),
-                    ],
-                  ),
-                ),
+                } catch (e) {
+                  if (mounted) {
+                    _showSnackBar('Gagal: $e', isError: true);
+                  }
+                }
+              },
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('Kirim',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
+                ],
               ),
             ),
           ),
@@ -294,8 +236,9 @@ class _LoginScreenState extends State<LoginScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
@@ -305,8 +248,8 @@ class _LoginScreenState extends State<LoginScreen>
                     colors: [Colors.red.shade400, Colors.red.shade600]),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child:
-                  const Icon(Icons.block_rounded, color: Colors.white, size: 24),
+              child: const Icon(Icons.block_rounded,
+                  color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
             const Text('Akun Dinonaktifkan'),
@@ -325,19 +268,12 @@ class _LoginScreenState extends State<LoginScreen>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child:
-                  Text(reason, style: TextStyle(color: Colors.red.shade700)),
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade200)),
+              child: Text(reason,
+                  style: TextStyle(color: Colors.red.shade700)),
             ),
-            if (bannedAt != null) ...[
-              const SizedBox(height: 12),
-              Text('Dinonaktifkan: ${_formatDateTime(bannedAt)}',
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            ],
           ],
         ),
         actions: [
@@ -348,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('Tutup',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
@@ -357,23 +293,6 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       ),
     );
-  }
-
-  String _formatDateTime(String dateTimeStr) {
-    try {
-      final dateTime = DateTime.parse(dateTimeStr);
-      final now = DateTime.now();
-      final difference = now.difference(dateTime);
-      if (difference.inDays > 0) {
-        return '${difference.inDays} hari yang lalu';
-      }
-      if (difference.inHours > 0) {
-        return '${difference.inHours} jam yang lalu';
-      }
-      return '${difference.inMinutes} menit yang lalu';
-    } catch (e) {
-      return dateTimeStr;
-    }
   }
 
   void _showSnackBar(String message, {required bool isError}) {
@@ -413,6 +332,7 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Logo
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: Container(
@@ -420,8 +340,7 @@ class _LoginScreenState extends State<LoginScreen>
                         height: 120,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)],
-                          ),
+                              colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)]),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -435,15 +354,12 @@ class _LoginScreenState extends State<LoginScreen>
                         padding: const EdgeInsets.all(4),
                         child: Container(
                           decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
+                              color: Colors.white, shape: BoxShape.circle),
                           child: ClipOval(
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
+                              errorBuilder: (_, _, _) => const Icon(
                                 Icons.restaurant_rounded,
                                 size: 60,
                                 color: Color(0xFF2B6CB0),
@@ -454,6 +370,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     const SizedBox(height: 36),
+
                     SlideTransition(
                       position: _slideAnimation,
                       child: Column(
@@ -467,54 +384,34 @@ class _LoginScreenState extends State<LoginScreen>
                               border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.4),
                                   width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5))
-                              ],
                             ),
-                            child: Text('SELAMAT DATANG',
+                            child: const Text('SELAMAT DATANG',
                                 style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 4,
-                                    color: Colors.white,
-                                    shadows: [
-                                      Shadow(
-                                          color: Colors.black
-                                              .withValues(alpha: 0.3),
-                                          blurRadius: 8)
-                                    ])),
+                                    color: Colors.white)),
                           ),
                           const SizedBox(height: 18),
-                          Text('Savora',
+                          const Text('Savora',
                               style: TextStyle(
                                   fontSize: 56,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
                                   height: 1.1,
-                                  letterSpacing: -1,
-                                  shadows: [
-                                    Shadow(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 5))
-                                  ])),
+                                  letterSpacing: -1)),
                           const SizedBox(height: 10),
                           Text('Petualangan Kuliner Dimulai Disini',
-                              textAlign: TextAlign.center,
                               style: TextStyle(
                                   fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.95),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5)),
+                                  fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
                     const SizedBox(height: 50),
+
+                    // Form card
                     SlideTransition(
                       position: _slideAnimation,
                       child: Container(
@@ -532,19 +429,21 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                         child: Column(
                           children: [
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _emailController,
                                 hint: 'Email Address',
                                 icon: Icons.email_outlined,
                                 color: AppTheme.primaryCoral),
                             const SizedBox(height: 20),
-                            _buildModernTextField(
+                            _buildTextField(
                                 controller: _passwordController,
                                 hint: 'Password',
                                 icon: Icons.lock_outline_rounded,
                                 color: AppTheme.primaryOrange,
                                 isPassword: true),
                             const SizedBox(height: 32),
+
+                            // Login button
                             Container(
                               width: double.infinity,
                               height: 58,
@@ -583,6 +482,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                             const SizedBox(height: 28),
+
                             Row(children: [
                               Expanded(
                                   child: Divider(
@@ -604,6 +504,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       thickness: 1.5)),
                             ]),
                             const SizedBox(height: 28),
+
+                            // Google button
                             Container(
                               width: double.infinity,
                               height: 58,
@@ -612,13 +514,6 @@ class _LoginScreenState extends State<LoginScreen>
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                     color: Colors.grey.shade300, width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color:
-                                          Colors.grey.withValues(alpha: 0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 5))
-                                ],
                               ),
                               child: Material(
                                 color: Colors.transparent,
@@ -643,8 +538,7 @@ class _LoginScreenState extends State<LoginScreen>
                                                   'assets/images/googlelogo.png',
                                                   height: 26,
                                                   width: 26,
-                                                  errorBuilder: (context,
-                                                          error, stackTrace) =>
+                                                  errorBuilder: (_, _, _) =>
                                                       const Icon(
                                                           Icons
                                                               .g_mobiledata_rounded,
@@ -664,11 +558,17 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
+
+                            // Privacy & Terms links at bottom of card
+                            const SizedBox(height: 24),
+                            _buildPolicyLinks(),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
+
+                    // Resend verification
                     TextButton(
                       onPressed: _showResendVerificationDialog,
                       style: TextButton.styleFrom(
@@ -689,6 +589,8 @@ class _LoginScreenState extends State<LoginScreen>
                                   Colors.white.withValues(alpha: 0.95))),
                     ),
                     const SizedBox(height: 18),
+
+                    // Register link
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 22, vertical: 18),
@@ -698,12 +600,6 @@ class _LoginScreenState extends State<LoginScreen>
                         border: Border.all(
                             color: Colors.white.withValues(alpha: 0.4),
                             width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5))
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -742,7 +638,8 @@ class _LoginScreenState extends State<LoginScreen>
                                           fontWeight: FontWeight.bold)),
                                   SizedBox(width: 6),
                                   Icon(Icons.arrow_forward_rounded,
-                                      color: AppTheme.primaryCoral, size: 18),
+                                      color: AppTheme.primaryCoral,
+                                      size: 18),
                                 ],
                               ),
                             ),
@@ -760,7 +657,63 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildModernTextField({
+  // ─────────────────────────────────────────────
+  // POLICY LINKS — menggunakan RichText agar tidak overflow
+  // ─────────────────────────────────────────────
+
+  Widget _buildPolicyLinks() {
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+        children: [
+          const TextSpan(text: 'Dengan masuk, Anda setuju dengan '),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: GestureDetector(
+              onTap: () => PrivacyModal.show(context),
+              child: const Text(
+                'Privasi',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF2A9D8F),
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Color(0xFF2A9D8F),
+                ),
+              ),
+            ),
+          ),
+          TextSpan(
+            text: ' & ',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: GestureDetector(
+              onTap: () => TermsModal.show(context),
+              child: const Text(
+                'Ketentuan',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFFE76F51),
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Color(0xFFE76F51),
+                ),
+              ),
+            ),
+          ),
+          TextSpan(
+            text: ' kami.',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
     required IconData icon,
@@ -772,12 +725,6 @@ class _LoginScreenState extends State<LoginScreen>
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200, width: 2),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
       ),
       child: TextField(
         controller: controller,

@@ -5,6 +5,7 @@ import 'package:chewie/chewie.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
 import 'dart:io';
 import '../services/api_service.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -40,6 +41,79 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   bool _isVideoInitializing = false;
   late AnimationController _shareButtonAnimationController;
   late Animation<double> _scaleAnimation;
+
+  List<Map<String, dynamic>> _extractMapList(dynamic payload) {
+    if (payload is List) {
+      return payload
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+
+    if (payload is Map) {
+      final normalizedMap = Map<String, dynamic>.from(payload);
+      for (final key in const ['data', 'items', 'results', 'ratings', 'comments', 'tags']) {
+        final nested = normalizedMap[key];
+        if (nested is List) {
+          return nested
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
+        }
+      }
+    }
+
+    return [];
+  }
+
+
+
+  List<dynamic> _extractDynamicList(dynamic payload) {
+    if (payload is List) return payload;
+
+    if (payload is Map) {
+      final normalizedMap = Map<String, dynamic>.from(payload);
+      for (final key in const ['data', 'items', 'results', 'ingredients', 'steps']) {
+        final nested = normalizedMap[key];
+        if (nested is List) return nested;
+      }
+    }
+
+    if (payload is String) {
+      final text = payload.trim();
+      if (text.isEmpty) return [];
+
+      if ((text.startsWith('[') && text.endsWith(']')) ||
+          (text.startsWith('{') && text.endsWith('}'))) {
+        try {
+          final decoded = jsonDecode(text);
+          return _extractDynamicList(decoded);
+        } catch (_) {
+          // fallback to plain text parsing below
+        }
+      }
+
+      final cleanedLines = text
+          .split(RegExp(r'\r?\n'))
+          .map((line) => line.replaceFirst(RegExp(r'^\s*(?:[-•]|\d+[.)])\s*'), '').trim())
+          .where((line) => line.isNotEmpty)
+          .toList();
+
+      if (cleanedLines.length > 1) return cleanedLines;
+
+      final commaSeparated = text
+          .split(',')
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList();
+
+      if (commaSeparated.length > 1) return commaSeparated;
+
+      return [text];
+    }
+
+    return [];
+  }
 
   @override
   void initState() {
@@ -134,7 +208,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         return;
       }
       final ratingResponse = await ApiService.get('/ratings/recipe/${widget.recipeId}');
-      final ratings = List<Map<String, dynamic>>.from(ratingResponse['data'] ?? []);
+      final ratings = _extractMapList(ratingResponse['data'] ?? ratingResponse);
       setState(() {
         _recipe = Map<String, dynamic>.from(data);
         _ratingCount = ratings.length;
@@ -197,7 +271,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     try {
       final response = await ApiService.get('/recipes/${widget.recipeId}/tags');
       if (!mounted) return;
-      final tags = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      final tags = _extractMapList(response['data'] ?? response);
       setState(() => _tags = tags.map((t) => t['name'] as String).toList());
     } catch (e) {
       debugPrint('Error loading tags: $e');
@@ -375,7 +449,7 @@ savora://recipe/${widget.recipeId}
         return;
       }
       final response = await ApiService.get('/boards');
-      final boards = List<Map<String, dynamic>>.from(response['data'] ?? []);
+      final boards = _extractMapList(response['data'] ?? response);
       if (!mounted) return;
       showModalBottomSheet(
         context: context,
@@ -608,7 +682,7 @@ savora://recipe/${widget.recipeId}
     try {
       final response = await ApiService.get('/comments/recipe/${widget.recipeId}');
       if (!mounted) return;
-      setState(() => _comments = List<Map<String, dynamic>>.from(response['data'] ?? []));
+      setState(() => _comments = _extractMapList(response['data'] ?? response));
     } catch (e) {
       debugPrint('Error loading comments: $e');
     }
@@ -1276,8 +1350,8 @@ savora://recipe/${widget.recipeId}
   }
 
   Widget _buildIngredientsList() {
-    final ingredients = _recipe!['ingredients'] as List<dynamic>?;
-    if (ingredients == null || ingredients.isEmpty) return AppTheme.buildEmptyState(icon: Icons.restaurant_menu_rounded, title: 'Belum ada bahan');
+    final ingredients = _extractDynamicList(_recipe!['ingredients']);
+    if (ingredients.isEmpty) return AppTheme.buildEmptyState(icon: Icons.restaurant_menu_rounded, title: 'Belum ada bahan');
     return Column(
       children: ingredients.asMap().entries.map((entry) {
         final index = entry.key;
@@ -1315,8 +1389,8 @@ savora://recipe/${widget.recipeId}
   }
 
   Widget _buildStepsList() {
-    final steps = _recipe!['steps'] as List<dynamic>?;
-    if (steps == null || steps.isEmpty) return AppTheme.buildEmptyState(icon: Icons.format_list_numbered_rounded, title: 'Belum ada langkah');
+    final steps = _extractDynamicList(_recipe!['steps']);
+    if (steps.isEmpty) return AppTheme.buildEmptyState(icon: Icons.format_list_numbered_rounded, title: 'Belum ada langkah');
     return Column(
       children: List.generate(steps.length, (index) => Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -1331,11 +1405,20 @@ savora://recipe/${widget.recipeId}
           children: [
             Container(width: 36, height: 36, decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(10)), child: Center(child: Text('${index + 1}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)))),
             const SizedBox(width: 14),
-            Expanded(child: Text(steps[index].toString(), style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.5))),
+            Expanded(child: Text(_buildStepText(steps[index]), style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.5))),
           ],
         ),
       )),
     );
+  }
+
+  String _buildStepText(dynamic step) {
+    if (step is String) return step;
+    if (step is Map) {
+      final normalized = Map<String, dynamic>.from(step);
+      return (normalized['description'] ?? normalized['text'] ?? normalized['step'] ?? step.toString()).toString();
+    }
+    return step.toString();
   }
 
   Widget _buildTagsList() {
