@@ -1,10 +1,34 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_service.dart';
 
 /// AuthClient - Handle Supabase Auth + Sanctum Token Exchange
 class AuthClient {
   static final _supabase = Supabase.instance.client;
+  static const _googleServerClientIdFromDartDefine = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  );
+
+  static String get _googleServerClientId {
+    final envClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
+    if (envClientId != null && envClientId.isNotEmpty) {
+      return envClientId;
+    }
+    return _googleServerClientIdFromDartDefine;
+  }
+
+  static GoogleSignIn? _googleSignInInstance;
+
+  static GoogleSignIn get _googleSignIn {
+    _googleSignInInstance ??= GoogleSignIn(
+      scopes: const ['email', 'profile', 'openid'],
+      serverClientId: _googleServerClientId,
+    );
+    return _googleSignInInstance!;
+  }
 
   // ─────────────────────────────────────────────
   // REGISTER
@@ -114,54 +138,106 @@ class AuthClient {
     try {
       debugPrint('AuthClient: Google Sign In...');
 
-      // 1. Sign in with Google via Supabase
-      final authResponse = await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: 'io.supabase.savora://login-callback/',
-      );
+      // Web uses OAuth popup/redirect by design.
+      if (kIsWeb) {
+        return _signInWithGoogleOAuth();
+      }
 
-      if (!authResponse) {
+      // Native-first flow: use Google Sign-In (Credential Manager on Android)
+      // and exchange Google ID token to Supabase session.
+      // Always clear cached account first to force a fresh ID token —
+      // prevents 401 on re-login after logout.
+      await _googleSignIn.signOut();
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
         throw Exception('Google Sign In cancelled');
       }
 
-      // 2. Wait for session
-      await Future.delayed(const Duration(seconds: 2));
-      
-      final session = _supabase.auth.currentSession;
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception(
+          'Google ID token tidak tersedia. Pastikan konfigurasi OAuth client Android/iOS sudah benar.',
+        );
+      }
+
+      final authResponse = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      final session = authResponse.session ?? _supabase.auth.currentSession;
       if (session == null) {
-        throw Exception('No session after Google Sign In');
+        throw Exception('No Supabase session after native Google Sign In');
       }
 
-      final supabaseToken = session.accessToken;
-      final userId = session.user.id;
-
-      // 3. Exchange token
-      final exchangeResponse = await ApiService.post('/auth/token', {
-        'supabase_token': supabaseToken,
-      });
-
-      if (exchangeResponse['success'] != true) {
-        throw Exception(exchangeResponse['message'] ?? 'Token exchange failed');
-      }
-
-      final sanctumToken = exchangeResponse['data']?['sanctum_token'];
-      if (sanctumToken == null) {
-        throw Exception('No Sanctum token received');
-      }
-
-      // 4. Save tokens
-      ApiService.setToken(sanctumToken);
-      ApiService.setCurrentUserId(userId);
-
-      return {
-        'success': true,
-        'token': sanctumToken,
-        'user': exchangeResponse['data']?['user'],
-      };
+      return _exchangeSupabaseSession(session);
     } catch (e) {
       debugPrint('AuthClient.signInWithGoogle error: $e');
-      rethrow;
+      final msg = e.toString();
+      if (msg.contains('cancelled') || msg.contains('cancel')) {
+        throw Exception('Login Google dibatalkan.');
+      } else if (msg.contains('network') || msg.contains('timeout')) {
+        throw Exception('Koneksi bermasalah. Periksa internet Anda.');
+      } else if (msg.contains('Invalid or expired') || msg.contains('401')) {
+        throw Exception('Sesi Google tidak valid. Silakan coba lagi.');
+      } else if (msg.contains('ID token')) {
+        throw Exception('Gagal mendapatkan token Google. Pastikan Google Play Services aktif.');
+      }
+      throw Exception('Login Google gagal. Silakan coba beberapa saat lagi.');
     }
+  }
+
+  static Future<Map<String, dynamic>> _signInWithGoogleOAuth() async {
+    final authResponse = await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'io.supabase.savora://login-callback/',
+    );
+
+    if (!authResponse) {
+      throw Exception('Google Sign In cancelled');
+    }
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    final session = _supabase.auth.currentSession;
+    if (session == null) {
+      throw Exception('No session after Google Sign In');
+    }
+
+    return _exchangeSupabaseSession(session);
+  }
+
+  static Future<Map<String, dynamic>> _exchangeSupabaseSession(
+    Session session,
+  ) async {
+    final supabaseToken = session.accessToken;
+    final userId = session.user.id;
+
+    final exchangeResponse = await ApiService.post('/auth/token', {
+      'supabase_token': supabaseToken,
+    });
+
+    if (exchangeResponse['success'] != true) {
+      throw Exception(exchangeResponse['message'] ?? 'Token exchange failed');
+    }
+
+    final sanctumToken = exchangeResponse['data']?['sanctum_token'];
+    if (sanctumToken == null) {
+      throw Exception('No Sanctum token received');
+    }
+
+    ApiService.setToken(sanctumToken);
+    ApiService.setCurrentUserId(userId);
+
+    return {
+      'success': true,
+      'token': sanctumToken,
+      'user': exchangeResponse['data']?['user'],
+    };
   }
 
   // ─────────────────────────────────────────────
@@ -176,6 +252,10 @@ class AuthClient {
 
       // 2. Sign out from Supabase
       await _supabase.auth.signOut();
+
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
 
       // 3. Clear tokens
       ApiService.clearToken();

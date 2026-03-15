@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "928387294220",
+    "project_id": "savora-476205",
+    "storage_bucket": "savora-476205.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928387294220:android:cf06a0c3c5893304fa3a29",
+        "android_client_info": {
+          "package_name": "id.savora.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "928387294220-h6qvjfjcp043b2mhovokfm660nhsnhjh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "id.savora.app",
+            "certificate_hash": "1db9f6923c6efd8dde10039f2f806b0a293a23c9"
+          }
+        },
+        {
+          "client_id": "928387294220-hb6h1ioaok3fksdkp0vh8fv0an9im27l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHUuN5BJ8S5QtmA_DRDvKlOWu4WOv1yr0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "928387294220-hb6h1ioaok3fksdkp0vh8fv0an9im27l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
