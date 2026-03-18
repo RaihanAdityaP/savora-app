@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/category_client.dart';
+import '../services/recipe_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
@@ -28,6 +29,10 @@ class SearchingScreen extends StatefulWidget {
 class _SearchingScreenState extends State<SearchingScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _minCaloriesController = TextEditingController();
+  final TextEditingController _maxCaloriesController = TextEditingController();
+  final TextEditingController _ingredientsController = TextEditingController();
+
   List<Map<String, dynamic>> _searchResults = [];
   final Map<String, double> _recipeRatings = {};
   bool _isLoading = false;
@@ -40,6 +45,11 @@ class _SearchingScreenState extends State<SearchingScreen>
   String? _selectedTagName;
   String _sortBy = 'popular';
   bool _followedUsersOnly = false;
+
+  // New filter state
+  int? _minCalories;
+  int? _maxCalories;
+  List<String> _ingredientKeywords = [];
 
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _popularTags = [];
@@ -76,6 +86,9 @@ class _SearchingScreenState extends State<SearchingScreen>
   @override
   void dispose() {
     _searchController.dispose();
+    _minCaloriesController.dispose();
+    _maxCaloriesController.dispose();
+    _ingredientsController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -112,7 +125,8 @@ class _SearchingScreenState extends State<SearchingScreen>
       if (response['success'] == true) {
         final list = response['data'] as List;
         setState(() =>
-            _popularTags = list.map((e) => Map<String, dynamic>.from(e)).toList());
+            _popularTags =
+                list.map((e) => Map<String, dynamic>.from(e)).toList());
       }
     } catch (e) {
       debugPrint('Error loading tags: $e');
@@ -125,60 +139,79 @@ class _SearchingScreenState extends State<SearchingScreen>
       _lastSearchQuery = query.trim();
     });
     try {
-      // Build query params
-      String endpoint = '/recipes?status=all&limit=50';
+      final recipes = await RecipeClient.searchRecipesAdvanced(
+        query: _lastSearchQuery,
+        minCalories: _minCalories,
+        maxCalories: _maxCalories,
+        ingredients: _ingredientKeywords,
+        categoryId: _selectedCategoryId,
+      );
 
-      if (_lastSearchQuery.isNotEmpty) {
-        endpoint += '&search=${Uri.encodeComponent(_lastSearchQuery)}';
+      if (!mounted) return;
+
+      // Extract ratings if included in response
+      final Map<String, double> newRatings = {};
+      for (var recipe in recipes) {
+        final ratingInfo = recipe['rating_info'];
+        if (ratingInfo != null) {
+          final avg = ratingInfo['average'];
+          if (avg != null) {
+            newRatings[recipe['id'].toString()] = (avg as num).toDouble();
+          }
+        }
+        final avg = recipe['average_rating'];
+        if (avg != null) {
+          newRatings[recipe['id'].toString()] = (avg as num).toDouble();
+        }
       }
-      if (_selectedCategoryId != null) {
-        endpoint += '&category_id=$_selectedCategoryId';
-      }
+
+      // Client-side: tag filter (API doesn't support tag_id in search endpoint)
+      List<Map<String, dynamic>> filtered = recipes;
       if (_selectedTagId != null) {
-        endpoint += '&tag_id=$_selectedTagId';
-      }
-      if (_followedUsersOnly) {
-        endpoint += '&followed_only=true';
+        filtered = recipes.where((recipe) {
+          final tags = recipe['recipe_tags'] as List? ?? [];
+          return tags.any((rt) {
+            final tag = rt['tags'];
+            if (tag == null) return false;
+            return tag['id'] == _selectedTagId;
+          });
+        }).toList();
       }
 
+      // Client-side: sort
       switch (_sortBy) {
         case 'newest':
-          endpoint += '&order_by=created_at&order_direction=desc';
+          filtered.sort((a, b) {
+            final aDate = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(0);
+            final bDate = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(0);
+            return bDate.compareTo(aDate);
+          });
           break;
         case 'rating':
-          endpoint += '&order_by=average_rating&order_direction=desc';
+          filtered.sort((a, b) {
+            final aRating =
+                (a['rating_info']?['average'] as num?)?.toDouble() ?? 0.0;
+            final bRating =
+                (b['rating_info']?['average'] as num?)?.toDouble() ?? 0.0;
+            return bRating.compareTo(aRating);
+          });
           break;
         case 'popular':
         default:
-          endpoint += '&order_by=views_count&order_direction=desc';
+          filtered.sort((a, b) {
+            final aViews = (a['views_count'] as num?)?.toInt() ?? 0;
+            final bViews = (b['views_count'] as num?)?.toInt() ?? 0;
+            return bViews.compareTo(aViews);
+          });
           break;
       }
 
-      final response = await ApiService.get(endpoint);
-      if (!mounted) return;
-
-      if (response['success'] == true) {
-        final recipes = List<Map<String, dynamic>>.from(response['data'] as List);
-
-        // Extract ratings if included in response
-        for (var recipe in recipes) {
-          final avg = recipe['average_rating'];
-          if (avg != null) {
-            _recipeRatings[recipe['id']] = (avg as num).toDouble();
-          }
-        }
-
-        setState(() {
-          _searchResults = recipes;
-          _isLoading = false;
-        });
-        _animationController.forward(from: 0);
-      } else {
-        setState(() {
-          _searchResults = [];
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _searchResults = filtered;
+        _recipeRatings.addAll(newRatings);
+        _isLoading = false;
+      });
+      _animationController.forward(from: 0);
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -188,501 +221,790 @@ class _SearchingScreenState extends State<SearchingScreen>
   }
 
   void _showFilterBottomSheet() {
+    // Local temp state — only committed to parent on "Terapkan"
+    int? tempCategoryId = _selectedCategoryId;
+    String? tempCategoryName = _selectedCategoryName;
+    int? tempTagId = _selectedTagId;
+    String? tempTagName = _selectedTagName;
+    String tempSortBy = _sortBy;
+    bool tempFollowedOnly = _followedUsersOnly;
+
+    // Local controllers pre-filled from current state
+    final tempMinCaloriesCtrl =
+        TextEditingController(text: _minCalories?.toString() ?? '');
+    final tempMaxCaloriesCtrl =
+        TextEditingController(text: _maxCalories?.toString() ?? '');
+    final tempIngredientsCtrl =
+        TextEditingController(text: _ingredientKeywords.join(', '));
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.backgroundLight,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          maxChildSize: 0.92,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) => Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          // Helper sort chip — reads/writes local temp state
+          Widget buildLocalSortChip(
+              String label, String value, IconData icon) {
+            final isSelected = tempSortBy == value;
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (!isSelected) {
+                    setSheetState(() => tempSortBy = value);
+                  }
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: isSelected ? AppTheme.tealGradient : null,
+                    color: isSelected ? null : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: isSelected
+                            ? AppTheme.primaryTeal
+                            : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1.5),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                                color: AppTheme.primaryTeal
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4))
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon,
+                          size: 18,
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.textPrimary),
+                      const SizedBox(width: 8),
+                      Text(label,
+                          style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              fontSize: 14)),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.accentGradient,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: AppTheme.buttonShadow,
-                      ),
-                      child: const Icon(Icons.tune,
-                          color: Colors.white, size: 26),
-                    ),
-                    const SizedBox(width: 14),
-                    const Expanded(
-                      child: Text('Filter & Urutkan',
+              ),
+            );
+          }
+
+          // Helper filter chip — reads/writes local temp state
+          Widget buildLocalFilterChip({
+            required String label,
+            int? count,
+            required bool isSelected,
+            required IconData icon,
+            required Color color,
+            required VoidCallback onTap,
+          }) {
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: isSelected
+                        ? LinearGradient(
+                            colors: [color, color.withValues(alpha: 0.8)])
+                        : null,
+                    color: isSelected ? null : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                        color: isSelected ? color : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1.5),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                                color: color.withValues(alpha: 0.3),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3))
+                          ]
+                        : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon,
+                          size: 16,
+                          color: isSelected ? Colors.white : color),
+                      const SizedBox(width: 6),
+                      Text(label,
                           style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary)),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                          AppTheme.primaryCoral.withValues(alpha: 0.15),
-                          AppTheme.primaryOrange.withValues(alpha: 0.15)
-                        ]),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color:
-                                AppTheme.primaryCoral.withValues(alpha: 0.3)),
+                              color: isSelected
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              fontSize: 13)),
+                      if (count != null) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : color.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8)),
+                          child: Text('$count',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      isSelected ? Colors.white : color)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: AppTheme.backgroundLight,
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.85,
+              maxChildSize: 0.95,
+              minChildSize: 0.5,
+              expand: false,
+              builder: (context, scrollController) => Container(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
                       ),
-                      child: TextButton.icon(
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.accentGradient,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: AppTheme.buttonShadow,
+                          ),
+                          child: const Icon(Icons.tune,
+                              color: Colors.white, size: 26),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Text('Filter & Urutkan',
+                              style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.textPrimary)),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: [
+                              AppTheme.primaryCoral.withValues(alpha: 0.15),
+                              AppTheme.primaryOrange
+                                  .withValues(alpha: 0.15)
+                            ]),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: AppTheme.primaryCoral
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: TextButton.icon(
+                            onPressed: () {
+                              tempMinCaloriesCtrl.clear();
+                              tempMaxCaloriesCtrl.clear();
+                              tempIngredientsCtrl.clear();
+                              setSheetState(() {
+                                tempCategoryId = null;
+                                tempCategoryName = null;
+                                tempTagId = null;
+                                tempTagName = null;
+                                tempSortBy = 'popular';
+                                tempFollowedOnly = false;
+                              });
+                            },
+                            icon: const Icon(Icons.refresh_rounded,
+                                size: 18, color: AppTheme.primaryCoral),
+                            label: const Text('Reset',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.primaryCoral)),
+                            style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: ListView(
+                        controller: scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          // Sort Section
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryTeal.withValues(alpha: 0.08),
+                                AppTheme.primaryTeal.withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryTeal
+                                      .withValues(alpha: 0.2),
+                                  width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.primaryTeal
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: const Icon(Icons.sort_rounded,
+                                          color: AppTheme.primaryTeal,
+                                          size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text('Urutkan Berdasarkan',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary)),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Wrap(
+                                    spacing: 10,
+                                    runSpacing: 10,
+                                    children: [
+                                      buildLocalSortChip('Terpopuler',
+                                          'popular', Icons.trending_up),
+                                      buildLocalSortChip(
+                                          'Terbaru', 'newest', Icons.fiber_new),
+                                      buildLocalSortChip('Rating Tertinggi',
+                                          'rating', Icons.star),
+                                    ]),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Calories Range Filter
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryTeal.withValues(alpha: 0.08),
+                                AppTheme.primaryTeal.withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryTeal
+                                      .withValues(alpha: 0.2),
+                                  width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.primaryTeal
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: const Icon(
+                                          Icons.local_fire_department_rounded,
+                                          color: AppTheme.primaryTeal,
+                                          size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text('Kalori (kkal)',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary)),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildCaloriesInput(
+                                        controller: tempMinCaloriesCtrl,
+                                        hint: 'Min (cth: 100)',
+                                        label: 'Minimum',
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10),
+                                      child: Text('—',
+                                          style: TextStyle(
+                                              color: Colors.grey.shade500,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                    Expanded(
+                                      child: _buildCaloriesInput(
+                                        controller: tempMaxCaloriesCtrl,
+                                        hint: 'Max (cth: 500)',
+                                        label: 'Maksimum',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Ingredients Filter
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryCoral.withValues(alpha: 0.08),
+                                AppTheme.primaryCoral.withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryCoral
+                                      .withValues(alpha: 0.2),
+                                  width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.primaryCoral
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: const Icon(Icons.egg_alt_rounded,
+                                          color: AppTheme.primaryCoral,
+                                          size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text('Bahan-Bahan',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary)),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                    'Pisahkan dengan koma, cth: ayam, bawang',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                        color: AppTheme.primaryCoral
+                                            .withValues(alpha: 0.3),
+                                        width: 1.5),
+                                  ),
+                                  child: TextField(
+                                    controller: tempIngredientsCtrl,
+                                    decoration: InputDecoration(
+                                      hintText: 'cth: ayam, bawang, tomat',
+                                      hintStyle: TextStyle(
+                                          color: Colors.grey.shade400,
+                                          fontSize: 14),
+                                      border: InputBorder.none,
+                                      prefixIcon: const Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: Icon(Icons.search_rounded,
+                                            color: AppTheme.primaryCoral,
+                                            size: 20),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 14),
+                                    ),
+                                    style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Followed Users Filter
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryOrange
+                                    .withValues(alpha: 0.08),
+                                AppTheme.primaryOrange
+                                    .withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryOrange
+                                      .withValues(alpha: 0.3),
+                                  width: 1.5),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                      color: AppTheme.primaryOrange
+                                          .withValues(alpha: 0.2),
+                                      borderRadius:
+                                          BorderRadius.circular(12)),
+                                  child: const Icon(Icons.people_rounded,
+                                      color: AppTheme.primaryOrange,
+                                      size: 24),
+                                ),
+                                const SizedBox(width: 14),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Dari yang Diikuti',
+                                          style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppTheme.textPrimary)),
+                                      SizedBox(height: 2),
+                                      Text(
+                                          'Hanya tampilkan resep dari pengguna yang Anda ikuti',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppTheme.textSecondary)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Transform.scale(
+                                  scale: 0.95,
+                                  child: Switch(
+                                    value: tempFollowedOnly,
+                                    onChanged: (value) => setSheetState(
+                                        () => tempFollowedOnly = value),
+                                    activeThumbColor: AppTheme.primaryOrange,
+                                    activeTrackColor: AppTheme.primaryOrange
+                                        .withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Categories Section
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryCoral.withValues(alpha: 0.08),
+                                AppTheme.primaryCoral.withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryCoral
+                                      .withValues(alpha: 0.2),
+                                  width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.primaryCoral
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: const Icon(
+                                          Icons.category_rounded,
+                                          color: AppTheme.primaryCoral,
+                                          size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text('Kategori',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary)),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _categories.map((cat) {
+                                    final isSelected =
+                                        tempCategoryId == cat['id'];
+                                    return buildLocalFilterChip(
+                                      label: cat['name'] ?? '',
+                                      isSelected: isSelected,
+                                      icon: Icons.restaurant_menu_rounded,
+                                      color: AppTheme.primaryCoral,
+                                      onTap: () {
+                                        setSheetState(() {
+                                          if (isSelected) {
+                                            tempCategoryId = null;
+                                            tempCategoryName = null;
+                                          } else {
+                                            tempCategoryId = cat['id'];
+                                            tempCategoryName = cat['name'];
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Tags Section
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                AppTheme.primaryYellow
+                                    .withValues(alpha: 0.08),
+                                AppTheme.primaryYellow
+                                    .withValues(alpha: 0.04)
+                              ]),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppTheme.primaryYellow
+                                      .withValues(alpha: 0.3),
+                                  width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                          color: AppTheme.primaryYellow
+                                              .withValues(alpha: 0.3),
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      child: const Icon(
+                                          Icons.local_offer_rounded,
+                                          color: AppTheme.primaryDark,
+                                          size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text('Tags Populer',
+                                        style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppTheme.textPrimary)),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _popularTags.map((tag) {
+                                    final isSelected =
+                                        tempTagId == tag['id'];
+                                    return buildLocalFilterChip(
+                                      label: '#${tag['name'] ?? ''}',
+                                      count: tag['usage_count'],
+                                      isSelected: isSelected,
+                                      icon: Icons.tag_rounded,
+                                      color: AppTheme.primaryYellow,
+                                      onTap: () {
+                                        setSheetState(() {
+                                          if (isSelected) {
+                                            tempTagId = null;
+                                            tempTagName = null;
+                                          } else {
+                                            tempTagId = tag['id'];
+                                            tempTagName = tag['name'];
+                                          }
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: AppTheme.primaryButtonDecoration,
+                      child: ElevatedButton.icon(
                         onPressed: () {
+                          final minText = tempMinCaloriesCtrl.text.trim();
+                          final maxText = tempMaxCaloriesCtrl.text.trim();
+                          final ingredientsText =
+                              tempIngredientsCtrl.text.trim();
+
+                          // Commit all temp values to parent state at once
                           setState(() {
-                            _selectedCategoryId = null;
-                            _selectedCategoryName = null;
-                            _selectedTagId = null;
-                            _selectedTagName = null;
-                            _sortBy = 'popular';
-                            _followedUsersOnly = false;
+                            _selectedCategoryId = tempCategoryId;
+                            _selectedCategoryName = tempCategoryName;
+                            _selectedTagId = tempTagId;
+                            _selectedTagName = tempTagName;
+                            _sortBy = tempSortBy;
+                            _followedUsersOnly = tempFollowedOnly;
+                            _minCalories = minText.isNotEmpty
+                                ? int.tryParse(minText)
+                                : null;
+                            _maxCalories = maxText.isNotEmpty
+                                ? int.tryParse(maxText)
+                                : null;
+                            _ingredientKeywords = ingredientsText.isNotEmpty
+                                ? ingredientsText
+                                    .split(',')
+                                    .map((e) => e.trim())
+                                    .where((e) => e.isNotEmpty)
+                                    .toList()
+                                : [];
+                            // Sync main controllers with committed values
+                            _minCaloriesController.text =
+                                _minCalories?.toString() ?? '';
+                            _maxCaloriesController.text =
+                                _maxCalories?.toString() ?? '';
+                            _ingredientsController.text =
+                                _ingredientKeywords.join(', ');
                           });
                           Navigator.pop(context);
                           _searchRecipes(_lastSearchQuery);
                         },
-                        icon: const Icon(Icons.refresh_rounded,
-                            size: 18, color: AppTheme.primaryCoral),
-                        label: const Text('Reset',
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16)),
+                        ),
+                        icon: const Icon(Icons.search_rounded,
+                            color: Colors.white, size: 24),
+                        label: const Text('Terapkan Filter',
                             style: TextStyle(
+                                fontSize: 17,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryCoral)),
-                        style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10)),
+                                color: Colors.white)),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: ListView(
-                    controller: scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    children: [
-                      // Sort Section
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            AppTheme.primaryTeal.withValues(alpha: 0.08),
-                            AppTheme.primaryTeal.withValues(alpha: 0.04)
-                          ]),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                              color:
-                                  AppTheme.primaryTeal.withValues(alpha: 0.2),
-                              width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                      color: AppTheme.primaryTeal
-                                          .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Icon(Icons.sort_rounded,
-                                      color: AppTheme.primaryTeal, size: 20),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text('Urutkan Berdasarkan',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary)),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(spacing: 10, runSpacing: 10, children: [
-                              _buildSortChip(
-                                  'Terpopuler', 'popular', Icons.trending_up),
-                              _buildSortChip(
-                                  'Terbaru', 'newest', Icons.fiber_new),
-                              _buildSortChip(
-                                  'Rating Tertinggi', 'rating', Icons.star),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Followed Users Filter
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            AppTheme.primaryOrange.withValues(alpha: 0.08),
-                            AppTheme.primaryOrange.withValues(alpha: 0.04)
-                          ]),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                              color:
-                                  AppTheme.primaryOrange.withValues(alpha: 0.3),
-                              width: 1.5),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: AppTheme.primaryOrange
-                                      .withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.people_rounded,
-                                  color: AppTheme.primaryOrange, size: 24),
-                            ),
-                            const SizedBox(width: 14),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Dari yang Diikuti',
-                                      style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.textPrimary)),
-                                  SizedBox(height: 2),
-                                  Text(
-                                      'Hanya tampilkan resep dari pengguna yang Anda ikuti',
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: AppTheme.textSecondary)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Transform.scale(
-                              scale: 0.95,
-                              child: Switch(
-                                value: _followedUsersOnly,
-                                onChanged: (value) =>
-                                    setState(() => _followedUsersOnly = value),
-                                activeThumbColor: AppTheme.primaryOrange,
-                                activeTrackColor: AppTheme.primaryOrange
-                                    .withValues(alpha: 0.4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Categories Section
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            AppTheme.primaryCoral.withValues(alpha: 0.08),
-                            AppTheme.primaryCoral.withValues(alpha: 0.04)
-                          ]),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                              color:
-                                  AppTheme.primaryCoral.withValues(alpha: 0.2),
-                              width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                      color: AppTheme.primaryCoral
-                                          .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Icon(Icons.category_rounded,
-                                      color: AppTheme.primaryCoral, size: 20),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text('Kategori',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary)),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _categories.map((cat) {
-                                final isSelected =
-                                    _selectedCategoryId == cat['id'];
-                                return _buildFilterChip(
-                                  label: cat['name'] ?? '',
-                                  isSelected: isSelected,
-                                  icon: Icons.restaurant_menu_rounded,
-                                  color: AppTheme.primaryCoral,
-                                  onTap: () {
-                                    setState(() {
-                                      if (isSelected) {
-                                        _selectedCategoryId = null;
-                                        _selectedCategoryName = null;
-                                      } else {
-                                        _selectedCategoryId = cat['id'];
-                                        _selectedCategoryName = cat['name'];
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Tags Section
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [
-                            AppTheme.primaryYellow.withValues(alpha: 0.08),
-                            AppTheme.primaryYellow.withValues(alpha: 0.04)
-                          ]),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                              color:
-                                  AppTheme.primaryYellow.withValues(alpha: 0.3),
-                              width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                      color: AppTheme.primaryYellow
-                                          .withValues(alpha: 0.3),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Icon(Icons.local_offer_rounded,
-                                      color: AppTheme.primaryDark, size: 20),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text('Tags Populer',
-                                    style: TextStyle(
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary)),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _popularTags.map((tag) {
-                                final isSelected = _selectedTagId == tag['id'];
-                                return _buildFilterChip(
-                                  label: '#${tag['name'] ?? ''}',
-                                  count: tag['usage_count'],
-                                  isSelected: isSelected,
-                                  icon: Icons.tag_rounded,
-                                  color: AppTheme.primaryYellow,
-                                  onTap: () {
-                                    setState(() {
-                                      if (isSelected) {
-                                        _selectedTagId = null;
-                                        _selectedTagName = null;
-                                      } else {
-                                        _selectedTagId = tag['id'];
-                                        _selectedTagName = tag['name'];
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  height: 56,
-                  decoration: AppTheme.primaryButtonDecoration,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _searchRecipes(_lastSearchQuery);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                    ),
-                    icon: const Icon(Icons.search_rounded,
-                        color: Colors.white, size: 24),
-                    label: const Text('Terapkan Filter',
-                        style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white)),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSortChip(String label, String value, IconData icon) {
-    final isSelected = _sortBy == value;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          if (!isSelected) setState(() => _sortBy = value);
+          );
         },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            gradient: isSelected ? AppTheme.tealGradient : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: isSelected
-                    ? AppTheme.primaryTeal
-                    : Colors.grey.shade300,
-                width: isSelected ? 2 : 1.5),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                        color: AppTheme.primaryTeal.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4))
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon,
-                  size: 18,
-                  color: isSelected ? Colors.white : AppTheme.textPrimary),
-              const SizedBox(width: 8),
-              Text(label,
-                  style: TextStyle(
-                      color:
-                          isSelected ? Colors.white : AppTheme.textPrimary,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w600,
-                      fontSize: 14)),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildFilterChip({
+  Widget _buildCaloriesInput({
+    required TextEditingController controller,
+    required String hint,
     required String label,
-    int? count,
-    required bool isSelected,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600)),
+        const SizedBox(height: 6),
+        Container(
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? LinearGradient(
-                    colors: [color, color.withValues(alpha: 0.8)])
-                : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: isSelected ? color : Colors.grey.shade300,
-                width: isSelected ? 2 : 1.5),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                        color: color.withValues(alpha: 0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 3))
-                  ]
-                : null,
+                color: AppTheme.primaryTeal.withValues(alpha: 0.3),
+                width: 1.5),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon,
-                  size: 16, color: isSelected ? Colors.white : color),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : AppTheme.textPrimary,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w600,
-                      fontSize: 13)),
-              if (count != null) ...[
-                const SizedBox(width: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.3)
-                          : color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8)),
-                  child: Text('$count',
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : color)),
-                ),
-              ],
-            ],
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle:
+                  TextStyle(color: Colors.grey.shade400, fontSize: 13),
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              suffixText: 'kkal',
+              suffixStyle: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500),
+            ),
+            style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -693,6 +1015,8 @@ class _SearchingScreenState extends State<SearchingScreen>
     if (_selectedTagId != null) activeFilters++;
     if (_followedUsersOnly) activeFilters++;
     if (_sortBy != 'popular') activeFilters++;
+    if (_minCalories != null || _maxCalories != null) activeFilters++;
+    if (_ingredientKeywords.isNotEmpty) activeFilters++;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -793,8 +1117,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                  color:
-                                      Colors.red.withValues(alpha: 0.5),
+                                  color: Colors.red.withValues(alpha: 0.5),
                                   blurRadius: 8,
                                   spreadRadius: 1)
                             ],
@@ -846,6 +1169,36 @@ class _SearchingScreenState extends State<SearchingScreen>
                       });
                       _searchRecipes(_lastSearchQuery);
                     }),
+                  if (_minCalories != null || _maxCalories != null)
+                    _buildActiveFilterChip(
+                        _minCalories != null && _maxCalories != null
+                            ? '$_minCalories–$_maxCalories kkal'
+                            : _minCalories != null
+                                ? '≥$_minCalories kkal'
+                                : '≤$_maxCalories kkal',
+                        Icons.local_fire_department_rounded,
+                        AppTheme.primaryTeal, () {
+                      setState(() {
+                        _minCalories = null;
+                        _maxCalories = null;
+                        _minCaloriesController.clear();
+                        _maxCaloriesController.clear();
+                      });
+                      _searchRecipes(_lastSearchQuery);
+                    }),
+                  if (_ingredientKeywords.isNotEmpty)
+                    _buildActiveFilterChip(
+                        _ingredientKeywords.length == 1
+                            ? _ingredientKeywords.first
+                            : '${_ingredientKeywords.length} bahan',
+                        Icons.egg_alt_rounded,
+                        AppTheme.primaryCoral, () {
+                      setState(() {
+                        _ingredientKeywords = [];
+                        _ingredientsController.clear();
+                      });
+                      _searchRecipes(_lastSearchQuery);
+                    }),
                   if (_followedUsersOnly)
                     _buildActiveFilterChip('Dari yang diikuti',
                         Icons.people_rounded, AppTheme.primaryOrange, () {
@@ -854,9 +1207,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                     }),
                   if (_sortBy != 'popular')
                     _buildActiveFilterChip(
-                        _sortBy == 'newest'
-                            ? 'Terbaru'
-                            : 'Rating Tertinggi',
+                        _sortBy == 'newest' ? 'Terbaru' : 'Rating Tertinggi',
                         Icons.sort_rounded,
                         AppTheme.primaryTeal, () {
                       setState(() => _sortBy = 'popular');
@@ -898,19 +1249,22 @@ class _SearchingScreenState extends State<SearchingScreen>
                         child: SlideTransition(
                           position: _slideAnimation,
                           child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                            padding:
+                                const EdgeInsets.fromLTRB(20, 0, 20, 100),
                             physics: const BouncingScrollPhysics(),
                             itemCount: _searchResults.length,
                             itemBuilder: (context, index) {
                               final recipe = _searchResults[index];
                               return RecipeCard(
                                 recipe: recipe,
-                                rating: _recipeRatings[recipe['id']],
+                                rating: _recipeRatings[
+                                    recipe['id'].toString()],
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (context) => DetailScreen(
-                                          recipeId: recipe['id'].toString())),
+                                          recipeId:
+                                              recipe['id'].toString())),
                                 ),
                               );
                             },
@@ -936,8 +1290,7 @@ class _SearchingScreenState extends State<SearchingScreen>
           color.withValues(alpha: 0.1)
         ]),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: color.withValues(alpha: 0.4), width: 2),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
         boxShadow: [
           BoxShadow(
               color: color.withValues(alpha: 0.15),
@@ -1032,8 +1385,8 @@ class _SearchingScreenState extends State<SearchingScreen>
               _lastSearchQuery.isNotEmpty || activeFilters > 0
                   ? 'Coba kata kunci lain atau ubah filter pencarian'
                   : 'Temukan ribuan resep lezat\ndengan mudah dan cepat',
-              style: AppTheme.bodyLarge.copyWith(
-                  color: AppTheme.textSecondary, height: 1.6),
+              style: AppTheme.bodyLarge
+                  .copyWith(color: AppTheme.textSecondary, height: 1.6),
               textAlign: TextAlign.center,
             ),
             if (activeFilters > 0) ...[
@@ -1049,6 +1402,12 @@ class _SearchingScreenState extends State<SearchingScreen>
                       _selectedTagName = null;
                       _sortBy = 'popular';
                       _followedUsersOnly = false;
+                      _minCalories = null;
+                      _maxCalories = null;
+                      _ingredientKeywords = [];
+                      _minCaloriesController.clear();
+                      _maxCaloriesController.clear();
+                      _ingredientsController.clear();
                     });
                     _searchRecipes(_lastSearchQuery);
                   },

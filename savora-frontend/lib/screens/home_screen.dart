@@ -35,14 +35,31 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<Offset> _slideAnimation;
 
   final List<Map<String, String>> _dailyQuotes = [
-    {'quote': 'Masakan terbaik dibuat dengan cinta ❤', 'author': 'Chef Julia Child'},
-    {'quote': 'Memasak adalah seni yang bisa dinikmati semua orang 🎨', 'author': 'Gordon Ramsay'},
-    {'quote': 'Resep adalah cerita yang berakhir dengan makanan lezat 📖', 'author': 'Pat Conroy'},
-    {'quote': 'Kebahagiaan dimulai dari dapur 🍳', 'author': 'Traditional Wisdom'},
-    {'quote': 'Setiap chef adalah seniman dengan palet rasa 🎭', 'author': 'Anonymous'},
-    {'quote': 'Masak dengan hati, sajikan dengan senyuman 😊', 'author': 'Savora Community'},
-  ];
-
+  {
+    'quote': 'People who love to eat are always the best people.',
+    'author': 'Julia Child'
+  },
+  {
+    'quote': 'Cooking is like love. It should be entered into with abandon or not at all.',
+    'author': 'Harriet Van Horne'
+  },
+  {
+    'quote': 'I think food is, actually, very beautiful in itself.',
+    'author': 'Delia Smith'
+  },
+  {
+    'quote': 'This is my invariable advice to people: Learn how to cook—try new recipes, learn from your mistakes, be fearless and above all have fun!',
+    'author': 'Julia Child'
+  },
+  {
+    'quote': 'Cooking is one of the strongest ceremonies for life.',
+    'author': 'Laura Esquivel'
+  },
+  {
+    'quote': 'Food is everything we are. It’s an extension of nationalist feeling, ethnic feeling, your personal history.',
+    'author': 'Anthony Bourdain'
+  },
+];
   @override
   void initState() {
     super.initState();

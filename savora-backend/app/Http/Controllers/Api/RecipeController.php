@@ -31,6 +31,10 @@ class RecipeController extends Controller
             $filters = [];
             $options = [];
             $searchQuery = trim((string) $request->input('search', ''));
+            $ingredientKeywords = $this->parseIngredientKeywords($request->input('ingredients'));
+            $minCalories = $request->input('min_calories');
+            $maxCalories = $request->input('max_calories');
+            $localMaxCalories = null;
 
             // Status filter (approved, pending, rejected, or all)
             $status = $request->input('status');
@@ -53,6 +57,28 @@ class RecipeController extends Controller
             // Difficulty filter
             if ($request->filled('difficulty')) {
                 $filters['difficulty'] = $request->input('difficulty');
+            }
+
+            // Calories range filter
+            if ($minCalories !== null && $minCalories !== '') {
+                $filters['calories'] = [
+                    'operator' => 'gte',
+                    'value' => (int) $minCalories,
+                ];
+            }
+
+            if ($maxCalories !== null && $maxCalories !== '') {
+                $existingCaloriesFilter = $filters['calories'] ?? null;
+                if (is_array($existingCaloriesFilter)) {
+                    // Supabase filter builder supports one operator per key.
+                    // Keep DB filter on min, then enforce max in PHP.
+                    $localMaxCalories = (int) $maxCalories;
+                } else {
+                    $filters['calories'] = [
+                        'operator' => 'lte',
+                        'value' => (int) $maxCalories,
+                    ];
+                }
             }
 
             // Tag filter (resolve recipe ids first to avoid join-filter mismatch)
@@ -128,6 +154,28 @@ class RecipeController extends Controller
                 }));
 
                 $recipes = array_slice($recipes, $offset, $limit);
+            }
+
+            if ($localMaxCalories !== null) {
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($localMaxCalories) {
+                    $calories = $recipe['calories'] ?? null;
+                    if ($calories === null || $calories === '') {
+                        return false;
+                    }
+                    return (int) $calories <= $localMaxCalories;
+                }));
+            }
+
+            if (!empty($ingredientKeywords)) {
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($ingredientKeywords) {
+                    $haystack = strtolower($this->flattenIngredientsToText($recipe['ingredients'] ?? []));
+                    foreach ($ingredientKeywords as $keyword) {
+                        if (!str_contains($haystack, strtolower($keyword))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }));
             }
 
             // Add rating info for each recipe (non-fatal if ratings table/view is unavailable)
@@ -567,10 +615,15 @@ class RecipeController extends Controller
     public function search(Request $request)
     {
         try {
-            $query = $request->input('q', '');
+            $query = trim((string) $request->input('q', ''));
             $categoryId = $request->input('category_id');
             $difficulty = $request->input('difficulty');
-            $limit = $request->input('limit', 20);
+            $minCalories = $request->input('min_calories');
+            $maxCalories = $request->input('max_calories');
+            $ingredientKeywords = $this->parseIngredientKeywords($request->input('ingredients'));
+            $limit = (int) $request->input('limit', 20);
+            $offset = (int) $request->input('offset', 0);
+            $localMaxCalories = null;
 
             $filters = ['status' => 'approved'];
 
@@ -582,19 +635,61 @@ class RecipeController extends Controller
                 $filters['difficulty'] = $difficulty;
             }
 
+            if ($minCalories !== null && $minCalories !== '') {
+                $filters['calories'] = [
+                    'operator' => 'gte',
+                    'value' => (int) $minCalories,
+                ];
+            }
+
+            if ($maxCalories !== null && $maxCalories !== '') {
+                if (isset($filters['calories'])) {
+                    $localMaxCalories = (int) $maxCalories;
+                } else {
+                    $filters['calories'] = [
+                        'operator' => 'lte',
+                        'value' => (int) $maxCalories,
+                    ];
+                }
+            }
+
             $recipes = $this->supabase->select('recipes',
                 ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
                 $filters,
-                ['limit' => $limit, 'order' => 'views_count.desc']
+                ['limit' => $limit, 'offset' => $offset, 'order' => 'views_count.desc']
             );
 
             // Filter by search query if provided
-            if (!empty($query)) {
-                $recipes = array_filter($recipes, function ($recipe) use ($query) {
-                    return stripos($recipe['title'], $query) !== false ||
-                           stripos($recipe['description'], $query) !== false;
+            if ($query !== '') {
+                $needle = strtolower($query);
+                $recipes = array_filter($recipes, function ($recipe) use ($needle) {
+                    $title = strtolower((string) ($recipe['title'] ?? ''));
+                    $description = strtolower((string) ($recipe['description'] ?? ''));
+                    return str_contains($title, $needle) || str_contains($description, $needle);
                 });
                 $recipes = array_values($recipes);
+            }
+
+            if ($localMaxCalories !== null) {
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($localMaxCalories) {
+                    $calories = $recipe['calories'] ?? null;
+                    if ($calories === null || $calories === '') {
+                        return false;
+                    }
+                    return (int) $calories <= $localMaxCalories;
+                }));
+            }
+
+            if (!empty($ingredientKeywords)) {
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($ingredientKeywords) {
+                    $haystack = strtolower($this->flattenIngredientsToText($recipe['ingredients'] ?? []));
+                    foreach ($ingredientKeywords as $keyword) {
+                        if (!str_contains($haystack, strtolower($keyword))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }));
             }
 
             // Add rating info
@@ -618,6 +713,17 @@ class RecipeController extends Controller
                 'success' => true,
                 'data' => $recipes,
                 'query' => $query,
+                'filters' => [
+                    'category_id' => $categoryId,
+                    'difficulty' => $difficulty,
+                    'min_calories' => $minCalories,
+                    'max_calories' => $maxCalories,
+                    'ingredients' => $ingredientKeywords,
+                ],
+                'pagination' => [
+                    'limit' => $limit,
+                    'offset' => $offset,
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -625,6 +731,47 @@ class RecipeController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function parseIngredientKeywords($rawIngredients): array
+    {
+        if ($rawIngredients === null || $rawIngredients === '') {
+            return [];
+        }
+
+        if (is_array($rawIngredients)) {
+            $ingredients = $rawIngredients;
+        } else {
+            $ingredients = explode(',', (string) $rawIngredients);
+        }
+
+        return array_values(array_filter(array_map(function ($item) {
+            return trim((string) $item);
+        }, $ingredients), fn ($item) => $item !== ''));
+    }
+
+    private function flattenIngredientsToText($ingredients): string
+    {
+        if (is_string($ingredients)) {
+            $decoded = json_decode($ingredients, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $ingredients = $decoded;
+            } else {
+                return $ingredients;
+            }
+        }
+
+        if (is_array($ingredients)) {
+            return implode(' ', array_map(function ($item) {
+                if (is_array($item)) {
+                    return implode(' ', array_map(fn ($nested) => (string) $nested, $item));
+                }
+
+                return (string) $item;
+            }, $ingredients));
+        }
+
+        return (string) $ingredients;
     }
 
     private function normalizeArrayInput(Request $request, string $field, bool $castToInt = false): void
@@ -668,7 +815,6 @@ class RecipeController extends Controller
 
         $request->merge([$field => $parsed]);
     }
-
 
     /**
      * Increment recipe views explicitly
@@ -743,5 +889,4 @@ class RecipeController extends Controller
             ], 500);
         }
     }
-
 }

@@ -59,8 +59,51 @@ class RecipeClient {
 
   /// Search recipes
   static Future<List<Map<String, dynamic>>> searchRecipes(String query) async {
+    return searchRecipesAdvanced(query: query);
+  }
+
+  /// Advanced search recipes (feature 3)
+  static Future<List<Map<String, dynamic>>> searchRecipesAdvanced({
+    String query = '',
+    int? minCalories,
+    int? maxCalories,
+    List<String> ingredients = const [],
+    int? categoryId,
+    String? difficulty,
+    int limit = 20,
+    int offset = 0,
+  }) async {
     try {
-      final response = await ApiService.get('/recipes/search?q=$query');
+      final params = <String>['limit=$limit', 'offset=$offset'];
+
+      if (query.trim().isNotEmpty) {
+        params.add('q=${Uri.encodeComponent(query.trim())}');
+      }
+      if (minCalories != null) {
+        params.add('min_calories=$minCalories');
+      }
+      if (maxCalories != null) {
+        params.add('max_calories=$maxCalories');
+      }
+      if (ingredients.isNotEmpty) {
+        final cleanIngredients = ingredients
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        if (cleanIngredients.isNotEmpty) {
+          params.add(
+              'ingredients=${Uri.encodeComponent(cleanIngredients.join(','))}');
+        }
+      }
+      if (categoryId != null) {
+        params.add('category_id=$categoryId');
+      }
+      if (difficulty != null && difficulty.trim().isNotEmpty) {
+        params.add('difficulty=${Uri.encodeComponent(difficulty.trim())}');
+      }
+
+      final endpoint = '/recipes/search?${params.join('&')}';
+      final response = await ApiService.get(endpoint);
 
       if (response['success'] == true) {
         final recipes = response['data'] as List;

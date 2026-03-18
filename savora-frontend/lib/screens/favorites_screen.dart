@@ -19,31 +19,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   List<Map<String, dynamic>> _collections = [];
   Map<String, dynamic>? _selectedCollection;
   List<Map<String, dynamic>> _collectionRecipes = [];
+  final Map<String, List<String>> _collectionPreviews = {};
   bool _isLoading = true;
   String? _userAvatarUrl;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  final List<IconData> _collectionIcons = [
-    Icons.restaurant_menu_rounded,
-    Icons.favorite_rounded,
-    Icons.local_fire_department_rounded,
-    Icons.cake_rounded,
-    Icons.coffee_rounded,
-    Icons.lunch_dining_rounded,
-    Icons.fastfood_rounded,
-    Icons.breakfast_dining_rounded,
-  ];
-
-  final List<List<Color>> _collectionGradients = [
-    [Color(0xFFE76F51), Color(0xFFF4A261)],
-    [Color(0xFF2A9D8F), Color(0xFF3DB9A9)],
-    [Color(0xFFF4A261), Color(0xFFE9C46A)],
-    [Color(0xFFE76F51), Color(0xFFE9C46A)],
-    [Color(0xFF264653), Color(0xFF2A9D8F)],
-  ];
 
   @override
   void initState() {
@@ -98,6 +80,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _collections = collections;
         _isLoading = false;
       });
+
+      _loadAllCollectionPreviews(collections);
       _animationController.forward();
     } catch (e) {
       if (!mounted) return;
@@ -106,11 +90,37 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     }
   }
 
+  Future<void> _loadAllCollectionPreviews(
+      List<Map<String, dynamic>> collections) async {
+    for (final collection in collections) {
+      final id = collection['id']?.toString();
+      if (id == null) continue;
+      try {
+        final recipes = await FavoriteClient.getBoardRecipes(id);
+        if (!mounted) return;
+        final images = <String>[];
+        for (final boardRecipe in recipes) {
+          if (images.length >= 4) break;
+          final recipe =
+              (boardRecipe['recipes'] as Map<String, dynamic>?) ?? boardRecipe;
+          final url = recipe['image_url'];
+          if (url != null && url.toString().isNotEmpty) {
+            images.add(url.toString());
+          }
+        }
+        if (mounted) {
+          setState(() => _collectionPreviews[id] = images);
+        }
+      } catch (e) {
+        debugPrint('Error loading preview for collection $id: $e');
+      }
+    }
+  }
+
   Future<void> _loadCollectionRecipes(String collectionId) async {
     setState(() => _isLoading = true);
     try {
       final recipes = await FavoriteClient.getBoardRecipes(collectionId);
-
       if (!mounted) return;
       setState(() {
         _collectionRecipes = recipes;
@@ -147,8 +157,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-                'Apakah Anda yakin ingin menghapus koleksi "${collection['name']}"?'),
+            Text('Apakah Anda yakin ingin menghapus koleksi "${collection['name']}"?'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -219,8 +228,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               decoration: BoxDecoration(
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12)),
-              child:
-                  const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
+              child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             const Text('Edit Koleksi', style: AppTheme.headingMedium),
@@ -259,8 +267,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style:
-                TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
             child: const Text('Batal'),
           ),
           Container(
@@ -269,8 +276,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                          content: Text('Nama koleksi harus diisi')));
+                      const SnackBar(content: Text('Nama koleksi harus diisi')));
                   return;
                 }
                 try {
@@ -283,8 +289,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   Navigator.pop(dialogContext);
                   if (!mounted) return;
                   if (success) {
-                    _showSnackBar('Koleksi berhasil diperbarui!',
-                        isError: false);
+                    _showSnackBar('Koleksi berhasil diperbarui!', isError: false);
                     _loadCollections();
                   } else {
                     _showSnackBar('Gagal memperbarui koleksi', isError: true);
@@ -301,9 +306,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     );
   }
 
-  Future<void> _removeRecipeFromCollection(
-      Map<String, dynamic> boardRecipe) async {
-    final recipe = boardRecipe['recipe'] ?? boardRecipe;
+  Future<void> _removeRecipeFromCollection(Map<String, dynamic> boardRecipe) async {
+    final recipe = boardRecipe['recipes'] ?? boardRecipe;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -359,8 +363,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor:
-            isError ? Colors.red.shade600 : Colors.green.shade600,
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -383,8 +386,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               decoration: BoxDecoration(
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12)),
-              child:
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             const Text('Koleksi Baru', style: AppTheme.headingMedium),
@@ -423,8 +425,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style:
-                TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
             child: const Text('Batal'),
           ),
           Container(
@@ -433,8 +434,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                          content: Text('Nama koleksi harus diisi')));
+                      const SnackBar(content: Text('Nama koleksi harus diisi')));
                   return;
                 }
                 try {
@@ -500,8 +500,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   onTap: _showCreateCollectionDialog,
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -546,114 +546,100 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 
   Widget _buildCollectionsView() {
-    if (_collections.isEmpty) {
-      return _buildEmptyCollectionsState();
-    }
+    if (_collections.isEmpty) return _buildEmptyCollectionsState();
 
     return FadeTransition(
       opacity: _fadeAnimation,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
+          // ── TRANSPARENT HEADER ──
           SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                boxShadow: AppTheme.primaryShadow,
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.5),
-                                    width: 2),
-                              ),
-                              child: const Icon(
-                                  Icons.collections_bookmark_rounded,
-                                  color: Colors.white,
-                                  size: 32),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryCoral.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                  color: AppTheme.primaryCoral.withValues(alpha: 0.25),
+                                  width: 1.5),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Koleksi Resep',
-                                      style: AppTheme.headingLarge),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Kumpulan resep favorit Anda',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color:
-                                          Colors.white.withValues(alpha: 0.85),
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            child: const Icon(Icons.collections_bookmark_rounded,
+                                color: AppTheme.primaryCoral, size: 28),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Koleksi Resep',
+                                  style: AppTheme.headingMedium
+                                      .copyWith(color: AppTheme.textPrimary),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Kumpulan resep favorit Anda',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryCoral.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: AppTheme.primaryCoral.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.folder_special_rounded,
+                                color: AppTheme.primaryCoral, size: 16),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${_collections.length} Koleksi',
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.primaryCoral,
+                                  fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.folder_special_rounded,
-                                  color: Colors.white, size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${_collections.length} Koleksi',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildEnhancedCollectionCard(
-                        _collections[index], index),
-                  );
-                },
+                (context, index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildBoardCard(_collections[index], index),
+                ),
                 childCount: _collections.length,
               ),
             ),
@@ -664,12 +650,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     );
   }
 
-  Widget _buildEnhancedCollectionCard(
-      Map<String, dynamic> collection, int index) {
+  Widget _buildBoardCard(Map<String, dynamic> collection, int index) {
     final recipeCount = collection['recipe_count'] ?? 0;
     final description = collection['description'];
-    final gradient = _collectionGradients[index % _collectionGradients.length];
-    final icon = _collectionIcons[index % _collectionIcons.length];
+    final collectionId = collection['id']?.toString() ?? '';
+    final previews = _collectionPreviews[collectionId] ?? [];
 
     return GestureDetector(
       onTap: () {
@@ -680,165 +665,142 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: gradient[0].withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
-              Positioned(
-                right: -30,
-                top: -30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        gradient[0].withValues(alpha: 0.08),
-                        gradient[1].withValues(alpha: 0.04),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              Positioned(
-                left: -20,
-                bottom: -20,
-                child: Container(
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        gradient[1].withValues(alpha: 0.06),
-                        gradient[0].withValues(alpha: 0.02),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
+                  child: _buildPhotoGrid(previews),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: gradient,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: gradient[0].withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                    Text(
+                      collection['name'] ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.3,
                       ),
-                      child: Icon(icon, color: Colors.white, size: 34),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 4),
+                    if (description != null &&
+                        description.toString().trim().isNotEmpty)
+                      Text(
+                        description,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                            height: 1.3),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        'Koleksi resep spesial',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade400,
+                            fontStyle: FontStyle.italic),
+                      ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryCoral.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          Icon(Icons.restaurant_rounded,
+                              size: 13, color: AppTheme.primaryCoral),
+                          const SizedBox(width: 4),
                           Text(
-                            collection['name'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                              letterSpacing: -0.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          if (description != null &&
-                              description.toString().trim().isNotEmpty)
-                            Text(
-                              description,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppTheme.textSecondary,
-                                height: 1.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          else
-                            Text(
-                              'Koleksi resep spesial',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade400,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  gradient[0].withValues(alpha: 0.15),
-                                  gradient[1].withValues(alpha: 0.1),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  color: gradient[0].withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.restaurant_rounded,
-                                    size: 14, color: gradient[0]),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '$recipeCount Resep',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: gradient[0],
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            '$recipeCount Resep',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.primaryCoral,
+                                fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: gradient[0].withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.arrow_forward_ios_rounded,
-                          color: gradient[0], size: 16),
                     ),
                   ],
                 ),
               ),
+              IconButton(
+                onPressed: () => _showCollectionOptions(collection),
+                icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoGrid(List<String> images) {
+    const gap = 3.0;
+
+    Widget slot(int index) {
+      final url = index < images.length ? images[index] : null;
+      final hasImage = url != null && url.isNotEmpty;
+      return SizedBox.expand(
+        child: hasImage
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                errorBuilder: (_, _, _) => Container(color: Colors.grey.shade300),
+              )
+            : Container(color: Colors.grey.shade300),
+      );
+    }
+
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          Expanded(
+            child: Row(children: [
+              Expanded(child: slot(0)),
+              const SizedBox(width: gap),
+              Expanded(child: slot(1)),
+            ]),
+          ),
+          const SizedBox(height: gap),
+          Expanded(
+            child: Row(children: [
+              Expanded(child: slot(2)),
+              const SizedBox(width: gap),
+              Expanded(child: slot(3)),
+            ]),
+          ),
+        ],
       ),
     );
   }
@@ -908,8 +870,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: color.withValues(alpha: 0.3), width: 1.5),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Row(
             children: [
@@ -947,54 +908,47 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
+          // ── TRANSPARENT HEADER ──
           SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.accentGradient,
-                boxShadow: AppTheme.buttonShadow,
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedCollection = null;
-                            _collectionRecipes = [];
-                          });
-                        },
-                        icon: const Icon(Icons.arrow_back_rounded,
-                            color: Colors.white),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => setState(() {
+                        _selectedCollection = null;
+                        _collectionRecipes = [];
+                      }),
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: AppTheme.textPrimary),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedCollection!['name'] ?? '',
+                            style: AppTheme.headingMedium
+                                .copyWith(color: AppTheme.textPrimary),
+                          ),
+                          Text(
+                            '${_collectionRecipes.length} resep',
+                            style: TextStyle(
+                                fontSize: 13, color: AppTheme.textSecondary),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_selectedCollection!['name'] ?? '',
-                                style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white)),
-                            Text('${_collectionRecipes.length} resep',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    color:
-                                        Colors.white.withValues(alpha: 0.9))),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () =>
-                            _showCollectionOptions(_selectedCollection!),
-                        icon: const Icon(Icons.more_vert_rounded,
-                            color: Colors.white),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      onPressed: () =>
+                          _showCollectionOptions(_selectedCollection!),
+                      icon: const Icon(Icons.more_vert_rounded,
+                          color: AppTheme.textPrimary),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1014,10 +968,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final boardRecipe = _collectionRecipes[index];
-                    // Support both nested 'recipe' key and flat structure
-                    final recipe = (boardRecipe['recipe'] as Map<String, dynamic>?) ?? boardRecipe;
+                    final Map<String, dynamic> recipe = {
+                      ...((boardRecipe['recipes'] as Map<String, dynamic>?) ??
+                          boardRecipe),
+                    };
                     return Dismissible(
-                      key: Key(boardRecipe['id']?.toString() ?? index.toString()),
+                      key: Key(
+                          boardRecipe['id']?.toString() ?? index.toString()),
                       direction: DismissDirection.endToStart,
                       background: Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -1040,33 +997,32 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                           ],
                         ),
                       ),
-                      confirmDismiss: (direction) async {
-                        return await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20)),
-                                title: const Text('Hapus dari Koleksi'),
-                                content: Text(
-                                    'Hapus "${recipe['title']}" dari koleksi ini?'),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: const Text('Batal')),
-                                  ElevatedButton(
+                      confirmDismiss: (direction) async =>
+                          await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20)),
+                              title: const Text('Hapus dari Koleksi'),
+                              content: Text(
+                                  'Hapus "${recipe['title']}" dari koleksi ini?'),
+                              actions: [
+                                TextButton(
                                     onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red.shade600,
-                                        foregroundColor: Colors.white),
-                                    child: const Text('Hapus'),
-                                  ),
-                                ],
-                              ),
-                            ) ??
-                            false;
-                      },
+                                        Navigator.pop(context, false),
+                                    child: const Text('Batal')),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade600,
+                                      foregroundColor: Colors.white),
+                                  child: const Text('Hapus'),
+                                ),
+                              ],
+                            ),
+                          ) ??
+                          false,
                       onDismissed: (direction) async {
                         try {
                           await FavoriteClient.removeRecipeFromBoard(
@@ -1148,28 +1104,26 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               duration: const Duration(milliseconds: 1400),
               tween: Tween(begin: 0.0, end: 1.0),
               curve: Curves.elasticOut,
-              builder: (context, value, child) {
-                return Transform.scale(
-                  scale: value,
-                  child: Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.cardGradient,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryCoral.withValues(alpha: 0.2),
-                          blurRadius: 30,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.collections_bookmark_outlined,
-                        size: 70, color: AppTheme.primaryCoral),
+              builder: (context, value, child) => Transform.scale(
+                scale: value,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.cardGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryCoral.withValues(alpha: 0.2),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                );
-              },
+                  child: const Icon(Icons.collections_bookmark_outlined,
+                      size: 70, color: AppTheme.primaryCoral),
+                ),
+              ),
             ),
             const SizedBox(height: 32),
             const Text('Belum Ada Koleksi',
@@ -1177,8 +1131,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             const SizedBox(height: 12),
             Text(
                 'Mulai kumpulkan resep favoritmu!\nBuat koleksi untuk mengorganisir resep.',
-                style: AppTheme.bodyLarge.copyWith(
-                    color: AppTheme.textSecondary, height: 1.5),
+                style: AppTheme.bodyLarge
+                    .copyWith(color: AppTheme.textSecondary, height: 1.5),
                 textAlign: TextAlign.center),
             const SizedBox(height: 32),
             Container(

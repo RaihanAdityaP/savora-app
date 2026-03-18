@@ -45,26 +45,25 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Apakah header harus pakai gradient (hanya admin own profile)
+  bool get _useGradientHeader => _isOwnProfile && _userRole == 'admin';
+
   List<Color> get _primaryGradient {
-    if (_isOwnProfile && _userRole == 'admin') {
-      return AppTheme.getRoleGradient('admin');
-    }
+    if (_useGradientHeader) return AppTheme.getRoleGradient('admin');
     return [AppTheme.primaryCoral, AppTheme.primaryOrange];
   }
 
   Color get _primaryColor {
-    if (_isOwnProfile && _userRole == 'admin') return const Color(0xFFFFD700);
+    if (_useGradientHeader) return const Color(0xFFFFD700);
     return AppTheme.primaryCoral;
   }
 
   Color get _secondaryColor {
-    if (_isOwnProfile && _userRole == 'admin') return const Color(0xFFFFA500);
+    if (_useGradientHeader) return const Color(0xFFFFA500);
     return AppTheme.primaryOrange;
   }
 
-  LinearGradient get _headerGradient {
-    if (_isOwnProfile && _userRole == 'admin') {
-      return const LinearGradient(
+  LinearGradient get _headerGradient => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
@@ -74,16 +73,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           Color(0xFFFFD700),
         ],
       );
-    }
-    return AppTheme.primaryGradient;
-  }
 
   @override
   void initState() {
     super.initState();
     _currentUserId = ApiService.currentUserId;
-    _isOwnProfile =
-        widget.userId == null || widget.userId == _currentUserId;
+    _isOwnProfile = widget.userId == null || widget.userId == _currentUserId;
 
     _animationController = AnimationController(
         duration: const Duration(milliseconds: 1000), vsync: this);
@@ -125,8 +120,16 @@ class _ProfileScreenState extends State<ProfileScreen>
           _avatarUrl = profile['avatar_url'];
           _userRole = profile['role'] ?? 'user';
           _isPremium = profile['is_premium'] ?? false;
-          _followerCount = ((profile['followers_count'] ?? profile['total_followers']) as num?)?.toInt() ?? 0;
-          _followingCount = ((profile['following_count'] ?? profile['total_following']) as num?)?.toInt() ?? 0;
+          _followerCount =
+              ((profile['followers_count'] ?? profile['total_followers'])
+                          as num?)
+                      ?.toInt() ??
+                  0;
+          _followingCount =
+              ((profile['following_count'] ?? profile['total_following'])
+                          as num?)
+                      ?.toInt() ??
+                  0;
           _isLoading = false;
         });
         _animationController.forward();
@@ -149,7 +152,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       final recipes = await UserClient.getUserRecipes(targetUserId);
       if (!mounted) return;
 
-      // Extract ratings from recipe data if available
       for (var recipe in recipes) {
         final avg = recipe['average_rating'];
         if (avg != null) {
@@ -157,9 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         }
       }
 
-      if (mounted) {
-        setState(() => _userRecipes = recipes);
-      }
+      if (mounted) setState(() => _userRecipes = recipes);
     } catch (e) {
       debugPrint('Error loading user recipes: $e');
     }
@@ -294,8 +294,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         context: context,
         shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        builder: (context) => _buildFollowListSheet(
-            'Pengikut', followers, true),
+        builder: (context) =>
+            _buildFollowListSheet('Pengikut', followers, true),
       );
     } catch (e) {
       if (mounted) _showSnackBar('Error: $e', isError: true);
@@ -314,16 +314,14 @@ class _ProfileScreenState extends State<ProfileScreen>
         context: context,
         shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        builder: (context) => _buildFollowListSheet(
-            'Mengikuti', following, false),
+        builder: (context) =>
+            _buildFollowListSheet('Mengikuti', following, false),
       );
     } catch (e) {
       if (mounted) _showSnackBar('Error: $e', isError: true);
     }
   }
 
-  /// followers list dari Laravel:
-  /// [ { id, username, full_name, avatar_url, is_banned, banned_reason }, ... ]
   Widget _buildFollowListSheet(
       String title, List<Map<String, dynamic>> users, bool isFollowers) {
     if (users.isEmpty) {
@@ -395,8 +393,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: Container(
                       width: 50,
                       height: 50,
@@ -413,10 +411,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         padding: const EdgeInsets.all(2),
                         child: CircleAvatar(
                           backgroundColor: Colors.white,
-                          backgroundImage: profile['avatar_url'] != null &&
-                                  !isBanned
-                              ? NetworkImage(profile['avatar_url'])
-                              : null,
+                          backgroundImage:
+                              profile['avatar_url'] != null && !isBanned
+                                  ? NetworkImage(profile['avatar_url'])
+                                  : null,
                           child: profile['avatar_url'] == null || isBanned
                               ? Icon(
                                   isBanned ? Icons.block : Icons.person,
@@ -440,8 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (profile['full_name'] != null)
-                          Text(profile['full_name'],
-                              style: AppTheme.bodySmall),
+                          Text(profile['full_name'], style: AppTheme.bodySmall),
                         if (isBanned)
                           Container(
                             margin: const EdgeInsets.only(top: 4),
@@ -496,16 +493,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         content: Row(
           children: [
             Icon(
-                isError
-                    ? Icons.error_outline
-                    : Icons.check_circle_outline,
+                isError ? Icons.error_outline : Icons.check_circle_outline,
                 color: Colors.white),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor:
-            isError ? Colors.red.shade600 : Colors.green.shade600,
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -573,7 +567,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // Profile Header
+  // Admin own profile  → gradient header (style dok. 2)
+  // Semua lainnya      → layout polos tanpa gradient (style dok. 1)
+  // ─────────────────────────────────────────────────────────────
   Widget _buildProfileHeader() {
+    if (_useGradientHeader) {
+      return _buildAdminGradientHeader();
+    }
+    return _buildPlainHeader();
+  }
+
+  // ── Header gradient khusus admin own profile ──
+  Widget _buildAdminGradientHeader() {
     return SliverToBoxAdapter(
       child: Container(
         decoration: BoxDecoration(
@@ -592,105 +599,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             child: Column(
               children: [
                 // Avatar
-                Stack(
-                  children: [
-                    Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                            colors: AppTheme.getRoleGradient(_userRole)),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3)),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(55),
-                        child: _avatarUrl != null
-                            ? Image.network(
-                                _avatarUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    _buildDefaultAvatar(),
-                              )
-                            : _buildDefaultAvatar(),
-                      ),
-                    ),
-                    if (_isUploadingImage)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withValues(alpha: 0.6)),
-                          child: const Center(
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 3)),
-                        ),
-                      ),
-                    if (_isOwnProfile)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap:
-                              _isUploadingImage ? null : _pickAndUploadImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              gradient:
-                                  LinearGradient(colors: _primaryGradient),
-                              shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                    color:
-                                        Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 8)
-                              ],
-                            ),
-                            child: const Icon(Icons.camera_alt_rounded,
-                                color: Colors.white, size: 16),
-                          ),
-                        ),
-                      ),
-                    if (_userRole == 'admin')
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.adminGradient,
-                            shape: BoxShape.circle,
-                            border:
-                                Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                  color:
-                                      Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 8)
-                            ],
-                          ),
-                          child: const Icon(Icons.verified_rounded,
-                              color: Colors.white, size: 16),
-                        ),
-                      ),
-                  ],
-                ),
+                _buildAvatar(onGradient: true),
                 const SizedBox(height: 16),
 
+                // Username
                 Text(
                   _usernameController.text.isEmpty
                       ? 'Unknown'
@@ -706,9 +618,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
                 const SizedBox(height: 12),
 
+                // Role badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: AppTheme.getRoleGradient(_userRole)
@@ -717,21 +630,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 1.5),
+                        color: Colors.white.withValues(alpha: 0.5), width: 1.5),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        _userRole == 'admin'
-                            ? Icons.admin_panel_settings_rounded
-                            : _isPremium
-                                ? Icons.workspace_premium_rounded
-                                : Icons.person_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
+                      const Icon(Icons.admin_panel_settings_rounded,
+                          color: Colors.white, size: 16),
                       const SizedBox(width: 8),
                       Text(
                         AppTheme.getRoleLabel(_userRole),
@@ -745,6 +650,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
 
+                // Bio
                 if (_bioController.text.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -768,11 +674,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ],
                 const SizedBox(height: 20),
 
+                // Stats
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem(
-                        'Resep', _userRecipes.length.toString()),
+                    _buildStatItem('Resep', _userRecipes.length.toString(),
+                        onGradient: true),
                     Container(
                         width: 1,
                         height: 40,
@@ -780,7 +687,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     GestureDetector(
                       onTap: _showFollowersList,
                       child: _buildStatItem(
-                          'Pengikut', _followerCount.toString()),
+                          'Pengikut', _followerCount.toString(),
+                          onGradient: true),
                     ),
                     Container(
                         width: 1,
@@ -789,74 +697,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     GestureDetector(
                       onTap: _showFollowingList,
                       child: _buildStatItem(
-                          'Mengikuti', _followingCount.toString()),
+                          'Mengikuti', _followingCount.toString(),
+                          onGradient: true),
                     ),
                   ],
                 ),
-
-                if (!_isOwnProfile) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: _isFollowing
-                          ? null
-                          : LinearGradient(colors: _primaryGradient),
-                      color: _isFollowing
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : null,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1.5),
-                      boxShadow: _isFollowing
-                          ? null
-                          : [
-                              BoxShadow(
-                                  color:
-                                      _primaryColor.withValues(alpha: 0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6))
-                            ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _isFollowLoading ? null : _toggleFollow,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Center(
-                          child: _isFollowLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2.5, color: Colors.white))
-                              : Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      _isFollowing
-                                          ? Icons.person_remove_rounded
-                                          : Icons.person_add_rounded,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _isFollowing
-                                          ? 'Berhenti Mengikuti'
-                                          : 'Ikuti',
-                                      style: AppTheme.buttonText,
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -865,12 +710,217 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ── Header polos (non-admin / other profile) ──
+  Widget _buildPlainHeader() {
+    return SliverToBoxAdapter(
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            children: [
+              // Avatar
+              _buildAvatar(onGradient: false),
+              const SizedBox(height: 16),
+
+              // Username
+              Text(
+                _usernameController.text.isEmpty
+                    ? 'Unknown'
+                    : _usernameController.text,
+                style: AppTheme.headingMedium
+                    .copyWith(color: AppTheme.textPrimary, fontSize: 22),
+              ),
+              if (_fullNameController.text.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(_fullNameController.text,
+                    style: TextStyle(
+                        fontSize: 14, color: AppTheme.textSecondary)),
+              ],
+              const SizedBox(height: 12),
+
+              // Role badge
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: _primaryColor.withValues(alpha: 0.35), width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _userRole == 'admin'
+                          ? Icons.admin_panel_settings_rounded
+                          : _isPremium
+                              ? Icons.workspace_premium_rounded
+                              : Icons.person_rounded,
+                      color: _primaryColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      AppTheme.getRoleLabel(_userRole),
+                      style: TextStyle(
+                          color: _primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Bio
+              if (_bioController.text.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Text(
+                    _bioController.text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 14,
+                        height: 1.5),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+
+              // Stats card
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatItem('Resep', _userRecipes.length.toString()),
+                    Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.grey.shade200),
+                    GestureDetector(
+                      onTap: _showFollowersList,
+                      child: _buildStatItem(
+                          'Pengikut', _followerCount.toString()),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.grey.shade200),
+                    GestureDetector(
+                      onTap: _showFollowingList,
+                      child: _buildStatItem(
+                          'Mengikuti', _followingCount.toString()),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Follow button (other user's profile)
+              if (!_isOwnProfile) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: _isFollowing
+                        ? null
+                        : LinearGradient(colors: _primaryGradient),
+                    color: _isFollowing ? Colors.grey.shade100 : null,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: _isFollowing
+                            ? Colors.grey.shade300
+                            : Colors.transparent,
+                        width: 1.5),
+                    boxShadow: _isFollowing
+                        ? null
+                        : [
+                            BoxShadow(
+                                color: _primaryColor.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6))
+                          ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _isFollowLoading ? null : _toggleFollow,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Center(
+                        child: _isFollowLoading
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: _isFollowing
+                                        ? _primaryColor
+                                        : Colors.white))
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _isFollowing
+                                        ? Icons.person_remove_rounded
+                                        : Icons.person_add_rounded,
+                                    color: _isFollowing
+                                        ? AppTheme.textSecondary
+                                        : Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _isFollowing
+                                        ? 'Berhenti Mengikuti'
+                                        : 'Ikuti',
+                                    style: _isFollowing
+                                        ? TextStyle(
+                                            color: AppTheme.textSecondary,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold)
+                                        : AppTheme.buttonText,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileContent() {
     return SliverPadding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _useGradientHeader ? 20 : 0, 20, 0),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          // Admin Dashboard Button
+          // ── Admin Dashboard Button ──
           if (_isOwnProfile && _userRole == 'admin') ...[
             Container(
               decoration: BoxDecoration(
@@ -889,8 +939,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>
-                            const AdminDashboardScreen()),
+                        builder: (context) => const AdminDashboardScreen()),
                   ),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
@@ -902,10 +951,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(14)),
-                          child: const Icon(
-                              Icons.dashboard_customize_rounded,
-                              color: Colors.white,
-                              size: 28),
+                          child: const Icon(Icons.dashboard_customize_rounded,
+                              color: Colors.white, size: 28),
                         ),
                         const SizedBox(width: 16),
                         const Expanded(
@@ -941,7 +988,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 20),
           ],
 
-          // Edit Profile Form
+          // ── Edit Profile Form ──
           if (_isOwnProfile) ...[
             Row(
               children: [
@@ -1046,7 +1093,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             const SizedBox(height: 24),
           ],
 
-          // Recipes Section Header
+          // ── Recipes Section Header ──
           Row(
             children: [
               Container(
@@ -1125,6 +1172,117 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // Reusable widgets
+  // ─────────────────────────────────────────────────────────────
+
+  /// Avatar dengan camera button & admin badge.
+  /// [onGradient] → true berarti berada di atas background gelap/gradient.
+  Widget _buildAvatar({required bool onGradient}) {
+    return Stack(
+      children: [
+        Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient:
+                LinearGradient(colors: AppTheme.getRoleGradient(_userRole)),
+            boxShadow: [
+              BoxShadow(
+                  color: onGradient
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : _primaryColor.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8)),
+            ],
+          ),
+        ),
+        Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: onGradient
+                      ? Colors.white
+                      : _primaryColor.withValues(alpha: 0.4),
+                  width: 3)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(55),
+            child: _avatarUrl != null
+                ? Image.network(
+                    _avatarUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _buildDefaultAvatar(),
+                  )
+                : _buildDefaultAvatar(),
+          ),
+        ),
+        if (_isUploadingImage)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.6)),
+              child: const Center(
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 3)),
+            ),
+          ),
+        if (_isOwnProfile)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: _isUploadingImage ? null : _pickAndUploadImage,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: _primaryGradient),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: onGradient
+                          ? Colors.white
+                          : AppTheme.backgroundLight,
+                      width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8)
+                  ],
+                ),
+                child: const Icon(Icons.camera_alt_rounded,
+                    color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+        if (_userRole == 'admin')
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.adminGradient,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: onGradient ? Colors.white : AppTheme.backgroundLight,
+                    width: 2),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8)
+                ],
+              ),
+              child: const Icon(Icons.verified_rounded,
+                  color: Colors.white, size: 16),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
@@ -1134,19 +1292,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  /// [onGradient] → true = teks putih (di atas gradient admin header)
+  Widget _buildStatItem(String label, String value,
+      {bool onGradient = false}) {
     return Column(
       children: [
         Text(value,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white)),
+                color: onGradient ? Colors.white : AppTheme.textPrimary)),
         const SizedBox(height: 4),
         Text(label,
             style: TextStyle(
                 fontSize: 13,
-                color: Colors.white.withValues(alpha: 0.9),
+                color: onGradient
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : AppTheme.textSecondary,
                 fontWeight: FontWeight.w500)),
       ],
     );
