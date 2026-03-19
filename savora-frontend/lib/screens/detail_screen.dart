@@ -14,7 +14,6 @@ import 'home_screen.dart';
 import 'edit_recipe_screen.dart';
 import 'profile_screen.dart';
 import 'searching_screen.dart';
-import 'ai_assistant_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final String recipeId;
@@ -927,20 +926,6 @@ savora://recipe/${widget.recipeId}
                   ],
                 ),
       bottomNavigationBar: CustomBottomNav(currentIndex: 0, avatarUrl: _userAvatarUrl, onRefresh: _loadRecipe),
-      floatingActionButton: _recipe != null
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AIAssistantScreen(
-                  recipeContext: (_recipe!['title'] ?? '') + '\n${_recipe!['ingredients'] is List ? (_recipe!['ingredients'] as List).map((i) => i is Map ? i['name'] ?? i.toString() : i.toString()).join(', ') : ''}',
-                )),
-              ),
-              icon: const Icon(Icons.psychology_rounded),
-              label: const Text('Chef AI'),
-              backgroundColor: AppTheme.primaryCoral,
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

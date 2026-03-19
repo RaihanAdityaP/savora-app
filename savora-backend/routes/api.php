@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\TagController;
+use App\Http\Controllers\Api\FeedController;
+use App\Http\Controllers\Api\AIChatController;
+use App\Http\Controllers\Api\AISettingsController;
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -25,13 +28,43 @@ Route::prefix('auth')->group(function () {
 });
 
 // ─── AI ───────────────────────────────────────────────────────────────────
-Route::prefix('ai')->middleware(['auth:sanctum', 'throttle:20,1'])->group(function () {
-    Route::get('test', [AIController::class, 'testConnection']);
-    Route::post('ask', [AIController::class, 'askCookingQuestion']);
-    Route::post('analyze-image', [AIController::class, 'analyzeRecipeFromImage']);
-    Route::post('suggest-recipes', [AIController::class, 'suggestRecipes']);
-    Route::post('generate-recipe', [AIController::class, 'generateRecipe']);
-    Route::post('suggest-variations', [AIController::class, 'suggestVariations']);
+Route::prefix('ai')->middleware(['auth:sanctum'])->group(function () {
+
+    // ── Existing routes (throttle per route) ──
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::get('test',               [AIController::class, 'testConnection']);
+        Route::post('ask',               [AIController::class, 'askCookingQuestion']);
+        Route::post('analyze-image',     [AIController::class, 'analyzeRecipeFromImage']);
+        Route::post('suggest-recipes',   [AIController::class, 'suggestRecipes']);
+        Route::post('generate-recipe',   [AIController::class, 'generateRecipe']);
+        Route::post('suggest-variations',[AIController::class, 'suggestVariations']);
+    });
+
+    // ── models & settings ──
+    Route::get('models', [AIChatController::class, 'getAvailableModels'])
+        ->middleware('throttle:60,1');
+
+    Route::prefix('settings')->middleware('throttle:30,1')->group(function () {
+        Route::get('/',      [AISettingsController::class, 'show']);
+        Route::post('/',     [AISettingsController::class, 'save']);
+        Route::post('test',  [AISettingsController::class, 'testConnection']);
+        Route::delete('/',   [AISettingsController::class, 'reset']);
+    });
+
+    // ── conversations ──
+    Route::prefix('conversations')->middleware('throttle:30,1')->group(function () {
+        Route::get('/',    [AIChatController::class, 'listConversations']);
+        Route::post('/',   [AIChatController::class, 'createConversation']);
+        Route::delete('/', [AIChatController::class, 'deleteAllConversations']);
+
+        Route::get('/{id}',    [AIChatController::class, 'showConversation']);
+        Route::put('/{id}',    [AIChatController::class, 'updateConversation']);
+        Route::delete('/{id}', [AIChatController::class, 'deleteConversation']);
+
+        Route::get('/{id}/messages',  [AIChatController::class, 'getMessages']);
+        Route::post('/{id}/messages', [AIChatController::class, 'sendMessage'])
+            ->middleware('throttle:20,1');
+    });
 });
 
 // ─── RECIPES ──────────────────────────────────────────────────────────────
@@ -57,6 +90,11 @@ Route::prefix('recipes')->group(function () {
         Route::post('{id}/approve', [RecipeController::class, 'approve']);
         Route::post('{id}/reject', [RecipeController::class, 'reject']);
     });
+});
+
+// ─── FEED (FYP) ───────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    Route::get('feed', [FeedController::class, 'index']);
 });
 
 // ─── USERS ────────────────────────────────────────────────────────────────
