@@ -8,6 +8,7 @@ import 'screens/detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/searching_screen.dart';
 import 'services/api_service.dart';
+import 'services/auth_storage.dart';        // ← NEW
 import 'services/notification_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -21,7 +22,7 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
 
   // Initialize Supabase
-  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseUrl    = dotenv.env['SUPABASE_URL'];
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null ||
@@ -32,11 +33,18 @@ Future<void> main() async {
       'SUPABASE_URL / SUPABASE_ANON_KEY belum di-set di file .env',
     );
   }
-  await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
-  );
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   debugPrint('Supabase initialized');
+
+  // ── RESTORE SESSION ──────────────────────────────────────
+  // Muat token yang tersimpan dari SharedPreferences
+  final saved = await AuthStorage.load();
+  if (saved.token != null && saved.userId != null) {
+    ApiService.setToken(saved.token!);
+    ApiService.setCurrentUserId(saved.userId!);
+    debugPrint('Session restored for user: ${saved.userId}');
+  }
+  // ─────────────────────────────────────────────────────────
 
   // Initialize notification service
   debugPrint('Initializing notification service...');
@@ -70,8 +78,8 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _handleInitialDeepLink() async {
     try {
-      final appLinks = AppLinks();
-      final initialUri = await appLinks.getInitialLink();
+      final appLinks     = AppLinks();
+      final initialUri   = await appLinks.getInitialLink();
       if (initialUri == null) return;
       debugPrint('Initial deep link: $initialUri');
       _navigateByUri(initialUri);
@@ -100,16 +108,12 @@ class _MyAppState extends State<MyApp> {
       if (uri.host == 'recipe' && uri.pathSegments.isNotEmpty) {
         final recipeId = uri.pathSegments[0];
         navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (_) => DetailScreen(recipeId: recipeId),
-          ),
+          MaterialPageRoute(builder: (_) => DetailScreen(recipeId: recipeId)),
         );
       } else if (uri.host == 'profile' && uri.pathSegments.isNotEmpty) {
         final userId = uri.pathSegments[0];
         navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (_) => ProfileScreen(userId: userId),
-          ),
+          MaterialPageRoute(builder: (_) => ProfileScreen(userId: userId)),
         );
       } else if (uri.host == 'search') {
         navigatorKey.currentState?.push(
@@ -140,6 +144,7 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.orange,
         useMaterial3: true,
       ),
+      // ── Langsung ke HomeScreen jika ada token ──
       home: ApiService.hasToken ? const HomeScreen() : const LoginScreen(),
       onGenerateRoute: (settings) {
         debugPrint('Route requested: ${settings.name}');

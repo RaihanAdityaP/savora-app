@@ -2,7 +2,7 @@ name: savora
 description: "A blogger application."
 publish_to: 'none'
 
-version: 2.7.4+20262503
+version: 2.8.0+20262503
 
 environment:
   sdk: ^3.9.2
@@ -26,6 +26,7 @@ dependencies:
   logger: ^2.6.2
   app_links: ^6.3.2
   flutter_dotenv: ^5.1.0
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

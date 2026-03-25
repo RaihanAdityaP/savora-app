@@ -1,4 +1,5 @@
 // ignore_for_file: prefer_final_fields, use_build_context_synchronously
+import 'dart:async'; // ← NEW (for Timer)
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +7,7 @@ import 'dart:typed_data';
 import 'dart:io' show File;
 import '../services/api_service.dart';
 import '../services/category_client.dart';
+import '../services/draft_service.dart'; // ← NEW
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/theme.dart';
 
@@ -50,6 +52,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   final _tempIngredientController = TextEditingController();
   final _tempStepController = TextEditingController();
 
+  Timer? _draftTimer; // ← NEW
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +80,14 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _loadCategories();
     _loadUserAvatar();
     _loadPopularTags();
+    _restoreEditDraft(); // ← NEW
+
+    // Listen untuk auto-save ← NEW
+    _titleController.addListener(_scheduleDraftSave);
+    _descriptionController.addListener(_scheduleDraftSave);
+    _cookingTimeController.addListener(_scheduleDraftSave);
+    _servingsController.addListener(_scheduleDraftSave);
+    _caloriesController.addListener(_scheduleDraftSave);
   }
 
   Future<void> _loadInitialTags() async {
@@ -103,6 +115,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
 
   @override
   void dispose() {
+    _draftTimer?.cancel(); // ← NEW
     _titleController.dispose();
     _descriptionController.dispose();
     _cookingTimeController.dispose();
@@ -113,6 +126,117 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _tagInputController.dispose();
     super.dispose();
   }
+
+  // ── NEW: Draft methods ──────────────────────────────────────
+
+  void _scheduleDraftSave() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 1500), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+    final recipeId = widget.recipe['id']?.toString();
+    if (recipeId == null) return;
+    await DraftService.saveEditDraft(recipeId, {
+      'title'       : _titleController.text,
+      'description' : _descriptionController.text,
+      'cooking_time': _cookingTimeController.text,
+      'servings'    : _servingsController.text,
+      'calories'    : _caloriesController.text,
+      'ingredients' : _ingredients,
+      'steps'       : _steps,
+      'tags'        : _selectedTags,
+      'category_id' : _selectedCategoryId,
+      'difficulty'  : _selectedDifficulty,
+    });
+  }
+
+  Future<void> _restoreEditDraft() async {
+    final recipeId = widget.recipe['id']?.toString();
+    if (recipeId == null) return;
+
+    final draft = await DraftService.loadEditDraft(recipeId);
+    if (draft == null || !mounted) return;
+
+    final restore = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.restore_page_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          const Text('Draft Edit Ditemukan'),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Ada perubahan yang belum disimpan untuk resep ini.', style: TextStyle(color: Colors.grey.shade600)),
+          const SizedBox(height: 8),
+          if (draft['saved_at'] != null)
+            Text(
+              'Terakhir diedit: ${_formatDraftTime(draft['saved_at'])}',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abaikan'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.restore_rounded, size: 18),
+            label: const Text('Lanjutkan Edit'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryCoral,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (restore == true && mounted) {
+      setState(() {
+        _titleController.text       = draft['title']        ?? _titleController.text;
+        _descriptionController.text = draft['description']  ?? _descriptionController.text;
+        _cookingTimeController.text = draft['cooking_time'] ?? _cookingTimeController.text;
+        _servingsController.text    = draft['servings']     ?? _servingsController.text;
+        _caloriesController.text    = draft['calories']     ?? _caloriesController.text;
+        _ingredients
+          ..clear()
+          ..addAll(List<String>.from(draft['ingredients'] ?? _ingredients));
+        _steps
+          ..clear()
+          ..addAll(List<String>.from(draft['steps'] ?? _steps));
+        _selectedTags     = List<String>.from(draft['tags'] ?? _selectedTags);
+        _selectedCategoryId = draft['category_id'] as int? ?? _selectedCategoryId;
+        _selectedDifficulty = draft['difficulty'] ?? _selectedDifficulty;
+      });
+    } else if (restore == false) {
+      await DraftService.clearEditDraft(recipeId);
+    }
+  }
+
+ String _formatDraftTime(String? isoString) {
+  if (isoString == null) return '';
+  try {
+    final dt   = DateTime.parse(isoString).toLocal();
+    final now  = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1)  return 'Baru saja';
+    if (diff.inHours < 1)    return '${diff.inMinutes} menit lalu';
+    if (diff.inDays < 1)     return '${diff.inHours} jam lalu';
+    return '${diff.inDays} hari lalu';
+  } catch (_) {
+    return isoString;
+  }
+}
+
+  // ── END NEW draft methods ───────────────────────────────────
 
   Future<void> _loadUserAvatar() async {
     try {
@@ -382,6 +506,10 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         );
       }
 
+      // ← NEW: Clear draft on successful submit
+      final recipeId2 = widget.recipe['id']?.toString();
+      if (recipeId2 != null) await DraftService.clearEditDraft(recipeId2);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(_userRole == 'admin'
@@ -451,7 +579,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           child: IconButton(
             icon: const Icon(Icons.arrow_back_rounded,
                 color: AppTheme.primaryDark),
-            onPressed: () => Navigator.pop(context),
+            // ← NEW: save draft before navigating back
+            onPressed: () async {
+              await _saveDraft();
+              if (mounted) Navigator.pop(context);
+            },
           ),
         ),
       ),
