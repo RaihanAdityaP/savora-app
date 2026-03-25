@@ -24,7 +24,7 @@ class ApiService {
   static const String _configuredBaseUrl =
       String.fromEnvironment('API_BASE_URL', defaultValue: '');
   static const String _baseUrlDebug = 'http://192.168.1.14:8000/api/v1';
-  static const String _baseUrlProd = 'http://savora-app-production.up.railway.app';
+  static const String _baseUrlProd = 'https://savora-app-production.up.railway.app/api/v1';
 
   static String get _baseUrl {
     if (_configuredBaseUrl.isNotEmpty) {
