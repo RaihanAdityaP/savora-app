@@ -3,7 +3,7 @@ import '../screens/home_screen.dart';
 import '../screens/notification_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/ai_chat_screen.dart';
-import '../services/api_service.dart';
+import '../services/auth_client.dart';
 import '../services/notification_client.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -107,7 +107,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     );
 
     if (confirm == true) {
-      ApiService.clearToken();
+      await AuthClient.logout();
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
