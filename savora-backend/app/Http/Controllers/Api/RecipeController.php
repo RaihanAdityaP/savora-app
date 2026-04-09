@@ -290,7 +290,7 @@ class RecipeController extends Controller
             'ingredients' => 'required|array',
             'steps' => 'required|array',
             'tags' => 'nullable|array',
-            'tags.*' => 'integer',
+            'tags.*' => 'nullable',
             'image' => 'nullable|image|max:5120',
             'video_url' => 'nullable|url',
         ]);
@@ -304,6 +304,17 @@ class RecipeController extends Controller
         }
 
         try {
+            $resolvedTagIds = $this->resolveTagIds(
+                $request->input('tags', []),
+                $request->input('user_id')
+            );
+            $moderation = $this->autoModerateRecipeContent(
+                (string) $request->input('title', ''),
+                (string) $request->input('description', ''),
+                $request->input('ingredients', []),
+                $request->input('steps', [])
+            );
+
             $data = [
                 'user_id' => $request->input('user_id'),
                 'title' => $request->input('title'),
@@ -316,7 +327,8 @@ class RecipeController extends Controller
                 'ingredients' => json_encode($request->input('ingredients')),
                 'steps' => json_encode($request->input('steps')),
                 'video_url' => $request->input('video_url'),
-                'status' => 'pending', // Default pending approval
+                'status' => $moderation['status'],
+                'rejection_reason' => $moderation['reason'],
                 'views_count' => 0,
             ];
 
@@ -335,9 +347,8 @@ class RecipeController extends Controller
             $recipeId = $recipe[0]['id'];
 
             // Insert tags if provided
-            if ($request->has('tags')) {
-                $tags = $request->input('tags');
-                foreach ($tags as $tagId) {
+            if (!empty($resolvedTagIds)) {
+                foreach ($resolvedTagIds as $tagId) {
                     $this->supabase->insert('recipe_tags', [
                         'recipe_id' => $recipeId,
                         'tag_id' => $tagId,
@@ -355,7 +366,9 @@ class RecipeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Recipe created successfully and pending approval',
+                'message' => $moderation['status'] === 'approved'
+                    ? 'Recipe created and auto-approved'
+                    : 'Recipe created but auto-rejected by moderation rules',
                 'data' => $recipe[0],
             ], 201);
         } catch (Exception $e) {
@@ -383,7 +396,7 @@ class RecipeController extends Controller
             'ingredients' => 'nullable|array',
             'steps' => 'nullable|array',
             'tags' => 'nullable|array',
-            'tags.*' => 'integer',
+            'tags.*' => 'nullable',
             'image' => 'nullable|image|max:5120',
             'video_url' => 'nullable|url',
         ]);
@@ -422,6 +435,11 @@ class RecipeController extends Controller
 
             // Update tags if provided
             if ($request->has('tags')) {
+                $resolvedTagIds = $this->resolveTagIds(
+                    $request->input('tags', []),
+                    $request->input('user_id')
+                );
+
                 // Get old tags to decrement usage count
                 $oldTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
                 foreach ($oldTags as $oldTag) {
@@ -437,8 +455,7 @@ class RecipeController extends Controller
                 $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
 
                 // Insert new tags
-                $tags = $request->input('tags');
-                foreach ($tags as $tagId) {
+                foreach ($resolvedTagIds as $tagId) {
                     $this->supabase->insert('recipe_tags', [
                         'recipe_id' => $id,
                         'tag_id' => $tagId,
@@ -814,6 +831,82 @@ class RecipeController extends Controller
         }
 
         $request->merge([$field => $parsed]);
+    }
+
+    private function autoModerateRecipeContent(string $title, string $description, $ingredients, $steps): array
+    {
+        $bannedWords = [
+            'anjing', 'bangsat', 'kontol', 'memek', 'ngentot',
+            'goblok', 'tolol', 'jancok', 'fuck', 'bitch',
+            'asshole', 'nigga', 'nigger', 'bastard',
+        ];
+
+        $textBlob = strtolower(trim(implode(' ', [
+            $title,
+            $description,
+            $this->flattenIngredientsToText($ingredients),
+            $this->flattenIngredientsToText($steps),
+        ])));
+
+        foreach ($bannedWords as $badWord) {
+            if ($badWord !== '' && str_contains($textBlob, strtolower($badWord))) {
+                return [
+                    'status' => 'rejected',
+                    'reason' => "Auto moderation: konten mengandung kata terlarang ({$badWord})",
+                ];
+            }
+        }
+
+        return [
+            'status' => 'approved',
+            'reason' => null,
+        ];
+    }
+
+    private function resolveTagIds(array $rawTags, ?string $createdBy): array
+    {
+        $resolvedTagIds = [];
+
+        foreach ($rawTags as $rawTag) {
+            if ($rawTag === null) {
+                continue;
+            }
+
+            if (is_numeric($rawTag)) {
+                $resolvedTagIds[] = (int) $rawTag;
+                continue;
+            }
+
+            $tagName = trim((string) $rawTag);
+            if ($tagName === '') {
+                continue;
+            }
+
+            $slug = Str::slug($tagName);
+            if ($slug === '') {
+                continue;
+            }
+
+            $existing = $this->supabase->select('tags', ['id'], ['slug' => $slug]);
+            if (!empty($existing)) {
+                $resolvedTagIds[] = (int) $existing[0]['id'];
+                continue;
+            }
+
+            $inserted = $this->supabase->insert('tags', [
+                'name' => $tagName,
+                'slug' => $slug,
+                'created_by' => $createdBy,
+                'is_approved' => true,
+                'usage_count' => 0,
+            ]);
+
+            if (!empty($inserted) && isset($inserted[0]['id'])) {
+                $resolvedTagIds[] = (int) $inserted[0]['id'];
+            }
+        }
+
+        return array_values(array_unique($resolvedTagIds));
     }
 
     /**

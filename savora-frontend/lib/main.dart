@@ -43,6 +43,25 @@ Future<void> main() async {
     ApiService.setToken(saved.token!);
     ApiService.setCurrentUserId(saved.userId!);
     debugPrint('Session restored for user: ${saved.userId}');
+
+    // Validasi token yang dipulihkan dengan melakukan request ke endpoint yang memerlukan autentikasi
+    try {
+      await ApiService.get('/auth/me');
+      debugPrint('Restored Sanctum token is valid');
+    } catch (e) {
+      final message = e.toString().toLowerCase();
+      final isUnauthorized = message.contains('unauthenticated') ||
+          message.contains('401') ||
+          message.contains('invalid');
+
+      if (isUnauthorized) {
+        debugPrint('Restored token invalid on current backend. Clearing local auth...');
+        ApiService.clearToken();
+        await AuthStorage.clear();
+      } else {
+        debugPrint('Token validation skipped due to non-auth error: $e');
+      }
+    }
   }
   // ─────────────────────────────────────────────────────────
 

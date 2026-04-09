@@ -10,6 +10,7 @@ import '../services/category_client.dart';
 import '../services/draft_service.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/theme.dart';
+import 'tag_management_screen.dart';
 
 class CreateRecipeScreen extends StatefulWidget {
   const CreateRecipeScreen({super.key});
@@ -316,6 +317,42 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   }
 
   Future<void> _pickImage() async {
+    if (kIsWeb) {
+      await _pickImageFromGallery();
+      return;
+    }
+
+    if (!mounted) return;
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+    if (source == ImageSource.camera) {
+      await _pickImageFromCamera();
+      return;
+    }
+    await _pickImageFromGallery();
+  }
+
+  Future<void> _pickImageFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery, maxWidth: 800, maxHeight: 800, imageQuality: 80);
@@ -329,6 +366,36 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
+      if (image != null && mounted) {
+        setState(() => _imageFile = File(image.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal membuka kamera: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openTagManagementPage() async {
+    final selected = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const TagManagementScreen()),
+    );
+    if (selected != null && selected.trim().isNotEmpty) {
+      _addTag(selected.trim());
     }
   }
 
@@ -691,7 +758,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 20),
+                          const Icon(Icons.add_a_photo_rounded, color: Colors.white, size: 20),
                           const SizedBox(width: 8),
                           Text(
                             _imageFile != null || _webImageBytes != null ? 'Ganti Gambar' : 'Pilih Gambar',
@@ -1040,6 +1107,18 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               ),
             ),
           ]),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _openTagManagementPage,
+                icon: const Icon(Icons.manage_search_rounded, size: 18),
+                label: const Text('Kelola Tag Komunitas'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         if (_selectedTags.isNotEmpty)

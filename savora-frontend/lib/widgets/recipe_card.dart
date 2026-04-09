@@ -775,8 +775,7 @@ class _RecipeCardState extends State<RecipeCard> {
                               children: [
                                 _buildCategoryChip(
                                     context, categoryId, categoryName),
-                                if (tags.isNotEmpty)
-                                  _buildTagChip(context, tags.first),
+                                ...tags.take(2).map((tag) => _buildTagChip(context, tag)),
                               ],
                             ),
                           ),
