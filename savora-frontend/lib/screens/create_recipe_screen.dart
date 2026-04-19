@@ -40,6 +40,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   String?     _userAvatarUrl;
 
   List<String>              _selectedTags     = [];
+  List<int>                 _selectedTagIds   = [];
   final _tagInputController = TextEditingController();
   List<Map<String, dynamic>> _popularTags     = [];
   List<Map<String, dynamic>> _userCreatedTags = [];
@@ -206,9 +207,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           ..clear()
           ..addAll(List<String>.from(draft['steps'] ?? []));
         _selectedTags     = List<String>.from(draft['tags'] ?? []);
+        _selectedTagIds   = [];
         _selectedCategoryId = draft['category_id'] as int?;
         _selectedDifficulty = draft['difficulty'] ?? 'mudah';
       });
+      await _syncSelectedTagIdsFromNames();
     } else if (restore == false) {
       // User pilih mulai baru → hapus draft lama
       await DraftService.clearCreateDraft();
@@ -292,27 +295,105 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     }
   }
 
-  void _addTag(String tagName) {
-    if (_selectedTags.length >= 10) {
+  Future<Map<String, dynamic>?> _findExistingTagByName(String tagName) async {
+    final normalized = tagName.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+
+    for (final tag in [..._userCreatedTags, ..._popularTags]) {
+      final name = tag['name']?.toString().trim().toLowerCase();
+      final id = tag['id'];
+      if (name == normalized && id is num) return tag;
+    }
+
+    try {
+      final response = await ApiService.get(
+          '/tags/search?q=${Uri.encodeComponent(tagName.trim())}&limit=20');
+      if (response['success'] == true) {
+        final list = (response['data'] as List)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        for (final tag in list) {
+          final name = tag['name']?.toString().trim().toLowerCase();
+          final id = tag['id'];
+          if (name == normalized && id is num) return tag;
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  Future<void> _addTagByName(String tagName) async {
+    if (_selectedTagIds.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Maksimal 10 tag')));
       return;
     }
-    if (_selectedTags.contains(tagName)) {
+
+    final existingTag = await _findExistingTagByName(tagName);
+    if (existingTag == null || existingTag['id'] == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tag belum tersedia. Tambahkan dulu lewat Kelola Tag Komunitas.')),
+      );
+      return;
+    }
+
+    final resolvedName = existingTag['name']?.toString().trim() ?? tagName.trim();
+    final resolvedId = (existingTag['id'] as num).toInt();
+
+    if (_selectedTagIds.contains(resolvedId) || _selectedTags.contains(resolvedName)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tag sudah ditambahkan')));
       return;
     }
+
     setState(() {
-      _selectedTags.add(tagName);
+      _selectedTags.add(resolvedName);
+      _selectedTagIds.add(resolvedId);
       _tagInputController.clear();
       _userCreatedTags.clear();
-      _isSearchingTags = false;
     });
     FocusScope.of(context).unfocus();
     _scheduleDraftSave();
   }
 
+  Future<void> _syncSelectedTagIdsFromNames() async {
+    if (_selectedTags.isEmpty) {
+      if (_selectedTagIds.isNotEmpty && mounted) {
+        setState(() => _selectedTagIds = []);
+      }
+      return;
+    }
+
+    final resolvedNames = <String>[];
+    final resolvedIds = <int>[];
+
+    for (final name in _selectedTags) {
+      final found = await _findExistingTagByName(name);
+      final id = found?['id'];
+      final resolvedName = found?['name']?.toString().trim();
+      if (id is num && resolvedName != null && resolvedName.isNotEmpty) {
+        final intId = id.toInt();
+        if (!resolvedIds.contains(intId)) {
+          resolvedIds.add(intId);
+          resolvedNames.add(resolvedName);
+        }
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _selectedTags = resolvedNames;
+      _selectedTagIds = resolvedIds;
+    });
+  }
+
   void _removeTag(int index) {
-    setState(() => _selectedTags.removeAt(index));
+    setState(() {
+      _selectedTags.removeAt(index);
+      if (index >= 0 && index < _selectedTagIds.length) {
+        _selectedTagIds.removeAt(index);
+      }
+    });
     _scheduleDraftSave();
   }
 
@@ -395,7 +476,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       MaterialPageRoute(builder: (_) => const TagManagementScreen()),
     );
     if (selected != null && selected.trim().isNotEmpty) {
-      _addTag(selected.trim());
+      await _addTagByName(selected.trim());
     }
   }
 
@@ -509,6 +590,16 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       final userId = ApiService.currentUserId;
       if (userId == null) throw Exception('User not authenticated');
 
+      await _syncSelectedTagIdsFromNames();
+      if (_selectedTags.isNotEmpty && _selectedTagIds.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tag tidak valid. Pilih tag dari daftar yang tersedia.')),
+          );
+        }
+        return;
+      }
+
       String? imagePath;
       if (!kIsWeb && _imageFile != null) imagePath = _imageFile!.path;
 
@@ -537,7 +628,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         'ingredients': _ingredients,
         'steps'      : _steps,
         if (calories != null) 'calories': calories,
-        if (_selectedTags.isNotEmpty) 'tags': _selectedTags,
+        if (_selectedTagIds.isNotEmpty) 'tags': _selectedTagIds,
       };
 
       Map<String, dynamic> response;
@@ -548,7 +639,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             ...fields,
             'ingredients': _ingredients.join('||'),
             'steps'      : _steps.join('||'),
-            if (_selectedTags.isNotEmpty) 'tags': _selectedTags.join(','),
+            if (_selectedTagIds.isNotEmpty) 'tags': _selectedTagIds.join(','),
           },
         );
       } else {
@@ -1102,7 +1193,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               width: 42, height: 42,
               decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(10)),
               child: IconButton(
-                onPressed: () { if (_tagInputController.text.trim().isNotEmpty) _addTag(_tagInputController.text.trim()); },
+                onPressed: () async {
+                  if (_tagInputController.text.trim().isNotEmpty) {
+                    await _addTagByName(_tagInputController.text.trim());
+                  }
+                },
                 icon: const Icon(Icons.add, color: Colors.white, size: 20), padding: EdgeInsets.zero,
               ),
             ),
@@ -1137,7 +1232,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                   ]),
                 );
               }).toList()),
-        if (_isSearchingTags && _userCreatedTags.isNotEmpty)
+        if (_tagInputController.text.trim().isNotEmpty && (_isSearchingTags || _userCreatedTags.isNotEmpty))
           Container(
             margin: const EdgeInsets.only(top: 12),
             padding: const EdgeInsets.all(12),
@@ -1146,7 +1241,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               Text('Hasil Pencarian:', style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ..._userCreatedTags.map((tag) => InkWell(
-                onTap: () => _addTag(tag['name']),
+                onTap: () => _addTagByName(tag['name']),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(children: [
@@ -1171,9 +1266,23 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8,
                   children: _popularTags.take(8).map((tag) {
-                    final isSelected = _selectedTags.contains(tag['name']);
+                    final tagId = (tag['id'] is num) ? (tag['id'] as num).toInt() : null;
+                    final isSelected = tagId != null
+                        ? _selectedTagIds.contains(tagId)
+                        : _selectedTags.contains(tag['name']);
                     return GestureDetector(
-                      onTap: () { isSelected ? setState(() => _selectedTags.remove(tag['name'])) : _addTag(tag['name']); },
+                      onTap: () {
+                        if (isSelected) {
+                          final index = tagId != null
+                              ? _selectedTagIds.indexOf(tagId)
+                              : _selectedTags.indexOf(tag['name']);
+                          if (index != -1) {
+                            _removeTag(index);
+                          }
+                        } else {
+                          _addTagByName(tag['name']?.toString() ?? '');
+                        }
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: isSelected ? AppTheme.selectedTagDecoration : AppTheme.unselectedTagDecoration,
