@@ -1,10 +1,14 @@
+import 'dart:convert';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// NotificationService — hanya handle LOCAL notifications di HP.
-/// Logic pengiriman notifikasi dari backend ada di Laravel (NotificationService.php).
-/// Realtime listener sudah tidak ada karena digantikan FCM push notification.
+import 'api_service.dart';
+import 'notification_client.dart';
+
+/// NotificationService — handle FCM + local notifications di device.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -57,6 +61,8 @@ class NotificationService {
 
       await _requestPermission();
       await _createNotificationChannel();
+      await _setupFcmListeners();
+      await _registerCurrentFcmToken();
 
       _isInitialized = true;
       debugPrint('NotificationService initialized successfully');
@@ -101,7 +107,7 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────
-  // REQUEST PERMISSION (Android 13+)
+  // REQUEST PERMISSION (Android 13+ / iOS)
   // ─────────────────────────────────────────────
 
   Future<void> _requestPermission() async {
@@ -120,8 +126,54 @@ class NotificationService {
           debugPrint('Permission denied. Notifications will not work.');
         }
       }
+
+      final fcmSettings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint('FCM permission status: ${fcmSettings.authorizationStatus}');
     } catch (e) {
       debugPrint('Error requesting notification permission: $e');
+    }
+  }
+
+  Future<void> _setupFcmListeners() async {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final title =
+          message.notification?.title ?? message.data['title']?.toString();
+      final body =
+          message.notification?.body ?? message.data['body']?.toString();
+
+      if (title != null && body != null) {
+        showNotification(
+          title: title,
+          body: body,
+          payload: _payloadFromMessage(message),
+        );
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _triggerTapCallback(_payloadFromMessage(message));
+    });
+
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      _triggerTapCallback(_payloadFromMessage(initialMessage));
+    }
+
+    FirebaseMessaging.instance.onTokenRefresh.listen((String token) {
+      _registerDeviceToken(token);
+    });
+  }
+
+  String? _payloadFromMessage(RemoteMessage message) {
+    if (message.data.isEmpty) return null;
+    try {
+      return jsonEncode(message.data);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -132,8 +184,10 @@ class NotificationService {
   void _onNotificationTapped(NotificationResponse response) {
     final String? payload = response.payload;
     debugPrint('Notification tapped with payload: $payload');
+    _triggerTapCallback(payload);
+  }
 
-    // Panggil callback jika ada (set dari luar untuk navigasi)
+  void _triggerTapCallback(String? payload) {
     if (onNotificationTapped != null && payload != null) {
       onNotificationTapped!(payload);
     }
@@ -211,6 +265,38 @@ class NotificationService {
     }
   }
 
+  Future<void> _registerCurrentFcmToken() async {
+    if (kIsWeb || !ApiService.hasToken) return;
+
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('FCM token unavailable, skipping register device.');
+        return;
+      }
+
+      await _registerDeviceToken(token);
+    } catch (e) {
+      debugPrint('Failed to register current FCM token: $e');
+    }
+  }
+
+  Future<void> _registerDeviceToken(String token) async {
+    final userId = ApiService.currentUserId;
+    if (userId == null || userId.isEmpty) {
+      debugPrint('No logged-in user, skip register FCM token.');
+      return;
+    }
+
+    final success = await NotificationClient.registerDevice(
+      userId: userId,
+      deviceToken: token,
+      deviceType: defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+    );
+
+    debugPrint('Register FCM token result: $success');
+  }
+
   // ─────────────────────────────────────────────
   // GETTERS
   // ─────────────────────────────────────────────
@@ -223,7 +309,5 @@ class NotificationService {
 
   void dispose() {
     debugPrint('NotificationService disposed');
-    // Tidak ada channel realtime yang perlu di-unsubscribe
-    // karena kita sudah tidak pakai Supabase realtime
   }
 }

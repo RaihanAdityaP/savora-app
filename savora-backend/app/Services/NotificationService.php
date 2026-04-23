@@ -4,157 +4,208 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class NotificationService
 {
-    private $fcmServerKey;
-    private $fcmUrl = 'https://fcm.googleapis.com/fcm/send';
+    private string $projectId;
+    private string $fcmUrl;
 
     public function __construct()
     {
-        $this->fcmServerKey = env('FCM_SERVER_KEY');
-        
-        if (empty($this->fcmServerKey)) {
-            Log::warning('FCM_SERVER_KEY not found in environment!');
-        }
+        $this->projectId = env('FCM_PROJECT_ID', '');
+        $this->fcmUrl    = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
     }
 
-    /**
-     * Send push notification to a single device
-     */
+    // ─────────────────────────────────────────────
+    // GET CREDENTIALS dari env variable
+    // ─────────────────────────────────────────────
+    private function getCredentials(): array
+    {
+        $json = env('FCM_CREDENTIALS_JSON', '');
+
+        if (empty($json)) {
+            throw new Exception('FCM_CREDENTIALS_JSON is not set in environment variables.');
+        }
+
+        $credentials = json_decode($json, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('FCM_CREDENTIALS_JSON is not valid JSON: ' . json_last_error_msg());
+        }
+
+        if (empty($credentials['client_email']) || empty($credentials['private_key'])) {
+            throw new Exception('FCM_CREDENTIALS_JSON missing client_email or private_key.');
+        }
+
+        return $credentials;
+    }
+
+    // ─────────────────────────────────────────────
+    // GET OAUTH2 ACCESS TOKEN
+    // Cached selama 55 menit (token expired setiap 60 menit)
+    // ─────────────────────────────────────────────
+    private function getAccessToken(): string
+    {
+        return Cache::remember('fcm_access_token', 55 * 60, function () {
+            $credentials = $this->getCredentials();
+
+            $now    = time();
+            $header = rtrim(strtr(base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT'])), '+/', '-_'), '=');
+            $claims = rtrim(strtr(base64_encode(json_encode([
+                'iss'   => $credentials['client_email'],
+                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+                'aud'   => 'https://oauth2.googleapis.com/token',
+                'iat'   => $now,
+                'exp'   => $now + 3600,
+            ])), '+/', '-_'), '=');
+
+            $signature = '';
+            openssl_sign("{$header}.{$claims}", $signature, $credentials['private_key'], 'SHA256');
+            $sig = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
+
+            $jwt = "{$header}.{$claims}.{$sig}";
+
+            $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion'  => $jwt,
+            ]);
+
+            if (!$response->successful()) {
+                throw new Exception('Failed to get FCM access token: ' . $response->body());
+            }
+
+            return $response->json('access_token');
+        });
+    }
+
+    // ─────────────────────────────────────────────
+    // SEND TO SINGLE DEVICE
+    // ─────────────────────────────────────────────
     public function sendToDevice(string $deviceToken, string $title, string $body, array $data = []): bool
     {
-        if (empty($this->fcmServerKey)) {
-            throw new Exception('FCM_SERVER_KEY not configured');
-        }
-
         try {
+            $accessToken = $this->getAccessToken();
+            $stringData  = array_map('strval', $data);
+
             $payload = [
-                'to' => $deviceToken,
-                'notification' => [
-                    'title' => $title,
-                    'body' => $body,
-                    'sound' => 'default',
-                    'badge' => '1',
-                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                'message' => [
+                    'token'        => $deviceToken,
+                    'notification' => [
+                        'title' => $title,
+                        'body'  => $body,
+                    ],
+                    'data'    => $stringData,
+                    'android' => [
+                        'priority'     => 'high',
+                        'notification' => [
+                            'sound'        => 'default',
+                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        ],
+                    ],
                 ],
-                'data' => $data,
-                'priority' => 'high',
             ];
 
             $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->fcmServerKey,
-                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
             ])->post($this->fcmUrl, $payload);
 
             if ($response->successful()) {
-                Log::info('Notification sent successfully to device: ' . $deviceToken);
+                Log::info('FCM v1: Notification sent to device: ' . $deviceToken);
                 return true;
-            } else {
-                Log::error('FCM Error: ' . $response->body());
-                return false;
             }
+
+            // Token OAuth expired → clear cache dan retry sekali
+            if ($response->status() === 401) {
+                Cache::forget('fcm_access_token');
+                Log::warning('FCM v1: Access token expired, retrying...');
+                return $this->sendToDevice($deviceToken, $title, $body, $data);
+            }
+
+            Log::error('FCM v1 sendToDevice error: ' . $response->body());
+            return false;
         } catch (Exception $e) {
-            Log::error('Error sending notification: ' . $e->getMessage());
+            Log::error('FCM v1 sendToDevice exception: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Send push notification to multiple devices
-     */
+    // ─────────────────────────────────────────────
+    // SEND TO MULTIPLE DEVICES
+    // FCM v1 tidak support multicast, loop per token
+    // ─────────────────────────────────────────────
     public function sendToMultipleDevices(array $deviceTokens, string $title, string $body, array $data = []): array
     {
-        if (empty($this->fcmServerKey)) {
-            throw new Exception('FCM_SERVER_KEY not configured');
+        $success = 0;
+        $failure = 0;
+
+        foreach ($deviceTokens as $token) {
+            $this->sendToDevice($token, $title, $body, $data) ? $success++ : $failure++;
         }
 
-        try {
-            $payload = [
-                'registration_ids' => $deviceTokens,
-                'notification' => [
-                    'title' => $title,
-                    'body' => $body,
-                    'sound' => 'default',
-                    'badge' => '1',
-                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-                ],
-                'data' => $data,
-                'priority' => 'high',
-            ];
-
-            $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->fcmServerKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->fcmUrl, $payload);
-
-            if ($response->successful()) {
-                $result = $response->json();
-                Log::info('Batch notification sent. Success: ' . $result['success'] . ', Failure: ' . $result['failure']);
-                return $result;
-            } else {
-                Log::error('FCM Batch Error: ' . $response->body());
-                return ['success' => 0, 'failure' => count($deviceTokens)];
-            }
-        } catch (Exception $e) {
-            Log::error('Error sending batch notifications: ' . $e->getMessage());
-            return ['success' => 0, 'failure' => count($deviceTokens)];
-        }
+        Log::info("FCM v1 batch: Success={$success}, Failure={$failure}");
+        return ['success' => $success, 'failure' => $failure];
     }
 
-    /**
-     * Send notification to topic
-     */
+    // ─────────────────────────────────────────────
+    // SEND TO TOPIC
+    // ─────────────────────────────────────────────
     public function sendToTopic(string $topic, string $title, string $body, array $data = []): bool
     {
-        if (empty($this->fcmServerKey)) {
-            throw new Exception('FCM_SERVER_KEY not configured');
-        }
-
         try {
+            $accessToken = $this->getAccessToken();
+            $stringData  = array_map('strval', $data);
+
             $payload = [
-                'to' => '/topics/' . $topic,
-                'notification' => [
-                    'title' => $title,
-                    'body' => $body,
-                    'sound' => 'default',
-                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                'message' => [
+                    'topic'        => $topic,
+                    'notification' => [
+                        'title' => $title,
+                        'body'  => $body,
+                    ],
+                    'data'    => $stringData,
+                    'android' => [
+                        'priority'     => 'high',
+                        'notification' => [
+                            'sound'        => 'default',
+                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        ],
+                    ],
                 ],
-                'data' => $data,
-                'priority' => 'high',
             ];
 
             $response = Http::withHeaders([
-                'Authorization' => 'key=' . $this->fcmServerKey,
-                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type'  => 'application/json',
             ])->post($this->fcmUrl, $payload);
 
             if ($response->successful()) {
-                Log::info('Notification sent successfully to topic: ' . $topic);
+                Log::info('FCM v1: Notification sent to topic: ' . $topic);
                 return true;
-            } else {
-                Log::error('FCM Topic Error: ' . $response->body());
-                return false;
             }
+
+            Log::error('FCM v1 sendToTopic error: ' . $response->body());
+            return false;
         } catch (Exception $e) {
-            Log::error('Error sending topic notification: ' . $e->getMessage());
+            Log::error('FCM v1 sendToTopic exception: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Generate notification payload for different types
-     */
+    // ─────────────────────────────────────────────
+    // GENERATE PAYLOAD
+    // ─────────────────────────────────────────────
     public function generatePayload(string $type, string $entityId): array
     {
         $payloadMap = [
-            'new_recipe_from_following' => ['route' => 'recipe', 'id' => $entityId],
-            'recipe_approved' => ['route' => 'recipe', 'id' => $entityId],
-            'recipe_rejected' => ['route' => 'recipe', 'id' => $entityId],
-            'new_follower' => ['route' => 'profile', 'id' => $entityId],
-            'new_comment' => ['route' => 'recipe', 'id' => $entityId],
-            'new_like' => ['route' => 'recipe', 'id' => $entityId],
+            'new_recipe_from_following' => ['route' => 'recipe',  'id' => $entityId],
+            'recipe_approved'           => ['route' => 'recipe',  'id' => $entityId],
+            'recipe_rejected'           => ['route' => 'recipe',  'id' => $entityId],
+            'new_follower'              => ['route' => 'profile', 'id' => $entityId],
+            'new_comment'               => ['route' => 'recipe',  'id' => $entityId],
+            'new_like'                  => ['route' => 'recipe',  'id' => $entityId],
         ];
 
         return $payloadMap[$type] ?? ['route' => 'home', 'id' => ''];
