@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Enums\RecipeStatus;
 use App\Services\SupabaseService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Exception;
@@ -39,49 +41,42 @@ class RecipeController extends Controller
             // Status filter (approved, pending, rejected, or all)
             $status = $request->input('status');
             if ($status === null || $status === '') {
-                $filters['status'] = 'approved'; // Default only approved
+                $filters['status'] = RecipeStatus::APPROVED->value;
             } elseif ($status !== 'all') {
                 $filters['status'] = $status;
             }
 
-            // Category filter
             if ($request->filled('category_id')) {
                 $filters['category_id'] = $request->input('category_id');
             }
 
-            // User filter
             if ($request->filled('user_id')) {
                 $filters['user_id'] = $request->input('user_id');
             }
 
-            // Difficulty filter
             if ($request->filled('difficulty')) {
                 $filters['difficulty'] = $request->input('difficulty');
             }
 
-            // Calories range filter
             if ($minCalories !== null && $minCalories !== '') {
                 $filters['calories'] = [
                     'operator' => 'gte',
-                    'value' => (int) $minCalories,
+                    'value'    => (int) $minCalories,
                 ];
             }
 
             if ($maxCalories !== null && $maxCalories !== '') {
                 $existingCaloriesFilter = $filters['calories'] ?? null;
                 if (is_array($existingCaloriesFilter)) {
-                    // Supabase filter builder supports one operator per key.
-                    // Keep DB filter on min, then enforce max in PHP.
                     $localMaxCalories = (int) $maxCalories;
                 } else {
                     $filters['calories'] = [
                         'operator' => 'lte',
-                        'value' => (int) $maxCalories,
+                        'value'    => (int) $maxCalories,
                     ];
                 }
             }
 
-            // Tag filter (resolve recipe ids first to avoid join-filter mismatch)
             if ($request->filled('tag_id')) {
                 $taggedRecipeRows = $this->supabase->select(
                     'recipe_tags',
@@ -93,10 +88,10 @@ class RecipeController extends Controller
 
                 if (empty($taggedRecipeIds)) {
                     return response()->json([
-                        'success' => true,
-                        'data' => [],
+                        'success'    => true,
+                        'data'       => [],
                         'pagination' => [
-                            'limit' => (int) $request->input('limit', 10),
+                            'limit'  => (int) $request->input('limit', 10),
                             'offset' => (int) $request->input('offset', 0),
                         ],
                     ]);
@@ -104,21 +99,18 @@ class RecipeController extends Controller
 
                 $filters['id'] = [
                     'operator' => 'in',
-                    'values' => $taggedRecipeIds,
+                    'values'   => $taggedRecipeIds,
                 ];
             }
 
-            // Pagination
-            $limit = (int) $request->input('limit', 10);
+            $limit  = (int) $request->input('limit', 10);
             $offset = (int) $request->input('offset', 0);
 
-            // If search is active, fetch first then filter in PHP, then apply pagination.
             if ($searchQuery === '') {
-                $options['limit'] = $limit;
+                $options['limit']  = $limit;
                 $options['offset'] = $offset;
             }
 
-            // Ordering (guard invalid client params to avoid 500 from PostgREST)
             $allowedOrderBy = ['created_at', 'updated_at', 'views_count', 'title', 'calories', 'cooking_time'];
             $orderBy = $request->input('order_by', 'created_at');
             if (!in_array($orderBy, $allowedOrderBy, true)) {
@@ -132,7 +124,6 @@ class RecipeController extends Controller
 
             $options['order'] = "{$orderBy}.{$orderDirection}";
 
-            // Try relational select first; fallback to plain rows if relation config differs in DB
             $columns = ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'];
             try {
                 $recipes = $this->supabase->select('recipes', $columns, $filters, $options);
@@ -140,11 +131,10 @@ class RecipeController extends Controller
                 $recipes = $this->supabase->select('recipes', ['*'], $filters, $options);
             }
 
-            // Search by title/description/ingredients content.
             if ($searchQuery !== '') {
-                $needle = strtolower($searchQuery);
+                $needle  = strtolower($searchQuery);
                 $recipes = array_values(array_filter($recipes, function ($recipe) use ($needle) {
-                    $title = strtolower((string) ($recipe['title'] ?? ''));
+                    $title       = strtolower((string) ($recipe['title']       ?? ''));
                     $description = strtolower((string) ($recipe['description'] ?? ''));
                     $ingredients = strtolower(json_encode($recipe['ingredients'] ?? ''));
 
@@ -178,34 +168,33 @@ class RecipeController extends Controller
                 }));
             }
 
-            // Add rating info for each recipe (non-fatal if ratings table/view is unavailable)
             foreach ($recipes as &$recipe) {
                 $totalRatings = 0;
-                $avgRating = 0;
+                $avgRating    = 0;
 
                 try {
-                    $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
+                    $ratings      = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
                     $totalRatings = count($ratings);
 
                     if ($totalRatings > 0) {
-                        $sum = array_sum(array_column($ratings, 'rating'));
+                        $sum       = array_sum(array_column($ratings, 'rating'));
                         $avgRating = round($sum / $totalRatings, 1);
                     }
                 } catch (Exception $e) {
-                    // keep default rating info when ratings query fails
+                    // keep default
                 }
 
                 $recipe['rating_info'] = [
                     'average' => $avgRating,
-                    'total' => $totalRatings,
+                    'total'   => $totalRatings,
                 ];
             }
 
             return response()->json([
-                'success' => true,
-                'data' => $recipes,
+                'success'    => true,
+                'data'       => $recipes,
                 'pagination' => [
-                    'limit' => $limit,
+                    'limit'  => $limit,
                     'offset' => $offset,
                 ],
             ]);
@@ -236,29 +225,27 @@ class RecipeController extends Controller
 
             $recipe = $recipes[0];
 
-            // Get ratings info
-            $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $id]);
+            $ratings      = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $id]);
             $totalRatings = count($ratings);
-            $avgRating = 0;
+            $avgRating    = 0;
 
             if ($totalRatings > 0) {
-                $sum = array_sum(array_column($ratings, 'rating'));
+                $sum       = array_sum(array_column($ratings, 'rating'));
                 $avgRating = round($sum / $totalRatings, 1);
             }
 
             $recipe['rating_info'] = [
                 'average' => $avgRating,
-                'total' => $totalRatings,
+                'total'   => $totalRatings,
             ];
 
-            // Increment views count
             $this->supabase->update('recipes', [
-                'views_count' => ($recipe['views_count'] ?? 0) + 1
+                'views_count' => ($recipe['views_count'] ?? 0) + 1,
             ], ['id' => $id]);
 
             return response()->json([
                 'success' => true,
-                'data' => $recipe,
+                'data'    => $recipe,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -269,7 +256,7 @@ class RecipeController extends Controller
     }
 
     /**
-     * Create new recipe
+     * Create new recipe — always stored as 'pending', no auto-moderation.
      * POST /api/recipes
      */
     public function store(Request $request)
@@ -279,27 +266,27 @@ class RecipeController extends Controller
         $this->normalizeArrayInput($request, 'tags', true);
 
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid',
-            'title' => 'required|string|max:200',
-            'description' => 'required|string',
-            'category_id' => 'required|integer',
+            'user_id'      => 'required|uuid',
+            'title'        => 'required|string|max:200',
+            'description'  => 'required|string',
+            'category_id'  => 'required|integer',
             'cooking_time' => 'nullable|integer',
-            'servings' => 'nullable|integer',
-            'difficulty' => 'nullable|in:mudah,sedang,sulit',
-            'calories' => 'nullable|integer',
-            'ingredients' => 'required|array',
-            'steps' => 'required|array',
-            'tags' => 'nullable|array',
-            'tags.*' => 'nullable',
-            'image' => 'nullable|image|max:5120',
-            'video_url' => 'nullable|url',
+            'servings'     => 'nullable|integer',
+            'difficulty'   => 'nullable|in:mudah,sedang,sulit',
+            'calories'     => 'nullable|integer',
+            'ingredients'  => 'required|array',
+            'steps'        => 'required|array',
+            'tags'         => 'nullable|array',
+            'tags.*'       => 'nullable',
+            'image'        => 'nullable|image|max:5120',
+            'video_url'    => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
@@ -308,33 +295,25 @@ class RecipeController extends Controller
                 $request->input('tags', []),
                 $request->input('user_id')
             );
-            $moderation = $this->autoModerateRecipeContent(
-                (string) $request->input('title', ''),
-                (string) $request->input('description', ''),
-                $request->input('ingredients', []),
-                $request->input('steps', [])
-            );
 
             $data = [
-                'user_id' => $request->input('user_id'),
-                'title' => $request->input('title'),
-                'description' => $request->input('description'),
-                'category_id' => $request->input('category_id'),
+                'user_id'      => $request->input('user_id'),
+                'title'        => $request->input('title'),
+                'description'  => $request->input('description'),
+                'category_id'  => $request->input('category_id'),
                 'cooking_time' => $request->input('cooking_time'),
-                'servings' => $request->input('servings'),
-                'difficulty' => $request->input('difficulty', 'sedang'),
-                'calories' => $request->input('calories'),
-                'ingredients' => json_encode($request->input('ingredients')),
-                'steps' => json_encode($request->input('steps')),
-                'video_url' => $request->input('video_url'),
-                'status' => $moderation['status'],
-                'rejection_reason' => $moderation['reason'],
-                'views_count' => 0,
+                'servings'     => $request->input('servings'),
+                'difficulty'   => $request->input('difficulty', 'sedang'),
+                'calories'     => $request->input('calories'),
+                'ingredients'  => json_encode($request->input('ingredients')),
+                'steps'        => json_encode($request->input('steps')),
+                'video_url'    => $request->input('video_url'),
+                'status'       => RecipeStatus::PENDING->value,
+                'views_count'  => 0,
             ];
 
-            // Handle image upload if present
             if ($request->hasFile('image')) {
-                $image = $request->file('image');
+                $image     = $request->file('image');
                 $imageName = Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $imagePath = "recipes/{$imageName}";
 
@@ -342,23 +321,20 @@ class RecipeController extends Controller
                 $data['image_url'] = $this->supabase->getPublicUrl('recipe-images', $imagePath);
             }
 
-            // Insert recipe
-            $recipe = $this->supabase->insert('recipes', $data);
+            $recipe   = $this->supabase->insert('recipes', $data);
             $recipeId = $recipe[0]['id'];
 
-            // Insert tags if provided
             if (!empty($resolvedTagIds)) {
                 foreach ($resolvedTagIds as $tagId) {
                     $this->supabase->insert('recipe_tags', [
                         'recipe_id' => $recipeId,
-                        'tag_id' => $tagId,
+                        'tag_id'    => $tagId,
                     ]);
 
-                    // Increment tag usage count
                     $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $tagId]);
                     if (!empty($tagData)) {
                         $this->supabase->update('tags', [
-                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1
+                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1,
                         ], ['id' => $tagId]);
                     }
                 }
@@ -366,10 +342,8 @@ class RecipeController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $moderation['status'] === 'approved'
-                    ? 'Recipe created and auto-approved'
-                    : 'Recipe created but auto-rejected by moderation rules',
-                'data' => $recipe[0],
+                'message' => 'Resep berhasil dikirim dan menunggu persetujuan admin.',
+                'data'    => $recipe[0],
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -386,26 +360,26 @@ class RecipeController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'nullable|string|max:200',
-            'description' => 'nullable|string',
-            'category_id' => 'nullable|integer',
+            'title'        => 'nullable|string|max:200',
+            'description'  => 'nullable|string',
+            'category_id'  => 'nullable|integer',
             'cooking_time' => 'nullable|integer',
-            'servings' => 'nullable|integer',
-            'difficulty' => 'nullable|in:mudah,sedang,sulit',
-            'calories' => 'nullable|integer',
-            'ingredients' => 'nullable|array',
-            'steps' => 'nullable|array',
-            'tags' => 'nullable|array',
-            'tags.*' => 'nullable',
-            'image' => 'nullable|image|max:5120',
-            'video_url' => 'nullable|url',
+            'servings'     => 'nullable|integer',
+            'difficulty'   => 'nullable|in:mudah,sedang,sulit',
+            'calories'     => 'nullable|integer',
+            'ingredients'  => 'nullable|array',
+            'steps'        => 'nullable|array',
+            'tags'         => 'nullable|array',
+            'tags.*'       => 'nullable',
+            'image'        => 'nullable|image|max:5120',
+            'video_url'    => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
@@ -420,9 +394,8 @@ class RecipeController extends Controller
                 $data['steps'] = json_encode($request->input('steps'));
             }
 
-            // Handle image upload if present
             if ($request->hasFile('image')) {
-                $image = $request->file('image');
+                $image     = $request->file('image');
                 $imageName = Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $imagePath = "recipes/{$imageName}";
 
@@ -430,42 +403,36 @@ class RecipeController extends Controller
                 $data['image_url'] = $this->supabase->getPublicUrl('recipe-images', $imagePath);
             }
 
-            // Update recipe
             $recipe = $this->supabase->update('recipes', $data, ['id' => $id]);
 
-            // Update tags if provided
             if ($request->has('tags')) {
                 $resolvedTagIds = $this->resolveTagIds(
                     $request->input('tags', []),
                     $request->input('user_id')
                 );
 
-                // Get old tags to decrement usage count
                 $oldTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
                 foreach ($oldTags as $oldTag) {
                     $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $oldTag['tag_id']]);
                     if (!empty($tagData) && $tagData[0]['usage_count'] > 0) {
                         $this->supabase->update('tags', [
-                            'usage_count' => $tagData[0]['usage_count'] - 1
+                            'usage_count' => $tagData[0]['usage_count'] - 1,
                         ], ['id' => $oldTag['tag_id']]);
                     }
                 }
 
-                // Delete old tags
                 $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
 
-                // Insert new tags
                 foreach ($resolvedTagIds as $tagId) {
                     $this->supabase->insert('recipe_tags', [
                         'recipe_id' => $id,
-                        'tag_id' => $tagId,
+                        'tag_id'    => $tagId,
                     ]);
 
-                    // Increment tag usage count
                     $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $tagId]);
                     if (!empty($tagData)) {
                         $this->supabase->update('tags', [
-                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1
+                            'usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1,
                         ], ['id' => $tagId]);
                     }
                 }
@@ -474,7 +441,7 @@ class RecipeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Recipe updated successfully',
-                'data' => $recipe,
+                'data'    => $recipe,
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -491,27 +458,23 @@ class RecipeController extends Controller
     public function destroy($id)
     {
         try {
-            // Decrement usage_count for all tags attached to this recipe
             $recipeTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
             foreach ($recipeTags as $recipeTag) {
                 $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $recipeTag['tag_id']]);
                 if (!empty($tagData) && $tagData[0]['usage_count'] > 0) {
                     $this->supabase->update('tags', [
-                        'usage_count' => $tagData[0]['usage_count'] - 1
+                        'usage_count' => $tagData[0]['usage_count'] - 1,
                     ], ['id' => $recipeTag['tag_id']]);
                 }
             }
 
-            // Delete all child records that have FK → recipes.id before deleting the recipe
-            $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
-            $this->supabase->delete('board_recipes', ['recipe_id' => $id]);
+            $this->supabase->delete('recipe_tags',        ['recipe_id' => $id]);
+            $this->supabase->delete('board_recipes',      ['recipe_id' => $id]);
             $this->supabase->delete('collection_recipes', ['recipe_id' => $id]);
-            $this->supabase->delete('recipe_ratings', ['recipe_id' => $id]);
-            $this->supabase->delete('comments', ['recipe_id' => $id]);
-            $this->supabase->delete('menu_plans', ['recipe_id' => $id]);
-
-            // Finally delete the recipe itself
-            $this->supabase->delete('recipes', ['id' => $id]);
+            $this->supabase->delete('recipe_ratings',     ['recipe_id' => $id]);
+            $this->supabase->delete('comments',           ['recipe_id' => $id]);
+            $this->supabase->delete('menu_plans',         ['recipe_id' => $id]);
+            $this->supabase->delete('recipes',            ['id'        => $id]);
 
             return response()->json([
                 'success' => true,
@@ -526,42 +489,48 @@ class RecipeController extends Controller
     }
 
     /**
-     * Approve recipe (admin only)
+     * Approve recipe — admin only (enforced via middleware + role check)
      * POST /api/recipes/{id}/approve
      */
     public function approve(Request $request, $id)
     {
         try {
-            $moderatorId = $request->input('moderated_by');
+            $moderatorId = Auth::id();
+            if (!$moderatorId) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+            }
+
+            if (!$this->isAdminUser($moderatorId)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden: admin access required'], 403);
+            }
 
             $recipe = $this->supabase->update('recipes', [
-                'status' => 'approved',
+                'status'       => RecipeStatus::APPROVED->value,
                 'moderated_by' => $moderatorId,
-                'moderated_at' => date('Y-m-d H:i:s'),
+                'moderated_at' => now()->toDateTimeString(),
             ], ['id' => $id], true);
 
-            // Send notification to recipe owner
             $recipeData = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
-                $title = $recipeData[0]['title'];
+                $title  = $recipeData[0]['title'];
 
-                $existingNotification = $this->supabase->select('notifications', ['id'], [
-                    'user_id' => $userId,
-                    'type' => 'recipe_approved',
+                $existing = $this->supabase->select('notifications', ['id'], [
+                    'user_id'             => $userId,
+                    'type'                => 'recipe_approved',
                     'related_entity_type' => 'recipe',
-                    'related_entity_id' => $id,
-                    'is_read' => false,
+                    'related_entity_id'   => $id,
+                    'is_read'             => false,
                 ]);
 
-                if (empty($existingNotification)) {
+                if (empty($existing)) {
                     $this->supabase->insert('notifications', [
-                        'user_id' => $userId,
-                        'type' => 'recipe_approved',
-                        'title' => 'Resep Disetujui',
-                        'message' => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
+                        'user_id'             => $userId,
+                        'type'                => 'recipe_approved',
+                        'title'               => 'Resep Disetujui',
+                        'message'             => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
                         'related_entity_type' => 'recipe',
-                        'related_entity_id' => $id,
+                        'related_entity_id'   => $id,
                     ]);
                 }
             }
@@ -569,59 +538,60 @@ class RecipeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Recipe approved successfully',
-                'data' => $recipe,
+                'data'    => $recipe,
             ]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Reject recipe (admin only)
+     * Reject recipe — admin only (enforced via middleware + role check)
      * POST /api/recipes/{id}/reject
      */
     public function reject(Request $request, $id)
     {
         try {
-            $reason = $request->input('reason', 'Tidak memenuhi standar');
-            $moderatorId = $request->input('moderated_by');
+            $reason      = $request->input('reason', 'Tidak memenuhi standar');
+            $moderatorId = Auth::id();
+
+            if (!$moderatorId) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+            }
+
+            if (!$this->isAdminUser($moderatorId)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden: admin access required'], 403);
+            }
 
             $recipe = $this->supabase->update('recipes', [
-                'status' => 'rejected',
+                'status'           => RecipeStatus::REJECTED->value,
                 'rejection_reason' => $reason,
-                'moderated_by' => $moderatorId,
-                'moderated_at' => date('Y-m-d H:i:s'),
+                'moderated_by'     => $moderatorId,
+                'moderated_at'     => now()->toDateTimeString(),
             ], ['id' => $id], true);
 
-            // Send notification to recipe owner
             $recipeData = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
             if (!empty($recipeData)) {
                 $userId = $recipeData[0]['user_id'];
-                $title = $recipeData[0]['title'];
+                $title  = $recipeData[0]['title'];
 
                 $this->supabase->insert('notifications', [
-                    'user_id' => $userId,
-                    'type' => 'recipe_rejected',
-                    'title' => 'Resep Ditolak',
-                    'message' => "Resep '{$title}' ditolak. Alasan: {$reason}",
+                    'user_id'             => $userId,
+                    'type'                => 'recipe_rejected',
+                    'title'               => 'Resep Ditolak',
+                    'message'             => "Resep '{$title}' ditolak. Alasan: {$reason}",
                     'related_entity_type' => 'recipe',
-                    'related_entity_id' => $id,
+                    'related_entity_id'   => $id,
                 ]);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Recipe rejected',
-                'data' => $recipe,
+                'data'    => $recipe,
             ]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -632,67 +602,53 @@ class RecipeController extends Controller
     public function search(Request $request)
     {
         try {
-            $query = trim((string) $request->input('q', ''));
-            $categoryId = $request->input('category_id');
-            $difficulty = $request->input('difficulty');
-            $minCalories = $request->input('min_calories');
-            $maxCalories = $request->input('max_calories');
+            $query              = trim((string) $request->input('q', ''));
+            $categoryId         = $request->input('category_id');
+            $difficulty         = $request->input('difficulty');
+            $minCalories        = $request->input('min_calories');
+            $maxCalories        = $request->input('max_calories');
             $ingredientKeywords = $this->parseIngredientKeywords($request->input('ingredients'));
-            $limit = (int) $request->input('limit', 20);
-            $offset = (int) $request->input('offset', 0);
-            $localMaxCalories = null;
+            $limit              = (int) $request->input('limit', 20);
+            $offset             = (int) $request->input('offset', 0);
+            $localMaxCalories   = null;
 
-            $filters = ['status' => 'approved'];
+            $filters = ['status' => RecipeStatus::APPROVED->value];
 
-            if ($categoryId) {
-                $filters['category_id'] = $categoryId;
-            }
-
-            if ($difficulty) {
-                $filters['difficulty'] = $difficulty;
-            }
+            if ($categoryId) $filters['category_id'] = $categoryId;
+            if ($difficulty)  $filters['difficulty']  = $difficulty;
 
             if ($minCalories !== null && $minCalories !== '') {
-                $filters['calories'] = [
-                    'operator' => 'gte',
-                    'value' => (int) $minCalories,
-                ];
+                $filters['calories'] = ['operator' => 'gte', 'value' => (int) $minCalories];
             }
 
             if ($maxCalories !== null && $maxCalories !== '') {
                 if (isset($filters['calories'])) {
                     $localMaxCalories = (int) $maxCalories;
                 } else {
-                    $filters['calories'] = [
-                        'operator' => 'lte',
-                        'value' => (int) $maxCalories,
-                    ];
+                    $filters['calories'] = ['operator' => 'lte', 'value' => (int) $maxCalories];
                 }
             }
 
-            $recipes = $this->supabase->select('recipes',
+            $recipes = $this->supabase->select(
+                'recipes',
                 ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
                 $filters,
                 ['limit' => $limit, 'offset' => $offset, 'order' => 'views_count.desc']
             );
 
-            // Filter by search query if provided
             if ($query !== '') {
-                $needle = strtolower($query);
-                $recipes = array_filter($recipes, function ($recipe) use ($needle) {
-                    $title = strtolower((string) ($recipe['title'] ?? ''));
+                $needle  = strtolower($query);
+                $recipes = array_values(array_filter($recipes, function ($recipe) use ($needle) {
+                    $title       = strtolower((string) ($recipe['title']       ?? ''));
                     $description = strtolower((string) ($recipe['description'] ?? ''));
                     return str_contains($title, $needle) || str_contains($description, $needle);
-                });
-                $recipes = array_values($recipes);
+                }));
             }
 
             if ($localMaxCalories !== null) {
                 $recipes = array_values(array_filter($recipes, function ($recipe) use ($localMaxCalories) {
                     $calories = $recipe['calories'] ?? null;
-                    if ($calories === null || $calories === '') {
-                        return false;
-                    }
+                    if ($calories === null || $calories === '') return false;
                     return (int) $calories <= $localMaxCalories;
                 }));
             }
@@ -701,70 +657,57 @@ class RecipeController extends Controller
                 $recipes = array_values(array_filter($recipes, function ($recipe) use ($ingredientKeywords) {
                     $haystack = strtolower($this->flattenIngredientsToText($recipe['ingredients'] ?? []));
                     foreach ($ingredientKeywords as $keyword) {
-                        if (!str_contains($haystack, strtolower($keyword))) {
-                            return false;
-                        }
+                        if (!str_contains($haystack, strtolower($keyword))) return false;
                     }
                     return true;
                 }));
             }
 
-            // Add rating info
             foreach ($recipes as &$recipe) {
-                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
+                $ratings      = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
                 $totalRatings = count($ratings);
-                $avgRating = 0;
+                $avgRating    = 0;
 
                 if ($totalRatings > 0) {
-                    $sum = array_sum(array_column($ratings, 'rating'));
+                    $sum       = array_sum(array_column($ratings, 'rating'));
                     $avgRating = round($sum / $totalRatings, 1);
                 }
 
-                $recipe['rating_info'] = [
-                    'average' => $avgRating,
-                    'total' => $totalRatings,
-                ];
+                $recipe['rating_info'] = ['average' => $avgRating, 'total' => $totalRatings];
             }
 
             return response()->json([
-                'success' => true,
-                'data' => $recipes,
-                'query' => $query,
-                'filters' => [
+                'success'    => true,
+                'data'       => $recipes,
+                'query'      => $query,
+                'filters'    => [
                     'category_id' => $categoryId,
-                    'difficulty' => $difficulty,
-                    'min_calories' => $minCalories,
-                    'max_calories' => $maxCalories,
+                    'difficulty'  => $difficulty,
+                    'min_calories'=> $minCalories,
+                    'max_calories'=> $maxCalories,
                     'ingredients' => $ingredientKeywords,
                 ],
-                'pagination' => [
-                    'limit' => $limit,
-                    'offset' => $offset,
-                ],
+                'pagination' => ['limit' => $limit, 'offset' => $offset],
             ]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
+    // ─── PRIVATE HELPERS ──────────────────────────────────────────────────────
+
     private function parseIngredientKeywords($rawIngredients): array
     {
-        if ($rawIngredients === null || $rawIngredients === '') {
-            return [];
-        }
+        if ($rawIngredients === null || $rawIngredients === '') return [];
 
-        if (is_array($rawIngredients)) {
-            $ingredients = $rawIngredients;
-        } else {
-            $ingredients = explode(',', (string) $rawIngredients);
-        }
+        $ingredients = is_array($rawIngredients)
+            ? $rawIngredients
+            : explode(',', (string) $rawIngredients);
 
-        return array_values(array_filter(array_map(function ($item) {
-            return trim((string) $item);
-        }, $ingredients), fn ($item) => $item !== ''));
+        return array_values(array_filter(
+            array_map(fn ($item) => trim((string) $item), $ingredients),
+            fn ($item) => $item !== ''
+        ));
     }
 
     private function flattenIngredientsToText($ingredients): string
@@ -783,7 +726,6 @@ class RecipeController extends Controller
                 if (is_array($item)) {
                     return implode(' ', array_map(fn ($nested) => (string) $nested, $item));
                 }
-
                 return (string) $item;
             }, $ingredients));
         }
@@ -793,14 +735,10 @@ class RecipeController extends Controller
 
     private function normalizeArrayInput(Request $request, string $field, bool $castToInt = false): void
     {
-        if (!$request->has($field)) {
-            return;
-        }
+        if (!$request->has($field)) return;
 
         $value = $request->input($field);
-        if (is_array($value)) {
-            return;
-        }
+        if (is_array($value)) return;
 
         $parsed = null;
         if (is_string($value)) {
@@ -809,58 +747,22 @@ class RecipeController extends Controller
                 $parsed = [];
             } else {
                 $decoded = json_decode($trimmed, true);
-                if (is_array($decoded)) {
-                    $parsed = $decoded;
-                } else {
-                    $parsed = array_map('trim', explode(',', $trimmed));
-                }
+                $parsed  = is_array($decoded)
+                    ? $decoded
+                    : array_map('trim', explode(',', $trimmed));
             }
         }
 
-        if (!is_array($parsed)) {
-            return;
-        }
+        if (!is_array($parsed)) return;
 
         if ($castToInt) {
-            $parsed = array_values(array_filter(array_map(function ($item) {
-                if (is_numeric($item)) {
-                    return (int) $item;
-                }
-                return null;
-            }, $parsed), fn ($item) => $item !== null));
+            $parsed = array_values(array_filter(
+                array_map(fn ($item) => is_numeric($item) ? (int) $item : null, $parsed),
+                fn ($item) => $item !== null
+            ));
         }
 
         $request->merge([$field => $parsed]);
-    }
-
-    private function autoModerateRecipeContent(string $title, string $description, $ingredients, $steps): array
-    {
-        $bannedWords = [
-            'anjing', 'bangsat', 'kontol', 'memek', 'ngentot',
-            'goblok', 'tolol', 'jancok', 'fuck', 'bitch',
-            'asshole', 'nigga', 'nigger', 'bastard',
-        ];
-
-        $textBlob = strtolower(trim(implode(' ', [
-            $title,
-            $description,
-            $this->flattenIngredientsToText($ingredients),
-            $this->flattenIngredientsToText($steps),
-        ])));
-
-        foreach ($bannedWords as $badWord) {
-            if ($badWord !== '' && str_contains($textBlob, strtolower($badWord))) {
-                return [
-                    'status' => 'rejected',
-                    'reason' => "Auto moderation: konten mengandung kata terlarang ({$badWord})",
-                ];
-            }
-        }
-
-        return [
-            'status' => 'approved',
-            'reason' => null,
-        ];
     }
 
     private function resolveTagIds(array $rawTags, ?string $createdBy): array
@@ -868,9 +770,7 @@ class RecipeController extends Controller
         $resolvedTagIds = [];
 
         foreach ($rawTags as $rawTag) {
-            if ($rawTag === null) {
-                continue;
-            }
+            if ($rawTag === null) continue;
 
             if (is_numeric($rawTag)) {
                 $resolvedTagIds[] = (int) $rawTag;
@@ -878,14 +778,10 @@ class RecipeController extends Controller
             }
 
             $tagName = trim((string) $rawTag);
-            if ($tagName === '') {
-                continue;
-            }
+            if ($tagName === '') continue;
 
             $slug = Str::slug($tagName);
-            if ($slug === '') {
-                continue;
-            }
+            if ($slug === '') continue;
 
             $existing = $this->supabase->select('tags', ['id'], ['slug' => $slug]);
             if (!empty($existing)) {
@@ -894,9 +790,9 @@ class RecipeController extends Controller
             }
 
             $inserted = $this->supabase->insert('tags', [
-                'name' => $tagName,
-                'slug' => $slug,
-                'created_by' => $createdBy,
+                'name'        => $tagName,
+                'slug'        => $slug,
+                'created_by'  => $createdBy,
                 'is_approved' => true,
                 'usage_count' => 0,
             ]);
@@ -909,9 +805,16 @@ class RecipeController extends Controller
         return array_values(array_unique($resolvedTagIds));
     }
 
+    private function isAdminUser(string $userId): bool
+    {
+        $profiles = $this->supabase->select('profiles', ['role'], ['id' => $userId]);
+        if (empty($profiles)) return false;
+        return ($profiles[0]['role'] ?? null) === 'admin';
+    }
+
     /**
      * Increment recipe views explicitly
-     * POST /api/v1/recipes/{id}/view
+     * POST /api/recipes/{id}/view
      */
     public function incrementView($id)
     {
@@ -919,67 +822,43 @@ class RecipeController extends Controller
             $recipes = $this->supabase->select('recipes', ['id', 'views_count'], ['id' => $id]);
 
             if (empty($recipes)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Recipe not found',
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Recipe not found'], 404);
             }
 
-            $currentViews = (int) ($recipes[0]['views_count'] ?? 0);
             $this->supabase->update('recipes', [
-                'views_count' => $currentViews + 1,
+                'views_count' => (int) ($recipes[0]['views_count'] ?? 0) + 1,
             ], ['id' => $id]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Recipe view incremented',
-            ]);
+            return response()->json(['success' => true, 'message' => 'Recipe view incremented']);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     /**
      * Get tags attached to a recipe
-     * GET /api/v1/recipes/{id}/tags
+     * GET /api/recipes/{id}/tags
      */
     public function getRecipeTags($id)
     {
         try {
-            $recipeTags = $this->supabase->select('recipe_tags',
-                ['tag_id'],
-                ['recipe_id' => $id]
-            );
+            $recipeTags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $id]);
 
             if (empty($recipeTags)) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                ]);
+                return response()->json(['success' => true, 'data' => []]);
             }
 
             $tagIds = array_values(array_unique(array_column($recipeTags, 'tag_id')));
-            $tags = [];
+            $tags   = [];
 
             foreach ($tagIds as $tagId) {
                 $tag = $this->supabase->select('tags', ['id', 'name', 'slug'], ['id' => $tagId]);
-                if (!empty($tag)) {
-                    $tags[] = $tag[0];
-                }
+                if (!empty($tag)) $tags[] = $tag[0];
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $tags,
-            ]);
+            return response()->json(['success' => true, 'data' => $tags]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

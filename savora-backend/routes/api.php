@@ -213,6 +213,22 @@ Route::prefix('favorites')->middleware('auth:sanctum')->group(function () {
     });
 });
 
+// ─── BOARDS (BACKWARD-COMPAT ALIAS) ──────────────────────────────────────
+Route::prefix('boards')->middleware('auth:sanctum')->group(function () {
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/', [FavoriteController::class, 'getBoards']);
+        Route::get('{boardId}/recipes', [FavoriteController::class, 'getBoardRecipes']);
+    });
+
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/', [FavoriteController::class, 'createBoard']);
+        Route::put('{boardId}', [FavoriteController::class, 'updateBoard']);
+        Route::delete('{boardId}', [FavoriteController::class, 'deleteBoard']);
+        Route::post('{boardId}/recipes', [FavoriteController::class, 'addRecipeToBoard']);
+        Route::delete('{boardId}/recipes/{recipeId}', [FavoriteController::class, 'removeRecipeFromBoard']);
+    });
+});
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────
 Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
     Route::middleware('throttle:60,1')->group(function () {

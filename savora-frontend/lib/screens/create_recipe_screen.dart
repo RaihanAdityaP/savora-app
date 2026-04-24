@@ -657,10 +657,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         if (response['success'] == true) {
           // ── Hapus draft setelah submit berhasil ──
           await DraftService.clearCreateDraft();
+          const successMessage = 'Resep berhasil dikirim! Menunggu persetujuan admin.';
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Resep berhasil dibuat! Menunggu persetujuan admin...'),
+            SnackBar(
+              content: Text(successMessage),
               backgroundColor: Colors.green,
             ),
           );

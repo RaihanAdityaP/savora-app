@@ -447,7 +447,7 @@ savora://recipe/${widget.recipeId}
         _showSnackBar('Silakan login terlebih dahulu', isError: true);
         return;
       }
-      final response = await ApiService.get('/boards');
+      final response = await ApiService.get('/favorites/boards');
       final boards = _extractMapList(response['data'] ?? response);
       if (!mounted) return;
       showModalBottomSheet(
@@ -622,7 +622,7 @@ savora://recipe/${widget.recipeId}
                   return;
                 }
                 try {
-                  await ApiService.post('/boards', {
+                  await ApiService.post('/favorites/boards', {
                     'name': nameController.text.trim(),
                     'description': descController.text.trim(),
                   });
@@ -645,7 +645,7 @@ savora://recipe/${widget.recipeId}
 
   Future<void> _addToBoard(String boardId, String boardName) async {
     try {
-      await ApiService.post('/boards/$boardId/recipes', {'recipe_id': widget.recipeId});
+      await ApiService.post('/favorites/boards/$boardId/recipes', {'recipe_id': widget.recipeId});
       if (mounted) {
         setState(() => _isFavorite = true);
         _showSnackBar('Ditambahkan ke "$boardName"', isError: false);
