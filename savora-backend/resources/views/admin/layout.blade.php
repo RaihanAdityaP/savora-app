@@ -238,9 +238,27 @@
     <header class="top">
         <div class="top-ttl">@yield('page-title','DASHBOARD')</div>
         <div class="top-r">
-            <span class="top-dt">{{ now()->format('d M Y') }}</span>
-            <div class="top-b"><div class="dot"></div>Admin</div>
-        </div>
+    <span class="top-dt">{{ now()->format('d M Y') }}</span>
+    <div class="top-b"><div class="dot"></div>{{ session('admin_username', 'Admin') }}</div>
+    <form method="POST" action="{{ route('admin.logout') }}" style="display:inline;">
+        @csrf
+        <button type="button"
+                onclick="if(confirm('Logout dari admin panel?')) this.closest('form').submit()"
+                style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+                       background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.2);
+                       color:#E57373;font-family:'DM Sans',sans-serif;font-size:13px;
+                       font-weight:500;cursor:pointer;transition:all .15s;"
+                onmouseover="this.style.background='rgba(244,67,54,.18)'"
+                onmouseout="this.style.background='rgba(244,67,54,.1)'">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+        </button>
+    </form>
+</div>
     </header>
     <main class="pg">
         @if(session('status'))
