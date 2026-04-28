@@ -181,11 +181,37 @@
     .tc{color:var(--td)}.tm{color:var(--tm)}.ts{font-size:12px}.tx{font-size:11px}.fw7{font-weight:700}.fw6{font-weight:600}
     .trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     @media(max-width:1100px){.sg{grid-template-columns:repeat(2,1fr)}.mg{grid-template-columns:1fr}}
+    @media(max-width:768px){
+        .sb{transform:translateX(-100%);transition:transform .25s ease;z-index:300}
+        .sb.open{transform:translateX(0)}
+        .main{margin-left:0}
+        .pg{padding:16px}
+        .top{padding:0 16px}
+        .top-dt{display:none}
+        .sg{grid-template-columns:repeat(2,1fr);gap:12px}
+        .sc{padding:18px 16px}
+        .sc-val{font-size:28px}
+        .mg{grid-template-columns:1fr}
+        .card{overflow-x:auto}
+        table{min-width:600px}
+        .sbox .inp{width:160px}
+        .ssel .sel{width:120px}
+        .sb-overlay{display:block}
+    }
+    @media(max-width:480px){
+        .sg{grid-template-columns:1fr}
+        .top-b{display:none}
+    }
+    .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299}
+    .hamburger{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--bd);cursor:pointer;margin-right:12px;flex-shrink:0}
+    .hamburger svg{width:18px;height:18px;fill:none;stroke:var(--tw);stroke-width:2;stroke-linecap:round}
+    @media(max-width:768px){.hamburger{display:flex}}
     </style>
     @stack('styles')
 </head>
 <body>
-<aside class="sb">
+<div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
+<aside class="sb" id="sidebar">
     <div class="sb-brand">
         <div class="sb-logo">
             <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -236,6 +262,9 @@
 </aside>
 <div class="main">
     <header class="top">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+            <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <div class="top-ttl">@yield('page-title','DASHBOARD')</div>
         <div class="top-r">
     <span class="top-dt">{{ now()->format('d M Y') }}</span>
@@ -271,5 +300,17 @@
     </main>
 </div>
 @stack('scripts')
+<script>
+function toggleSidebar(){
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sbOverlay');
+    sb.classList.toggle('open');
+    ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+}
+// Close sidebar on nav link click (mobile)
+document.querySelectorAll('.sb .na').forEach(a => a.addEventListener('click', () => {
+    if(window.innerWidth <= 768) toggleSidebar();
+}));
+</script>
 </body>
 </html> 

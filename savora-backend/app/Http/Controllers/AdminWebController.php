@@ -168,13 +168,14 @@ class AdminWebController extends Controller
 
     private function loadStats(): array
     {
-        $stats = ['total_users' => 0, 'banned_users' => 0, 'pending_recipes' => 0, 'total_recipes' => 0];
+        $stats = ['total_users' => 0, 'banned_users' => 0, 'pending_recipes' => 0, 'total_recipes' => 0, 'pending_tags' => 0];
         $error = null;
         try {
             $stats['total_users']     = count($this->supabase->select('profiles', ['id']));
             $stats['banned_users']    = count($this->supabase->select('profiles', ['id'], ['is_banned' => true]));
             $stats['pending_recipes'] = count($this->supabase->select('recipes', ['id'], ['status' => 'pending']));
             $stats['total_recipes']   = count($this->supabase->select('recipes', ['id']));
+            $stats['pending_tags']    = count($this->supabase->select('tags', ['id'], ['is_approved' => false]));
         } catch (Exception $e) {
             $error = $e->getMessage();
         }

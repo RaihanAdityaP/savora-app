@@ -5,7 +5,7 @@
 @if($error)<div class="al al-err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ $error }}</div>@endif
 
 <div class="f ac jb mb4" style="flex-wrap:wrap;gap:16px;">
-  <div class="sh" style="margin-bottom:0;"><div class="sh-bar"></div><span class="sh-ttl">ACTIVITY LOGS</span></div>
+  <div style="flex:1;"></div>
   <span class="ts tc">{{ $paginator->total() }} total entries</span>
 </div>
 

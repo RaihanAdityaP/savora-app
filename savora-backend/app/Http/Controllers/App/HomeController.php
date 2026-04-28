@@ -74,9 +74,16 @@ class HomeController extends Controller
 
         $hasMore = count($feed) === $limit;
 
+        // Get unread notifications count
+        $unreadCount = 0;
+        try {
+            $notifications = $this->supabase->select('notifications', ['id'], ['user_id' => $userId, 'is_read' => false]);
+            $unreadCount = count($notifications);
+        } catch (Exception) {}
+
         return view('app.home', compact(
             'profile', 'feed', 'offset', 'hasMore',
-            'myRecipesCount', 'bookmarksCount', 'followersCount'
+            'myRecipesCount', 'bookmarksCount', 'followersCount', 'unreadCount'
         ));
     }
 }

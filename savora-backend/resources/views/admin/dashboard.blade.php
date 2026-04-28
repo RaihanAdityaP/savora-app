@@ -4,8 +4,6 @@
 @section('content')
 @if($error)<div class="al al-err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ $error }}</div>@endif
 
-<div class="sh mb4"><div class="sh-bar"></div><span class="sh-ttl">PLATFORM OVERVIEW</span></div>
-
 <div class="sg">
 @php
 $cards = [
@@ -32,6 +30,7 @@ $cards = [
 $menus = [
   [route('admin.users'),  'linear-gradient(135deg,#4CAF50,#66BB6A)', 'rgba(76,175,80,.25)',  'User Management',   $stats['total_users'].' registered users',   '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
   [route('admin.recipes'),'linear-gradient(135deg,#FF9800,#FFB74D)', 'rgba(255,152,0,.25)',  'Recipe Moderation', $stats['pending_recipes'].' awaiting approval', '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>'],
+  [route('admin.tags'),   'linear-gradient(135deg,#FFD700,#FFA500)', 'rgba(255,215,0,.25)',  'Tag Moderation',    ($stats['pending_tags'] ?? 0).' awaiting approval', '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'],
   [route('admin.logs'),   'linear-gradient(135deg,#2196F3,#64B5F6)', 'rgba(33,150,243,.25)', 'Activity Logs',     'Monitor all activities',                     '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
 ];
 @endphp

@@ -9,7 +9,7 @@ import 'screens/detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/searching_screen.dart';
 import 'services/api_service.dart';
-import 'services/auth_storage.dart';        // ← NEW
+import 'services/auth_storage.dart';
 import 'services/notification_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

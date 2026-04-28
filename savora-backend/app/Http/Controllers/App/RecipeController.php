@@ -112,7 +112,7 @@ class RecipeController extends Controller
             $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]);
         } catch (Exception) {}
 
-        return view('app.recipe-create', compact('categories', 'popularTags'));
+        return view('app.recipes.create', compact('categories', 'popularTags'));
     }
 
     // POST /app/recipes
@@ -208,7 +208,7 @@ class RecipeController extends Controller
             $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
             $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]);
 
-            return view('app.recipe-edit', compact('recipe', 'tags', 'categories', 'popularTags'));
+            return view('app.recipes.edit', compact('recipe', 'tags', 'categories', 'popularTags'));
 
         } catch (Exception $e) {
             abort(500, $e->getMessage());
@@ -228,6 +228,7 @@ class RecipeController extends Controller
             'calories'     => 'nullable|integer',
             'ingredients'  => 'required|array',
             'steps'        => 'required|array',
+            'tags'         => 'nullable|array',
             'image'        => 'nullable|image|max:5120',
         ]);
 

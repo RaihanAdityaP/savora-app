@@ -11,8 +11,8 @@ class AdminAuth
     public function handle(Request $request, Closure $next): Response
     {
         if (! session('admin_id')) {
-            return redirect()->route('admin.login')
-                ->with('error', 'Silakan login terlebih dahulu.');
+            return redirect()->route('app.login')
+                ->with('error', 'Silakan login sebagai admin terlebih dahulu.');
         }
 
         return $next($request);

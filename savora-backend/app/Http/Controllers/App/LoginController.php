@@ -78,8 +78,13 @@ class LoginController extends Controller
 
             // Redirect admin ke admin panel
             if (($profile['role'] ?? '') === 'admin') {
-                return redirect()->route('admin.dashboard')
-                    ->with('status', 'Login sebagai admin.');
+                session()->regenerate();
+                session([
+                    'admin_id'       => $profile['id'],
+                    'admin_username' => $profile['username'] ?? $profile['full_name'] ?? 'Admin',
+                    'admin_role'     => 'admin',
+                ]);
+                return redirect()->route('admin.dashboard');
             }
 
             session()->regenerate();

@@ -5,11 +5,11 @@
 @if($error)<div class="al al-err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ $error }}</div>@endif
 
 <div class="f ac jb mb4" style="flex-wrap:wrap;gap:16px;">
-  <div class="sh" style="margin-bottom:0;flex:1;"><div class="sh-bar"></div><span class="sh-ttl">USER MANAGEMENT</span></div>
-  <form method="GET" action="{{ route('admin.users') }}" class="f ac g3" style="flex-wrap:wrap;">
-    <div class="sbox">
+  <div style="flex:1;"></div>
+  <form method="GET" action="{{ route('admin.users') }}" class="f ac g3" style="flex-wrap:wrap;width:100%;">
+    <div class="sbox" style="flex:1;min-width:0;">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search username..." class="inp">
+      <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search username..." class="inp" style="width:100%;">
     </div>
     <div class="ssel">
       <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>

@@ -11,16 +11,16 @@ use App\Http\Controllers\App\SearchController;
 use App\Http\Controllers\App\FavoriteController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\AIChatController;
+use App\Http\Controllers\App\TagController;
 use Illuminate\Support\Facades\Route;
 
 // ── Root redirect ──────────────────────────────────────────────
 Route::redirect('/', '/app/home');
 
-// ── Admin auth (guest only) ────────────────────────────────────
+// ── Admin auth — redirect to unified app login ────────────────
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('login',  [AdminLoginController::class, 'showLogin'])->name('login');
-    Route::post('login', [AdminLoginController::class, 'login'])->name('login.post');
-    Route::post('logout',[AdminLoginController::class, 'logout'])->name('logout');
+    Route::get('login', fn() => redirect()->route('app.login'))->name('login');
+    Route::post('logout', [AdminLoginController::class, 'logout'])->name('logout');
 });
 
 // ── Admin protected ────────────────────────────────────────────
@@ -105,4 +105,8 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::post('ai/delete-all',                      [AIChatController::class, 'deleteAll'])->name('ai.delete-all');
     Route::get('ai/settings',                         [AIChatController::class, 'settings'])->name('ai.settings');
     Route::post('ai/settings',                        [AIChatController::class, 'saveSettings'])->name('ai.settings.save');
+
+    // ── Tags ──────────────────────────────────────────────
+    Route::get('tags',  [TagController::class, 'index'])->name('tags');
+    Route::post('tags', [TagController::class, 'store'])->name('tags.store');
 });
