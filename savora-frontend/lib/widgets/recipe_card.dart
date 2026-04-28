@@ -3,6 +3,7 @@ import '../screens/detail_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/searching_screen.dart';
 import '../services/favorite_client.dart';
+import '../widgets/theme.dart';
 
 class RecipeCard extends StatefulWidget {
   final Map<String, dynamic> recipe;
@@ -47,7 +48,6 @@ class _RecipeCardState extends State<RecipeCard> {
         return;
       }
 
-      // Ambil semua favorit user, cek apakah resep ini ada
       final favorites = await FavoriteClient.getFavorites(userId);
       final recipeId = widget.recipe['id']?.toString();
 
@@ -124,9 +124,7 @@ class _RecipeCardState extends State<RecipeCard> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE76F51), Color(0xFFF4A261)],
-                  ),
+                  gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.collections_bookmark_rounded,
@@ -139,7 +137,7 @@ class _RecipeCardState extends State<RecipeCard> {
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF264653),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ),
@@ -150,21 +148,9 @@ class _RecipeCardState extends State<RecipeCard> {
           // Buat koleksi baru
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFFE76F51),
-                  Color(0xFFF4A261),
-                  Color(0xFFE9C46A)
-                ],
-              ),
+              gradient: AppTheme.accentGradient,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFE76F51).withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              boxShadow: AppTheme.buttonShadow,
             ),
             child: Material(
               color: Colors.transparent,
@@ -233,10 +219,7 @@ class _RecipeCardState extends State<RecipeCard> {
                     const SizedBox(height: 4),
                     Text(
                       'Buat koleksi pertama Anda',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade500,
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                     ),
                   ],
                 ),
@@ -255,8 +238,7 @@ class _RecipeCardState extends State<RecipeCard> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            const Color(0xFFE76F51).withValues(alpha: 0.2),
+                        color: AppTheme.primaryCoral.withValues(alpha: 0.2),
                         width: 1.5,
                       ),
                       boxShadow: [
@@ -287,38 +269,33 @@ class _RecipeCardState extends State<RecipeCard> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      const Color(0xFFE76F51)
-                                          .withValues(alpha: 0.2),
-                                      const Color(0xFFF4A261)
-                                          .withValues(alpha: 0.1),
+                                      AppTheme.primaryCoral.withValues(alpha: 0.2),
+                                      AppTheme.primaryOrange.withValues(alpha: 0.1),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
                                   Icons.collections_bookmark_rounded,
-                                  color: Color(0xFFE76F51),
+                                  color: AppTheme.primaryCoral,
                                   size: 20,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       board['name'] ?? '',
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF264653),
+                                        color: AppTheme.textPrimary,
                                       ),
                                     ),
                                     if (board['description'] != null &&
-                                        board['description']
-                                            .toString()
-                                            .isNotEmpty)
+                                        board['description'].toString().isNotEmpty)
                                       Text(
                                         board['description'],
                                         style: TextStyle(
@@ -334,7 +311,7 @@ class _RecipeCardState extends State<RecipeCard> {
                               const Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 14,
-                                color: Color(0xFFE76F51),
+                                color: AppTheme.primaryCoral,
                               ),
                             ],
                           ),
@@ -361,76 +338,47 @@ class _RecipeCardState extends State<RecipeCard> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE76F51), Color(0xFFF4A261)],
-                ),
+                gradient: AppTheme.accentGradient,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.add_rounded,
-                  color: Colors.white, size: 24),
+              child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Koleksi Baru',
-              style:
-                  TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text('Koleksi Baru',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: Colors.grey.shade200, width: 1.5),
-              ),
+              decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
               child: TextField(
                 controller: nameController,
-                decoration: InputDecoration(
-                  hintText: 'Nama Koleksi',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  prefixIcon: const Icon(
-                      Icons.collections_bookmark_rounded,
-                      color: Color(0xFFE76F51)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
+                decoration: AppTheme.buildInputDecoration(
+                  hint: 'Nama Koleksi',
+                  icon: Icons.collections_bookmark_rounded,
+                  iconColor: AppTheme.primaryCoral,
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: Colors.grey.shade200, width: 1.5),
-              ),
+              decoration: AppTheme.inputDecoration(AppTheme.primaryOrange),
               child: TextField(
                 controller: descController,
                 maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Deskripsi (opsional)',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(bottom: 60),
-                    child: Icon(Icons.description_rounded,
-                        color: Colors.grey.shade500),
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
+                decoration: AppTheme.buildInputDecoration(
+                  hint: 'Deskripsi (opsional)',
+                  icon: Icons.description_rounded,
+                  iconColor: AppTheme.primaryOrange,
+                  maxLines: 3,
                 ),
               ),
             ),
@@ -439,19 +387,12 @@ class _RecipeCardState extends State<RecipeCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey.shade600,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 12),
-            ),
-            child: const Text('Batal',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
+            child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
           ),
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE76F51), Color(0xFFF4A261)],
-              ),
+              gradient: AppTheme.accentGradient,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextButton(
@@ -459,13 +400,11 @@ class _RecipeCardState extends State<RecipeCard> {
                 if (nameController.text.trim().isEmpty) {
                   if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                        content: Text('Nama koleksi harus diisi')),
+                    const SnackBar(content: Text('Nama koleksi harus diisi')),
                   );
                   return;
                 }
 
-                // Buat board via API
                 final board = await FavoriteClient.createBoard(
                   userId: userId,
                   name: nameController.text.trim(),
@@ -479,23 +418,15 @@ class _RecipeCardState extends State<RecipeCard> {
 
                 if (board != null) {
                   if (!mounted) return;
-                  _showSnackBar('Koleksi berhasil dibuat!',
-                      isError: false);
+                  _showSnackBar('Koleksi berhasil dibuat!', isError: false);
                   _showBoardSelector();
                 } else {
                   if (!mounted) return;
                   _showSnackBar('Gagal membuat koleksi', isError: true);
                 }
               },
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
-              ),
-              child: const Text(
-                'Buat',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+              child: const Text('Buat', style: AppTheme.buttonText),
             ),
           ),
         ],
@@ -510,7 +441,6 @@ class _RecipeCardState extends State<RecipeCard> {
   Future<void> _addToBoard(String boardId, String boardName) async {
     try {
       final recipeId = widget.recipe['id']?.toString() ?? '';
-
       final success = await FavoriteClient.addRecipeToBoard(
         boardId: boardId,
         recipeId: recipeId,
@@ -553,8 +483,7 @@ class _RecipeCardState extends State<RecipeCard> {
         backgroundColor:
             isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
@@ -610,14 +539,13 @@ class _RecipeCardState extends State<RecipeCard> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _isPressed
-                  ? const Color(0xFFE76F51).withValues(alpha: 0.4)
-                  : const Color(0xFFE76F51).withValues(alpha: 0.2),
+                  ? AppTheme.primaryCoral.withValues(alpha: 0.4)
+                  : AppTheme.primaryCoral.withValues(alpha: 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    Colors.black.withValues(alpha: _isPressed ? 0.12 : 0.08),
+                color: Colors.black.withValues(alpha: _isPressed ? 0.12 : 0.08),
                 blurRadius: _isPressed ? 16 : 12,
                 offset: Offset(0, _isPressed ? 6 : 4),
               ),
@@ -656,9 +584,7 @@ class _RecipeCardState extends State<RecipeCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                          ),
+                          gradient: AppTheme.orangeGradient,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
@@ -701,7 +627,7 @@ class _RecipeCardState extends State<RecipeCard> {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF264653),
+                          color: AppTheme.textPrimary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -727,7 +653,7 @@ class _RecipeCardState extends State<RecipeCard> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
-                                  colors: _getRoleGradient(userRole),
+                                  colors: AppTheme.getRoleGradient(userRole),
                                 ),
                               ),
                               child: ClipOval(
@@ -773,8 +699,7 @@ class _RecipeCardState extends State<RecipeCard> {
                               spacing: 4,
                               runSpacing: 4,
                               children: [
-                                _buildCategoryChip(
-                                    context, categoryId, categoryName),
+                                _buildCategoryChip(context, categoryId, categoryName),
                                 ...tags.take(2).map((tag) => _buildTagChip(context, tag)),
                               ],
                             ),
@@ -784,33 +709,20 @@ class _RecipeCardState extends State<RecipeCard> {
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: _isCheckingFavorite
-                                  ? null
-                                  : _showBoardSelector,
+                              onTap: _isCheckingFavorite ? null : _showBoardSelector,
                               borderRadius: BorderRadius.circular(10),
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  gradient: _isFavorite
-                                      ? const LinearGradient(
-                                          colors: [
-                                            Color(0xFFE76F51),
-                                            Color(0xFFF4A261)
-                                          ],
-                                        )
-                                      : null,
-                                  color: _isFavorite
-                                      ? null
-                                      : Colors.grey.shade100,
+                                  gradient: _isFavorite ? AppTheme.accentGradient : null,
+                                  color: _isFavorite ? null : Colors.grey.shade100,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   _isFavorite
                                       ? Icons.bookmark_rounded
                                       : Icons.bookmark_border_rounded,
-                                  color: _isFavorite
-                                      ? Colors.white
-                                      : Colors.grey.shade600,
+                                  color: _isFavorite ? Colors.white : Colors.grey.shade600,
                                   size: 18,
                                 ),
                               ),
@@ -837,17 +749,12 @@ class _RecipeCardState extends State<RecipeCard> {
     return Container(
       color: Colors.grey.shade200,
       child: Center(
-        child: Icon(
-          Icons.restaurant_rounded,
-          size: 40,
-          color: Colors.grey.shade400,
-        ),
+        child: Icon(Icons.restaurant_rounded, size: 40, color: Colors.grey.shade400),
       ),
     );
   }
 
-  Widget _buildCategoryChip(
-      BuildContext context, dynamic categoryId, String categoryName) {
+  Widget _buildCategoryChip(BuildContext context, dynamic categoryId, String categoryName) {
     return GestureDetector(
       onTap: categoryId != null
           ? () => Navigator.push(
@@ -863,9 +770,7 @@ class _RecipeCardState extends State<RecipeCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF264653), Color(0xFF2A9D8F)],
-          ),
+          gradient: AppTheme.categoryGradient,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -899,33 +804,19 @@ class _RecipeCardState extends State<RecipeCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFE9C46A).withValues(alpha: 0.3),
+          color: AppTheme.tagBorder.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: const Color(0xFFE9C46A),
-            width: 1,
-          ),
+          border: Border.all(color: AppTheme.tagBorder, width: 1),
         ),
         child: Text(
           '#$tagName',
           style: const TextStyle(
-            color: Color(0xFF264653),
+            color: AppTheme.textPrimary,
             fontSize: 9,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
     );
-  }
-
-  List<Color> _getRoleGradient(String role) {
-    switch (role) {
-      case 'admin':
-        return [const Color(0xFFFFD700), const Color(0xFFFFB300)];
-      case 'premium':
-        return [const Color(0xFF6C63FF), const Color(0xFF9F8FFF)];
-      default:
-        return [Colors.grey.shade400, Colors.grey.shade500];
-    }
   }
 }

@@ -5,6 +5,7 @@ import '../screens/login_screen.dart';
 import '../screens/ai_chat_screen.dart';
 import '../services/auth_client.dart';
 import '../services/notification_client.dart';
+import '../widgets/theme.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool showBackButton;
@@ -163,9 +164,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                       Container(
                         width     : 40, height: 40,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)]),
-                          shape   : BoxShape.circle,
-                          boxShadow: [BoxShadow(color: const Color(0xFF2B6CB0).withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
+                          gradient : AppTheme.logoGradient,
+                          shape    : BoxShape.circle,
+                          boxShadow: AppTheme.logoBlueShadow,
                         ),
                         padding: const EdgeInsets.all(2),
                         child  : Container(
@@ -174,16 +175,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                             child: Image.asset(
                               'assets/images/logo.png',
                               fit         : BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(Icons.restaurant_rounded, size: 20, color: Color(0xFF2B6CB0)),
+                              errorBuilder: (_, _, _) => const Icon(Icons.restaurant_rounded, size: 20, color: AppTheme.logoBlue),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
-                          colors: [Color(0xFF2B6CB0), Color(0xFFFF6B35)],
-                        ).createShader(bounds),
+                        shaderCallback: (bounds) => AppTheme.logoGradient.createShader(bounds),
                         child: const Text(
                           'Savora',
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
@@ -217,9 +216,10 @@ class _CustomAppBarState extends State<CustomAppBar>
                         child: Container(
                           padding    : const EdgeInsets.all(4),
                           decoration : BoxDecoration(
-                            color    : const Color(0xFFFF6B35),
+                            gradient : AppTheme.badgeGradient,
                             shape    : BoxShape.circle,
                             border   : Border.all(color: Colors.white, width: 1.5),
+                            boxShadow: AppTheme.badgeShadow,
                           ),
                           constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                           child      : Text(
@@ -291,7 +291,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                         Container(
                           padding   : const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color       : const Color(0xFFFF6B35),
+                            color       : AppTheme.logoOrange,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(

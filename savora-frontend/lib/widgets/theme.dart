@@ -16,6 +16,25 @@ class AppTheme {
   static const Color textPrimary = Color(0xFF264653);
   static const Color textSecondary = Color(0xFF6B7280);
 
+  // Extended Colors (untuk modal, tag management, recipe card, app bar)
+  static const Color privacyGreen   = Color(0xFF2A9D8F);
+  static const Color privacyDark    = Color(0xFF264653);
+  static const Color privacyDeep    = Color(0xFF1a5c54);
+  static const Color termsRed       = Color(0xFFE76F51);
+  static const Color termsAmber     = Color(0xFFF4A261);
+  static const Color termsYellow    = Color(0xFFE9C46A);
+  static const Color tagBorder      = Color(0xFFE9C46A);
+  static const Color recipeCatDark  = Color(0xFF264653);
+  static const Color recipeCatTeal  = Color(0xFF2A9D8F);
+  static const Color logoBlue       = Color(0xFF2B6CB0);
+  static const Color logoOrange     = Color(0xFFFF6B35);
+  static const Color badgeRed       = Color(0xFFFF3B30);
+  static const Color badgeRedLight  = Color(0xFFFF6B6B);
+
+  // Proxy/Warning Colors
+  static const Color proxyOrange    = Color(0xFFF97316);
+  static const Color proxyPurple    = Color(0xFF9333EA);
+
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -41,6 +60,26 @@ class AppTheme {
     colors: [primaryOrange, primaryYellow],
   );
 
+  static const LinearGradient logoGradient = LinearGradient(
+    colors: [logoBlue, logoOrange],
+  );
+
+  static const LinearGradient privacyGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [privacyGreen, privacyDark, privacyDeep],
+  );
+
+  static const LinearGradient termsGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [termsRed, termsAmber, termsYellow],
+  );
+
+  static const LinearGradient badgeGradient = LinearGradient(
+    colors: [badgeRed, badgeRedLight],
+  );
+
   static LinearGradient get cardGradient => LinearGradient(
         colors: [
           primaryCoral.withValues(alpha: 0.05),
@@ -62,6 +101,11 @@ class AppTheme {
 
   static const LinearGradient premiumGradient = LinearGradient(
     colors: [Color(0xFF6C63FF), Color(0xFF9F8FFF)],
+  );
+
+  // Recipe card category gradient
+  static const LinearGradient categoryGradient = LinearGradient(
+    colors: [recipeCatDark, recipeCatTeal],
   );
 
   // Box Shadows
@@ -86,6 +130,22 @@ class AppTheme {
           color: primaryCoral.withValues(alpha: 0.4),
           blurRadius: 15,
           offset: const Offset(0, 8),
+        ),
+      ];
+
+  static List<BoxShadow> get logoBlueShadow => [
+        BoxShadow(
+          color: logoBlue.withValues(alpha: 0.3),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ];
+
+  static List<BoxShadow> get badgeShadow => [
+        BoxShadow(
+          color: badgeRed.withValues(alpha: 0.5),
+          blurRadius: 8,
+          spreadRadius: 1,
         ),
       ];
 
@@ -126,6 +186,16 @@ class AppTheme {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      );
+
+  // Tag chip decoration for tag management screen
+  static BoxDecoration tagChipDecoration(Color color, {bool isSelected = false}) => BoxDecoration(
+        color: isSelected ? color.withValues(alpha: 0.15) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isSelected ? color : Colors.grey.shade300,
           width: 1.5,
         ),
       );

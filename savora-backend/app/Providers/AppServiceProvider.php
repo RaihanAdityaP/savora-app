@@ -8,19 +8,11 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
+    public function register(): void {}
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
+        // ── Admin panel shared vars ──────────────────────────────
         if (request()->is('admin*')) {
             $pendingTagCount    = 0;
             $pendingRecipeCount = 0;
@@ -33,6 +25,31 @@ class AppServiceProvider extends ServiceProvider
 
             View::share('pendingTagCount',    $pendingTagCount);
             View::share('pendingRecipeCount', $pendingRecipeCount);
+        }
+
+        // ── App (user web) shared vars ───────────────────────────
+        if (request()->is('app*')) {
+            $appUnreadCount = 0;
+
+            try {
+                $userId = session('user_id');
+                if ($userId) {
+                    $supabase       = app(SupabaseService::class);
+                    $appUnreadCount = count($supabase->select(
+                        'notifications',
+                        ['id'],
+                        ['user_id' => $userId, 'is_read' => false]
+                    ));
+                }
+            } catch (\Exception) {}
+
+            View::share('appUnreadCount', $appUnreadCount);
+
+            // Share session info ke semua app views
+            View::share('sessionUserId',   session('user_id'));
+            View::share('sessionUsername', session('user_username'));
+            View::share('sessionRole',     session('user_role', 'user'));
+            View::share('sessionAvatar',   session('user_avatar'));
         }
     }
 }
