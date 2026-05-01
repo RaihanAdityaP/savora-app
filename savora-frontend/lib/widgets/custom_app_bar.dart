@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/notification_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/ai_chat_screen.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/ai/chat_screen.dart';
 import '../services/auth_client.dart';
 import '../services/notification_client.dart';
 import '../widgets/theme.dart';

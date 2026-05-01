@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import '../services/auth_client.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_client.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../widgets/theme.dart';
-import '../widgets/privacy_modal.dart';
-import '../widgets/terms_modal.dart';
+import '../../widgets/theme.dart';
+import '../../widgets/privacy_modal.dart';
+import '../../widgets/terms_modal.dart';
 import 'register_screen.dart';
-import 'home_screen.dart';
+import '../home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

@@ -33,7 +33,7 @@ class FavoriteController extends Controller
             }
         } catch (Exception) {}
 
-        return view('app.favorites', compact('boards', 'previews'));
+        return view('app.favorites.index', compact('boards', 'previews'));
     }
 
     // GET /app/favorites/{boardId}
@@ -56,7 +56,7 @@ class FavoriteController extends Controller
 
             $recipes = array_map(fn($br) => $br['recipes'], $boardRecipes);
 
-            return view('app.favorites-board', compact('board', 'recipes', 'boardRecipes'));
+            return view('app.favorites.board', compact('board', 'recipes', 'boardRecipes'));
 
         } catch (Exception $e) {
             abort(500, $e->getMessage());

@@ -99,23 +99,32 @@
                 <a href="{{ route('app.favorites.board', $board['id']) }}" class="flex gap-4 p-4">
                     {{-- Photo grid --}}
                     <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                        @if(count($boardPreviews) >= 4)
-                            <div class="grid grid-cols-2 gap-0.5 w-full h-full">
-                                @foreach(array_slice($boardPreviews, 0, 4) as $preview)
-                                    <div class="overflow-hidden">
-                                        <img src="{{ $preview['image_url'] ?? '' }}" alt=""
-                                             class="w-full h-full object-cover">
-                                    </div>
-                                @endforeach
-                            </div>
-                        @elseif(count($boardPreviews) > 0)
-                            <img src="{{ $boardPreviews[0]['image_url'] ?? '' }}" alt=""
-                                 class="w-full h-full object-cover">
-                        @else
+                        @php $imgs = array_slice($boardPreviews, 0, 4); $cnt = count($imgs); @endphp
+                        @if($cnt === 0)
                             <div class="w-full h-full gradient-accent flex items-center justify-center">
                                 <svg class="w-10 h-10 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
+                            </div>
+                        @elseif($cnt === 1)
+                            <img src="{{ $imgs[0]['image_url'] ?? '' }}" class="w-full h-full object-cover" alt="">
+                        @elseif($cnt === 2)
+                            <div class="grid grid-cols-2 h-full gap-px">
+                                @foreach($imgs as $img)
+                                    <img src="{{ $img['image_url'] ?? '' }}" class="w-full h-full object-cover" alt="">
+                                @endforeach
+                            </div>
+                        @elseif($cnt === 3)
+                            <div class="grid grid-cols-2 h-full gap-px">
+                                <img src="{{ $imgs[0]['image_url'] ?? '' }}" class="w-full h-full object-cover row-span-2" alt="">
+                                <img src="{{ $imgs[1]['image_url'] ?? '' }}" class="w-full h-full object-cover" alt="">
+                                <img src="{{ $imgs[2]['image_url'] ?? '' }}" class="w-full h-full object-cover" alt="">
+                            </div>
+                        @else
+                            <div class="grid grid-cols-2 h-full gap-px">
+                                @foreach($imgs as $img)
+                                    <img src="{{ $img['image_url'] ?? '' }}" class="w-full h-full object-cover" alt="">
+                                @endforeach
                             </div>
                         @endif
                     </div>

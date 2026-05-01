@@ -26,7 +26,7 @@
         $headerClass  = $useGradient ? 'gradient-admin' : 'gradient-accent';
     @endphp
 
-    <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
+    <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10" x-data="{ showEdit: false }">
 
         {{-- Profile Header Card --}}
         <div class="relative rounded-3xl overflow-hidden mb-6 shadow-xl {{ $headerClass }} p-6 text-white">
@@ -107,10 +107,10 @@
                 {{-- Follow / Edit buttons --}}
                 <div class="flex gap-3 mt-4 w-full">
                     @if($isOwnProfile)
-                        <a href="#edit-profile"
+                        <button @click="showEdit = true"
                            class="flex-1 py-3 bg-white/25 border-2 border-white/50 text-white font-bold rounded-2xl text-sm text-center hover:bg-white/35 transition-all">
                             Edit Profil
-                        </a>
+                        </button>
                         <a href="{{ route('app.favorites') }}"
                            class="flex-1 py-3 bg-white/25 border-2 border-white/50 text-white font-bold rounded-2xl text-sm text-center hover:bg-white/35 transition-all">
                             Koleksi
@@ -136,45 +136,85 @@
             <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-sm font-medium">{{ session('error') }}</div>
         @endif
 
-        {{-- Edit Profile Form (own profile only) --}}
+        {{-- Edit Profile Modal (own profile only) --}}
         @if($isOwnProfile)
-            <div id="edit-profile" class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
-                <div class="flex items-center gap-3 mb-5">
-                    <div class="p-2.5 gradient-accent rounded-xl">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                    </div>
-                    <h2 class="text-lg font-bold text-gray-900">Edit Profil</h2>
+            {{-- Backdrop overlay --}}
+            <div x-show="showEdit"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="showEdit = false"
+                 class="fixed inset-0 bg-black/60 z-40"
+                 style="display:none;"></div>
+
+            {{-- Bottom sheet modal --}}
+            <div x-show="showEdit"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-full"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 translate-y-full"
+                 class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto"
+                 style="display:none;"
+                 @click.stop>
+
+                {{-- Handle bar --}}
+                <div class="flex justify-center pt-3 pb-1">
+                    <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
                 </div>
 
-                <form action="{{ route('app.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Username</label>
-                        <input type="text" name="username" value="{{ old('username', $profile['username']) }}" required
-                               class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium">
+                {{-- Header --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 gradient-accent rounded-xl">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-bold text-gray-900">Edit Profil</h2>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Nama Lengkap</label>
-                        <input type="text" name="full_name" value="{{ old('full_name', $profile['full_name'] ?? '') }}"
-                               class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Bio</label>
-                        <textarea name="bio" rows="3"
-                                  class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium resize-none">{{ old('bio', $profile['bio'] ?? '') }}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Foto Profil</label>
-                        <input type="file" name="avatar" accept="image/*"
-                               class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:gradient-accent file:text-white">
-                    </div>
-                    <button type="submit"
-                            class="w-full py-3.5 gradient-accent text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all text-sm">
-                        Simpan Perubahan
+                    <button @click="showEdit = false"
+                            class="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
                     </button>
-                </form>
+                </div>
+
+                {{-- Form --}}
+                <div class="px-6 py-5 pb-8">
+                    <form action="{{ route('app.profile.update') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Username</label>
+                            <input type="text" name="username" value="{{ old('username', $profile['username']) }}" required
+                                   class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Nama Lengkap</label>
+                            <input type="text" name="full_name" value="{{ old('full_name', $profile['full_name'] ?? '') }}"
+                                   class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Bio</label>
+                            <textarea name="bio" rows="3"
+                                      class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium resize-none">{{ old('bio', $profile['bio'] ?? '') }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Foto Profil</label>
+                            <input type="file" name="avatar" accept="image/*"
+                                   class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm text-gray-600 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:gradient-accent file:text-white">
+                        </div>
+                        <button type="submit"
+                                class="w-full py-3.5 gradient-accent text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all text-sm">
+                            Simpan Perubahan
+                        </button>
+                    </form>
+                </div>
             </div>
         @endif
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/auth_client.dart';
-import '../widgets/theme.dart';
-import '../widgets/privacy_modal.dart';
-import '../widgets/terms_modal.dart';
+import '../../services/auth_client.dart';
+import '../../widgets/theme.dart';
+import '../../widgets/privacy_modal.dart';
+import '../../widgets/terms_modal.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {

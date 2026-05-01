@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyModal extends StatefulWidget {
   final VoidCallback onClose;
@@ -699,35 +700,49 @@ class _PrivacyModalState extends State<PrivacyModal>
           const SizedBox(height: 10),
           _contactRow(Icons.mail_outline,  'Email',   'adminsavora@gmail.com'),
           const SizedBox(height: 8),
-          _contactRow(Icons.language,      'Website', 'savora-web.vercel.app'),
+          _contactRow(Icons.language,      'Website', 'savora-app-productions.up.railway.app'),
         ],
       ),
     );
   }
 
   Widget _contactRow(IconData icon, String label, String value) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A9D8F).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF2A9D8F), size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
-                Text(value,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF264653))),
-              ],
+    final isWebsite = label == 'Website';
+    return GestureDetector(
+      onTap: isWebsite
+          ? () => launchUrl(Uri.parse('https://$value'), mode: LaunchMode.externalApplication)
+          : null,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A9D8F).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF2A9D8F), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                  Text(value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isWebsite ? const Color(0xFF2A9D8F) : const Color(0xFF264653),
+                        decoration: isWebsite ? TextDecoration.underline : TextDecoration.none,
+                        decorationColor: isWebsite ? const Color(0xFF2A9D8F) : null,
+                      )),
+                ],
+              ),
             ),
-          ),
-        ],
+            if (isWebsite)
+              const Icon(Icons.open_in_new, size: 14, color: Color(0xFF2A9D8F)),
+          ],
+        ),
       ),
     );
   }

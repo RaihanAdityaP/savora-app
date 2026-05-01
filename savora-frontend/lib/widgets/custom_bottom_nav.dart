@@ -1,8 +1,8 @@
   import 'package:flutter/material.dart';
   import '../screens/home_screen.dart';
   import '../screens/searching_screen.dart';
-  import '../screens/create_recipe_screen.dart';
-  import '../screens/favorites_screen.dart';
+  import '../screens/recipes/create_screen.dart';
+  import '../screens/favorites/favorites_screen.dart';
   import '../screens/profile_screen.dart';
   import '../widgets/theme.dart';
 

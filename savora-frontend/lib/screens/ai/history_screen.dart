@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/ai_chat_client.dart';
-import '../widgets/theme.dart';
-import 'ai_chat_screen.dart';
-import 'ai_settings_screen.dart';
+import '../../services/ai_chat_client.dart';
+import '../../widgets/theme.dart';
+import 'chat_screen.dart';
+import 'settings_screen.dart';
 
 class AIChatHistoryScreen extends StatefulWidget {
   const AIChatHistoryScreen({super.key});

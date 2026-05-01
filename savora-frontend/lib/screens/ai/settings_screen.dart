@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/ai_chat_client.dart';
-import '../widgets/theme.dart';
+import '../../services/ai_chat_client.dart';
+import '../../widgets/theme.dart';
 
 class AISettingsScreen extends StatefulWidget {
   const AISettingsScreen({super.key});

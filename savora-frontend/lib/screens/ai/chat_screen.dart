@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../services/ai_chat_client.dart';
-import '../widgets/theme.dart';
-import 'ai_chat_history_screen.dart';
-import 'ai_settings_screen.dart';
+import '../../services/ai_chat_client.dart';
+import '../../widgets/theme.dart';
+import 'history_screen.dart';
+import 'settings_screen.dart';
 
 class AIChatScreen extends StatefulWidget {
   /// Jika null → buat conversation baru otomatis

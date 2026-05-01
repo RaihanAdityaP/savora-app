@@ -6,7 +6,7 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/theme.dart';
-import 'detail_screen.dart';
+import 'recipes/detail_screen.dart';
 
 class SearchingScreen extends StatefulWidget {
   final int? initialCategoryId;

@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:io' show File;
-import '../services/api_service.dart';
-import '../services/category_client.dart';
-import '../services/draft_service.dart'; // ← NEW
-import '../widgets/custom_bottom_nav.dart';
-import '../widgets/theme.dart';
+import '../../services/api_service.dart';
+import '../../services/category_client.dart';
+import '../../services/draft_service.dart'; // ← NEW
+import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/theme.dart';
 
 class EditRecipeScreen extends StatefulWidget {
   final Map<String, dynamic> recipe;

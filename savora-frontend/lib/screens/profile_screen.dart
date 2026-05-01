@@ -7,7 +7,7 @@ import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/theme.dart';
 import 'admin/admin_dashboard_screen.dart';
-import 'detail_screen.dart';
+import 'recipes/detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? userId;

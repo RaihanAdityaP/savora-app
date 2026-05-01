@@ -21,7 +21,7 @@ class LoginController extends Controller
         if (session('user_id')) {
             return redirect()->route('app.home');
         }
-        return view('app.login');
+        return view('app.auth.login');
     }
 
     public function login(Request $request)
@@ -72,9 +72,10 @@ class LoginController extends Controller
             $profile = $profiles[0];
 
             if ($profile['is_banned'] ?? false) {
-                return back()->withInput(['email' => $email])
-                    ->with('error', 'Akun ini telah dinonaktifkan.');
-            }
+            return back()->withInput(['email' => $email])
+                ->with('banned', true)
+                ->with('banned_reason', $profile['banned_reason'] ?? 'Tidak disebutkan');
+        }
 
             // Redirect admin ke admin panel
             if (($profile['role'] ?? '') === 'admin') {
@@ -118,7 +119,7 @@ class LoginController extends Controller
         if (session('user_id')) {
             return redirect()->route('app.home');
         }
-        return view('app.register');
+        return view('app.auth.register');
     }
 
     public function register(Request $request)

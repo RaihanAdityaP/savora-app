@@ -7,13 +7,13 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import 'dart:io';
-import '../services/api_service.dart';
-import '../widgets/custom_bottom_nav.dart';
-import '../widgets/theme.dart';
-import 'home_screen.dart';
-import 'edit_recipe_screen.dart';
-import 'profile_screen.dart';
-import 'searching_screen.dart';
+import '../../services/api_service.dart';
+import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/theme.dart';
+import '../home_screen.dart';
+import 'edit_screen.dart';
+import '../profile_screen.dart';
+import '../searching_screen.dart';
 
 class DetailScreen extends StatefulWidget {
   final String recipeId;

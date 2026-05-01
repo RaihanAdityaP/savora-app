@@ -30,7 +30,7 @@ class AIChatController extends Controller
             );
         } catch (Exception) {}
 
-        return view('app.ai-chat', compact('conversations'));
+        return view('app.ai.chat', compact('conversations'));
     }
 
     // GET /app/ai/conversations/{id}
@@ -64,7 +64,7 @@ class AIChatController extends Controller
                 ['order' => 'updated_at.desc', 'limit' => 30]
             );
 
-            return view('app.ai-conversation', compact('conversation', 'messages', 'conversations'));
+            return view('app.ai.conversation', compact('conversation', 'messages', 'conversations'));
 
         } catch (Exception $e) {
             abort(500, $e->getMessage());
@@ -213,7 +213,7 @@ class AIChatController extends Controller
         $userId   = session('user_id');
         $settings = $this->getUserSettings($userId);
 
-        return view('app.ai-settings', compact('settings'));
+        return view('app.ai.settings', compact('settings'));
     }
 
     // POST /app/ai/settings

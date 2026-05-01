@@ -5,9 +5,9 @@ import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/theme.dart';
-import 'detail_screen.dart';
-import 'login_screen.dart';
-import 'create_recipe_screen.dart';
+import 'recipes/detail_screen.dart';
+import 'auth/login_screen.dart';
+import 'recipes/create_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

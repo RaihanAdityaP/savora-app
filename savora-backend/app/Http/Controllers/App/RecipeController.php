@@ -91,7 +91,7 @@ class RecipeController extends Controller
 
             $currentUserRole = session('user_role', 'user');
 
-            return view('app.recipe-detail', compact(
+            return view('app.recipes.detail', compact(
                 'recipe', 'ratings', 'avgRating', 'totalRatings',
                 'userRating', 'comments', 'tags', 'isFavorite',
                 'userId', 'currentUserRole'
