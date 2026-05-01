@@ -1,74 +1,62 @@
-# Savora App — Collaboration README
+<div align="center">
 
-Dokumen ini ditujukan untuk **calon kolaborator** Savora agar proses onboarding cepat, urutan kerja jelas, dan debug lokal tidak membingungkan.
+# 🍽️ Savora
+
+**Temukan, Simpan, dan Masak Resep Favoritmu — Dibantu AI**
+
+Savora adalah aplikasi mobile berbasis Flutter yang menghubungkan para pecinta masak dengan ribuan resep, komunitas, dan asisten AI yang siap membantu kapan saja.
+
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?logo=laravel)](https://laravel.com)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth-3ECF8E?logo=supabase)](https://supabase.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+
+</div>
 
 ---
 
-## Struktur Repository
+## ✨ Apa itu Savora?
+
+Savora hadir untuk menjawab pertanyaan sehari-hari: *"Hari ini masak apa ya?"*
+
+Dengan Savora, kamu bisa menjelajahi resep dari komunitas, menyimpan favorit, memberi rating, dan bahkan bertanya langsung ke **AI Chef** yang akan merekomendasikan resep berdasarkan bahan yang kamu punya.
+
+---
+
+## 🚀 Fitur Utama
+
+| Fitur | Deskripsi |
+|-------|-----------|
+| 🔍 **Jelajahi Resep** | Feed resep dari komunitas, bisa difilter berdasarkan kategori & tag |
+| 🤖 **AI Chef Assistant** | Chat dengan AI untuk rekomendasi resep, tips memasak, dan substitusi bahan |
+| ❤️ **Favorit** | Simpan resep yang kamu suka untuk diakses kapan saja |
+| ⭐ **Rating & Komentar** | Beri ulasan dan baca pengalaman orang lain |
+| 🔔 **Notifikasi** | Update real-time dari aktivitas komunitas |
+| 👤 **Profil & Resep Pribadi** | Buat dan kelola resep milikmu sendiri |
+| 🏷️ **Tag & Kategori** | Navigasi resep yang terorganisir dan mudah ditemukan |
+| 🔐 **Auth Aman** | Login via Supabase dengan JWT yang terenkripsi |
+
+---
+
+## 🏗️ Arsitektur
 
 ```
 savora-app/
-├── savora-backend/    # Laravel API (dan rencana Laravel web/Blade)
-└── savora-frontend/   # Flutter mobile app
+├── savora-backend/     # Laravel 11 — REST API + Admin Panel (Blade)
+└── savora-frontend/    # Flutter — Mobile App (Android & iOS)
 ```
 
----
+**Stack Teknologi:**
 
-## Urutan Pengembangan
-
-> **Aturan utama tim:**
-> 1. **Backend (Laravel) diselesaikan terlebih dahulu**
-> 2. Baru lanjut ke **Frontend/Mobile App (Flutter)**
-
-Alasannya sederhana — kontrak API harus stabil sebelum integrasi di Flutter dimulai, agar tidak terjadi perubahan bolak-balik.
+- **Backend** — Laravel 11, Supabase (Auth + DB), Groq AI, Firebase Cloud Messaging
+- **Frontend** — Flutter, Dart, Supabase Auth Client
+- **Deployment** — Railway (backend)
 
 ---
 
-## Pembagian Divisi
+## ⚡ Quick Start
 
-### Divisi Backend — Laravel
-
-**Fokus:**
-- Endpoint API (`routes/api.php`, controller, service)
-- Desain database, migration, dan seeding
-- Auth/token (Sanctum/Supabase)
-- Integrasi AI (Groq/Hugging Face)
-- Integrasi push notification (FCM)
-- Persiapan versi web Laravel (Blade) untuk kebutuhan ke depan
-
-**Output yang diharapkan:**
-- API stabil dengan dokumentasi request/response
-- Migration rapi dan repeatable
-- Validasi dan error handling yang konsisten
-- Test backend minimal berjalan
-
----
-
-### Divisi Frontend — Flutter
-
-**Fokus:**
-- Implementasi UI/UX layar mobile
-- Integrasi API ke service client Flutter
-- Auth flow, state management, serta loading/error/empty state
-- Integrasi fitur utama (AI assistant, favorit, notifikasi, dll.)
-
-**Output yang diharapkan:**
-- Aplikasi mobile stabil di emulator maupun device fisik
-- Integrasi ke API konsisten
-- Struktur komponen reusable
-
----
-
-## Setup Lokal — Backend (Laravel)
-
-### Prasyarat
-
-- PHP 8.2+
-- Composer
-- SQLite / MySQL
-- Node.js + npm *(opsional, untuk asset tooling)*
-
-### Instalasi
+### Backend (Laravel)
 
 ```bash
 cd savora-backend
@@ -76,167 +64,31 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-```
-
-### Menjalankan Server
-
-**Opsi 1 — Standar Laravel:**
-```bash
 php artisan serve
 ```
 
-**Opsi 2 — Direkomendasikan untuk tes device fisik/LAN:**
-```bash
-php -S 0.0.0.0:8000 -t public
-```
+Cek di browser: `http://127.0.0.1:8000/up` → harus muncul **"Application up"**
 
-### Verifikasi Backend
-
-Buka browser dan akses salah satu URL berikut:
-
-| Mode | URL |
-|------|-----|
-| `php artisan serve` | `http://127.0.0.1:8000/up` |
-| `php -S 0.0.0.0:8000` | `http://<IP_KAMU>:8000/up` |
-
-Jika muncul **"Application up"**, backend siap digunakan.
-
-### Environment Variables Penting
-
-File: `savora-backend/.env`
-
-| Variabel | Keterangan |
-|----------|------------|
-| `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_JWT_SECRET` | Konfigurasi Supabase |
-| `GROQ_API_KEY`, `GROQ_MODEL` | Integrasi Groq AI |
-| `HF_API_KEY` | Hugging Face |
-| `FCM_SERVER_KEY` | Firebase Cloud Messaging |
-
----
-
-## Setup Lokal — Frontend (Flutter)
-
-### Prasyarat
-
-- Flutter SDK (stable)
-- Android Studio / Xcode (sesuai target platform)
-- Device fisik atau emulator yang siap dipakai
-
-### Instalasi
+### Frontend (Flutter)
 
 ```bash
 cd savora-frontend
 flutter pub get
-cp .env.example .env
-```
-
-### Menjalankan Aplikasi
-
-```bash
-flutter devices   # cek device yang tersedia
 flutter run
 ```
 
-### Shortcut Debug (`flutter run`)
-
-| Tombol | Aksi |
-|--------|------|
-| `r` | Hot reload |
-| `R` | Hot restart |
-| `q` | Stop app |
+> Untuk testing di device fisik via LAN, jalankan backend dengan `php -S 0.0.0.0:8000 -t public` dan set `_baseUrlDebug` di `lib/services/api_service.dart` ke IP laptop kamu.
 
 ---
 
-## Panduan Debug — Device Fisik + Laravel (LAN)
+## 📄 Lisensi
 
-Ikuti langkah berikut setiap kali laptop di-restart atau berganti jaringan Wi-Fi.
+Copyright © 2026 Tim Savora. All rights reserved.
 
-### Langkah 1 — Cek IP Laptop
-
-Buka CMD atau PowerShell, lalu jalankan:
-
-```bash
-ipconfig
-```
-
-Cari bagian **Wireless LAN adapter Wi-Fi** → catat nilai **IPv4 Address**.
-
-Contoh: `192.168.137.211`
+Source code ini bersifat proprietary. Dilarang menggunakan, menyalin, memodifikasi, atau mendistribusikan sebagian maupun seluruh kode tanpa izin tertulis dari pemilik.
 
 ---
 
-### Langkah 2 — Jalankan Backend di LAN
-
-```bash
-cd savora-backend
-php -S 0.0.0.0:8000 -t public
-```
-
-Verifikasi dari laptop maupun HP *(harus satu jaringan Wi-Fi)*:
-
-```
-http://<IP_KAMU>:8000/up
-```
-
-Jika muncul **"Application up"** → backend siap.
-
----
-
-### Langkah 3 — Set Base URL di Flutter
-
-Edit file: `savora-frontend/lib/services/api_service.dart`
-
-```dart
-static const String _baseUrlDebug = 'http://<IP_KAMU>:8000/api/v1';
-```
-
-Contoh:
-
-```dart
-static const String _baseUrlDebug = 'http://192.168.137.211:8000/api/v1';
-```
-
----
-
-### Langkah 4 — Jalankan Flutter
-
-```bash
-cd savora-frontend
-flutter pub get
-flutter devices
-flutter run
-```
-
----
-
-## Aturan Penting Integrasi
-
-- Setiap kali **restart laptop**, **ganti Wi-Fi**, atau **restart jaringan** → ulangi cek IP laptop.
-- Backend **harus aktif terlebih dahulu** sebelum menjalankan Flutter.
-- Jika ada perubahan endpoint, segera update client di `lib/services/*_client.dart`.
-
----
-
-## Workflow Kolaborasi
-
-1. Selesaikan scope backend terlebih dahulu.
-2. Freeze kontrak API (request/response + status code).
-3. Implementasi frontend berdasarkan kontrak final.
-4. Buat PR kecil per fitur agar review lebih cepat.
-5. Jalankan checklist sebelum merge:
-
-| Divisi | Checklist |
-|--------|-----------|
-| Backend | Migration berjalan, endpoint utama aktif, auth flow bekerja |
-| Frontend | Login/register, list/detail, error handling berfungsi |
-
----
-
-## Catatan Roadmap
-
-- Backend Laravel saat ini fokus pada pengembangan API.
-- Ke depan akan ditambahkan **versi website menggunakan Laravel Blade** dalam lingkup divisi backend.
-
----
-
-Semoga kolaborasi berjalan lancar, cepat, dan minim revisi berulang. 🚀
+<div align="center">
+  <sub>Dibuat dengan ❤️ oleh tim Savora</sub>
+</div>

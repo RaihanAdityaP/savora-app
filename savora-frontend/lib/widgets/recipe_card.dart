@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/detail_screen.dart';
+import '../screens/recipes/detail_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/searching_screen.dart';
 import '../services/favorite_client.dart';
