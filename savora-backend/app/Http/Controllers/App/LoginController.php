@@ -36,7 +36,7 @@ class LoginController extends Controller
 
         try {
             $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-            $anonKey     = env('SUPABASE_KEY');
+            $anonKey     = env('SUPABASE_ANON_KEY');
 
             $authResp = Http::withHeaders([
                 'apikey'       => $anonKey,
@@ -133,7 +133,7 @@ class LoginController extends Controller
 
         try {
             $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
-            $anonKey     = env('SUPABASE_KEY');
+            $anonKey     = env('SUPABASE_ANON_KEY');
 
             $signupResp = Http::withHeaders([
                 'apikey'       => $anonKey,

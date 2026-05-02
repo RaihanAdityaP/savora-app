@@ -15,7 +15,7 @@ class SupabaseService
     public function __construct()
     {
         $this->supabaseUrl        = env('SUPABASE_URL');
-        $this->supabaseKey        = env('SUPABASE_KEY');
+        $this->supabaseKey        = env('SUPABASE_ANON_KEY');
         $this->supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
     }
 
