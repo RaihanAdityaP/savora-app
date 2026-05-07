@@ -6,18 +6,12 @@
     <title>Daftar Akun — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @include('components.app-theme')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap');
 
         body { font-family: 'Inter', sans-serif; }
         h1   { font-family: 'Poppins', sans-serif; }
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #264653 0%, #2A9D8F 25%, #E9C46A 50%, #F4A261 75%, #E76F51 100%);
-        }
-        .gradient-btn {
-            background: linear-gradient(135deg, #E76F51 0%, #F4A261 100%);
-        }
 
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -35,7 +29,7 @@
         .anim-footer { animation: fadeSlideUp 0.5s ease both 0.45s; }
     </style>
 </head>
-<body class="gradient-bg min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-gradient-primary min-h-screen flex flex-col items-center justify-center p-4">
 
     <div class="w-full max-w-sm flex flex-col items-center gap-6"
          x-data="{ loading: false, showPassword: false, agreeTerms: false }">
@@ -52,12 +46,12 @@
 
         {{-- Logo --}}
         <div class="anim-logo">
-            <div class="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#2B6CB0] to-[#FF6B35] p-[3px] shadow-2xl">
+            <div class="relative w-20 h-20 rounded-full p-[3px] shadow-2xl" style="background: var(--gradient-logo)">
                 <div class="w-full h-full bg-white rounded-full overflow-hidden flex items-center justify-center">
                     <img src="{{ asset('storage/images/logo.png') }}" alt="Savora"
                          class="w-full h-full object-cover"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                    <span style="display:none" class="text-[#E76F51] font-black text-2xl">S</span>
+                    <span style="display:none; color: var(--color-primary-coral)" class="font-black text-2xl">S</span>
                 </div>
             </div>
         </div>
@@ -91,60 +85,64 @@
 
                 {{-- Username --}}
                 <div class="mb-4">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E76F51]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-coral) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
                         <input type="text" name="username" value="{{ old('username') }}"
                                placeholder="Username" maxlength="50" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all">
+                               class="input-savora has-icon py-3.5"
+                               style="border-radius: 1rem; --tw-border-opacity:1">
                     </div>
                 </div>
 
                 {{-- Nama Lengkap --}}
                 <div class="mb-4">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2A9D8F]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-teal) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <input type="text" name="full_name" value="{{ old('full_name') }}"
                                placeholder="Nama Lengkap" maxlength="100" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#2A9D8F] focus:bg-white transition-all">
+                               class="input-savora has-icon py-3.5"
+                               style="border-radius: 1rem">
                     </div>
                 </div>
 
                 {{-- Email --}}
                 <div class="mb-4">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E9C46A]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-yellow) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                         <input type="email" name="email" value="{{ old('email') }}"
                                placeholder="Email" autocomplete="email" required
-                               class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#E9C46A] focus:bg-white transition-all">
+                               class="input-savora has-icon py-3.5"
+                               style="border-radius: 1rem">
                     </div>
                 </div>
 
                 {{-- Password --}}
                 <div class="mb-5">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F4A261]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-orange) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                         <input :type="showPassword ? 'text' : 'password'" name="password"
                                placeholder="Password (min. 6 karakter)" minlength="6"
                                autocomplete="new-password" required
-                               class="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#F4A261] focus:bg-white transition-all">
+                               class="input-savora has-icon pr-12 py-3.5"
+                               style="border-radius: 1rem">
                         <button type="button" @click="showPassword = !showPassword"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#F4A261] transition-colors">
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors">
                             <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -162,7 +160,8 @@
                         <input type="checkbox" name="agree_terms" x-model="agreeTerms" required class="sr-only">
                         <div @click="agreeTerms = !agreeTerms"
                              class="w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center cursor-pointer"
-                             :class="agreeTerms ? 'bg-[#E76F51] border-[#E76F51]' : 'bg-white border-gray-300'">
+                             :class="agreeTerms ? 'border-[#E76F51]' : 'bg-white border-gray-300'"
+                             :style="agreeTerms ? 'background: var(--gradient-accent)' : ''">
                             <svg x-show="agreeTerms" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                             </svg>
@@ -171,18 +170,18 @@
                     <span class="text-sm text-gray-600 leading-relaxed">
                         Dengan mendaftar, Anda menyetujui
                         <button type="button" @click.prevent="TermsModal.show()"
-                                class="text-[#E76F51] font-semibold hover:underline">Syarat &amp; Ketentuan</button>
+                                class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Syarat &amp; Ketentuan</button>
                         dan
                         <button type="button" @click.prevent="PrivacyModal.show()"
-                                class="text-[#2A9D8F] font-semibold hover:underline">Kebijakan Privasi</button>
+                                class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Kebijakan Privasi</button>
                         kami.
                     </span>
                 </label>
 
                 {{-- DAFTAR button --}}
                 <button type="submit" :disabled="!agreeTerms || loading"
-                        class="w-full gradient-btn text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all text-base tracking-widest flex items-center justify-center gap-2"
-                        :class="(!agreeTerms || loading) ? 'opacity-50 cursor-not-allowed scale-100' : ''">
+                        class="btn-primary-savora w-full py-4 rounded-2xl text-base tracking-widest hover:scale-[1.01] active:scale-[0.99]"
+                        :class="(!agreeTerms || loading) ? 'opacity-50 cursor-not-allowed !scale-100' : ''">
                     <span x-show="!loading">DAFTAR SEKARANG</span>
                     <span x-show="loading" class="flex items-center gap-2">
                         <svg class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +198,8 @@
         <div class="anim-footer flex items-center gap-3 px-5 py-3 bg-white/15 border border-white/30 rounded-full">
             <span class="text-white/80 text-sm">Sudah punya akun?</span>
             <a href="{{ route('app.login') }}"
-               class="px-4 py-1.5 bg-white rounded-full text-[#E76F51] font-bold text-sm hover:bg-white/90 transition-all shadow">
+               class="px-4 py-1.5 bg-white rounded-full font-bold text-sm hover:bg-white/90 transition-all shadow"
+               style="color: var(--color-primary-coral)">
                 Masuk →
             </a>
         </div>

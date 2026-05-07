@@ -6,24 +6,12 @@
     <title>Login — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @include('components.app-theme')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap');
 
         body { font-family: 'Inter', sans-serif; }
         h1   { font-family: 'Poppins', sans-serif; }
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #264653 0%, #2A9D8F 25%, #E9C46A 50%, #F4A261 75%, #E76F51 100%);
-        }
-        .gradient-btn {
-            background: linear-gradient(135deg, #E76F51 0%, #F4A261 100%);
-        }
-        .logo-ring {
-            background: linear-gradient(135deg, #2B6CB0, #FF6B35);
-            padding: 3px;
-            border-radius: 9999px;
-            display: inline-flex;
-        }
 
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -41,24 +29,24 @@
         .anim-footer { animation: fadeSlideUp 0.5s ease both 0.45s; }
     </style>
 </head>
-<body class="gradient-bg min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-gradient-primary min-h-screen flex flex-col items-center justify-center p-4">
 
     <div class="w-full max-w-sm flex flex-col items-center gap-6">
 
-        {{-- ── Logo ── --}}
+        {{-- Logo --}}
         <div class="anim-logo flex flex-col items-center gap-3">
-            <div class="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#2B6CB0] to-[#FF6B35] p-[3px] shadow-2xl">
+            <div class="relative w-20 h-20 rounded-full p-[3px] shadow-2xl" style="background: var(--gradient-logo)">
                 <div class="w-full h-full bg-white rounded-full overflow-hidden flex items-center justify-center">
                     <img src="{{ asset('storage/images/logo.png') }}" alt="Savora"
                         class="w-full h-full object-cover"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                    <span style="display:none"
-                        class="text-[#E76F51] font-black text-2xl">S</span>
+                    <span style="display:none; color: var(--color-primary-coral)"
+                        class="font-black text-2xl">S</span>
                 </div>
             </div>
         </div>
 
-        {{-- ── Title ── --}}
+        {{-- Title --}}
         <div class="anim-title flex flex-col items-center gap-2">
             <div class="px-4 py-1.5 bg-white/20 border border-white/40 rounded-full">
                 <span class="text-white text-xs font-bold tracking-widest">SELAMAT DATANG</span>
@@ -67,7 +55,7 @@
             <p class="text-white/80 text-sm text-center">Petualangan Kuliner Dimulai Disini</p>
         </div>
 
-        {{-- ── White card ── --}}
+        {{-- White card --}}
         <div class="anim-card w-full bg-white rounded-3xl shadow-2xl p-6">
 
             {{-- Banned alert --}}
@@ -119,31 +107,34 @@
 
                 {{-- Email --}}
                 <div class="mb-4">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E76F51]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-coral) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                         <input type="email" name="email" value="{{ old('email') }}"
                                placeholder="Email" autocomplete="email" autofocus required
-                               class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all">
+                               class="input-savora has-icon py-3.5"
+                               style="border-radius: 1rem">
                     </div>
                 </div>
 
                 {{-- Password --}}
                 <div class="mb-6">
-                    <div class="relative">
-                        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#F4A261]"
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="input-wrapper-savora">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                             style="color: var(--color-primary-orange) width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                         <input :type="showPassword ? 'text' : 'password'" name="password"
                                placeholder="Password" autocomplete="current-password" required
-                               class="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#F4A261] focus:bg-white transition-all">
+                               class="input-savora has-icon pr-12 py-3.5"
+                               style="border-radius: 1rem">
                         <button type="button" @click="showPassword = !showPassword"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#F4A261] transition-colors">
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors"
+                                style="hover:color: var(--color-primary-orange)">
                             <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -157,7 +148,7 @@
 
                 {{-- MASUK button --}}
                 <button type="submit" :disabled="loading"
-                        class="w-full gradient-btn text-white font-black py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] transition-all text-base tracking-widest disabled:opacity-60 flex items-center justify-center gap-2">
+                        class="btn-primary-savora w-full py-4 rounded-2xl text-base tracking-widest disabled:opacity-60 hover:scale-[1.01] active:scale-[0.99]">
                     <span x-show="!loading">MASUK</span>
                     <span x-show="loading" class="flex items-center gap-2">
                         <svg class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,16 +170,16 @@
                 <p class="text-center text-xs text-gray-500 leading-relaxed">
                     Dengan masuk, Anda setuju dengan
                     <button type="button" @click.prevent="PrivacyModal.show()"
-                            class="text-[#2A9D8F] font-semibold hover:underline">Privasi</button>
+                            class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Privasi</button>
                     &amp;
                     <button type="button" @click.prevent="TermsModal.show()"
-                            class="text-[#E76F51] font-semibold hover:underline">Syarat</button>
+                            class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Syarat</button>
                     kami
                 </p>
             </form>
         </div>
 
-        {{-- ── Resend verification ── --}}
+        {{-- Resend verification --}}
         <div class="anim-footer w-full">
             <button onclick="document.getElementById('resend-modal').classList.remove('hidden')"
                     class="w-full text-center text-white/75 text-sm hover:text-white underline underline-offset-2 transition-colors">
@@ -196,20 +187,19 @@
             </button>
         </div>
 
-        {{-- ── Register pill ── --}}
+        {{-- Register pill --}}
         <div class="anim-footer flex items-center gap-3 px-5 py-3 bg-white/15 border border-white/30 rounded-full">
             <span class="text-white/80 text-sm">Belum punya akun?</span>
             <a href="{{ route('app.register') }}"
-               class="px-4 py-1.5 bg-white rounded-full text-[#E76F51] font-bold text-sm hover:bg-white/90 transition-all shadow">
+               class="px-4 py-1.5 bg-white rounded-full font-bold text-sm hover:bg-white/90 transition-all shadow"
+               style="color: var(--color-primary-coral)">
                 Daftar →
             </a>
         </div>
 
-
-
     </div>
 
-    {{-- ── Resend verification modal ── --}}
+    {{-- Resend verification modal --}}
     <div id="resend-modal"
          class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4"
          onclick="if(event.target===this) this.classList.add('hidden')">
@@ -217,8 +207,7 @@
 
             {{-- Header --}}
             <div class="flex items-center gap-3 mb-5">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                     style="background: linear-gradient(135deg, #E76F51, #F4A261)">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-accent">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -240,15 +229,16 @@
                   x-data="{ loading: false }" @submit="loading = true">
                 @csrf
 
-                <div class="relative mb-4">
-                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E76F51]"
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="input-wrapper-savora mb-4">
+                    <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                         style="color: var(--color-primary-coral) width:18px; height:18px;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     <input type="email" name="resend_email" required
                            placeholder="Email Anda"
-                           class="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all">
+                           class="input-savora has-icon py-3.5"
+                           style="border-radius: 1rem">
                 </div>
 
                 <div class="flex gap-2">
@@ -258,7 +248,7 @@
                         Batal
                     </button>
                     <button type="submit" :disabled="loading"
-                            class="flex-1 py-3 rounded-2xl gradient-btn text-white font-bold text-sm flex items-center justify-center gap-2 hover:shadow-lg transition-all disabled:opacity-60">
+                            class="btn-primary-savora flex-1 py-3 rounded-2xl text-sm disabled:opacity-60">
                         <span x-show="!loading" class="flex items-center gap-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

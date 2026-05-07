@@ -6,9 +6,7 @@
     <title>AI Settings — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        .gradient-accent { background: linear-gradient(135deg, #E76F51, #F4A261); }
-    </style>
+    @include('components.app-theme')
 </head>
 <body class="bg-[#F5F7FA] text-gray-900">
 
@@ -19,9 +17,9 @@
     />
 
     @php
-        $activeProvider  = ($settings['is_active_provider'] ?? 'groq') === 'groq' ? 'default' : ($settings['is_active_provider'] ?? 'default');
+        $activeProvider   = ($settings['is_active_provider'] ?? 'groq') === 'groq' ? 'default' : ($settings['is_active_provider'] ?? 'default');
         $hasOpenRouterKey = !empty($settings['openrouter_api_key']) && $settings['openrouter_api_key'] !== '***SAVED***' ? false : (!empty($settings['openrouter_api_key']));
-        $savedModel      = $settings['openrouter_model'] ?? '';
+        $savedModel       = $settings['openrouter_model'] ?? '';
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-10"
@@ -29,14 +27,18 @@
 
         {{-- Header --}}
         <div class="flex items-center gap-4 mb-6">
-            <a href="{{ route('app.ai') }}" class="p-2.5 bg-white rounded-xl shadow-sm border border-gray-200 text-gray-600 hover:text-[#E76F51] transition-all">
+            <a href="{{ route('app.ai') }}"
+               class="p-2.5 bg-white rounded-xl shadow-sm border border-gray-200 transition-all"
+               style="color: var(--color-text-secondary)"
+               onmouseover="this.style.color='var(--color-primary-coral)'"
+               onmouseout="this.style.color='var(--color-text-secondary)'">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">AI Settings</h1>
-                <p class="text-gray-500 text-sm">Konfigurasi provider AI</p>
+                <h1 class="text-2xl font-bold" style="color: var(--color-text-primary)">AI Settings</h1>
+                <p class="text-sm" style="color: var(--color-text-secondary)">Konfigurasi provider AI</p>
             </div>
         </div>
 
@@ -51,9 +53,9 @@
             @csrf
 
             {{-- Provider selector --}}
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-                <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <div class="w-1 h-5 gradient-accent rounded-full"></div>
+            <div class="card-savora p-5">
+                <h2 class="font-bold mb-4 flex items-center gap-2" style="color: var(--color-text-primary)">
+                    <div class="w-1 h-5 bg-gradient-accent rounded-full"></div>
                     Provider AI
                 </h2>
 
@@ -70,8 +72,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-bold text-gray-900">Default (Groq)</p>
-                            <p class="text-xs text-gray-500">Gratis — API key dikelola server</p>
+                            <p class="font-bold" style="color: var(--color-text-primary)">Default (Groq)</p>
+                            <p class="text-xs" style="color: var(--color-text-secondary)">Gratis — API key dikelola server</p>
                         </div>
                         <div x-show="provider === 'default'" class="w-5 h-5 rounded-full bg-[#2A9D8F] flex items-center justify-center">
                             <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -94,8 +96,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-bold text-gray-900">OpenRouter</p>
-                            <p class="text-xs text-gray-500">API key & model konfigurasi sendiri</p>
+                            <p class="font-bold" style="color: var(--color-text-primary)">OpenRouter</p>
+                            <p class="text-xs" style="color: var(--color-text-secondary)">API key & model konfigurasi sendiri</p>
                         </div>
                         <div x-show="provider === 'openrouter'" class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
                             <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -107,9 +109,9 @@
             </div>
 
             {{-- Default info --}}
-            <div x-show="provider === 'default'" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-                <h2 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <div class="w-1 h-5 bg-[#2A9D8F] rounded-full"></div>
+            <div x-show="provider === 'default'" class="card-savora p-5">
+                <h2 class="font-bold mb-3 flex items-center gap-2" style="color: var(--color-text-primary)">
+                    <div class="w-1 h-5 rounded-full" style="background: var(--color-primary-teal)"></div>
                     Konfigurasi Default
                 </h2>
                 <div class="space-y-2">
@@ -120,8 +122,8 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500 font-semibold">Chat Teks</p>
-                            <p class="text-sm font-medium text-gray-800">Groq — llama-3.3-70b-versatile</p>
+                            <p class="text-xs font-semibold" style="color: var(--color-text-secondary)">Chat Teks</p>
+                            <p class="text-sm font-medium" style="color: var(--color-text-primary)">Groq — llama-3.3-70b-versatile</p>
                         </div>
                     </div>
                     <div class="p-3 bg-teal-50 rounded-xl border border-teal-200 text-sm text-teal-800">
@@ -132,13 +134,13 @@
 
             {{-- OpenRouter settings --}}
             <div x-show="provider === 'openrouter'" class="space-y-4">
-                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
-                    ⚠️ Model berbayar memerlukan saldo di akun openrouter.ai. Model berlabel :free bisa digunakan gratis.
-                </div>
+                <x-app-theme.info-banner
+                    message="⚠️ Model berbayar memerlukan saldo di akun openrouter.ai. Model berlabel :free bisa digunakan gratis."
+                    icon="" />
 
-                <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-                    <h2 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <div class="w-1 h-5 bg-purple-500 rounded-full"></div>
+                <div class="card-savora p-5">
+                    <h2 class="font-bold mb-3 flex items-center gap-2" style="color: var(--color-text-primary)">
+                        <div class="w-1 h-5 rounded-full bg-purple-500"></div>
                         API Key
                     </h2>
                     @if($hasOpenRouterKey)
@@ -154,7 +156,7 @@
                         <div class="relative">
                             <input :type="showKey ? 'text' : 'password'" name="openrouter_api_key"
                                    placeholder="sk-or-v1-..."
-                                   class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-purple-400 text-sm pr-12">
+                                   class="input-savora pr-12">
                             <button type="button" @click="showKey = !showKey"
                                     class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,20 +168,20 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-                    <h2 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <div class="w-1 h-5 bg-purple-500 rounded-full"></div>
+                <div class="card-savora p-5">
+                    <h2 class="font-bold mb-3 flex items-center gap-2" style="color: var(--color-text-primary)">
+                        <div class="w-1 h-5 rounded-full bg-purple-500"></div>
                         Model Name
                     </h2>
                     <input type="text" name="openrouter_model" value="{{ $savedModel }}"
                            placeholder="meta-llama/llama-3.3-70b-instruct:free"
-                           class="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-purple-400 text-sm mb-3">
-                    <p class="text-xs text-gray-500 mb-2 font-semibold">Contoh model gratis:</p>
+                           class="input-savora mb-3">
+                    <p class="text-xs font-semibold mb-2" style="color: var(--color-text-secondary)">Contoh model gratis:</p>
                     <div class="flex flex-wrap gap-2">
                         @foreach(['meta-llama/llama-3.3-70b-instruct:free', 'deepseek/deepseek-chat:free', 'google/gemma-3-27b-it:free', 'mistralai/mistral-7b-instruct:free'] as $model)
                             <button type="button"
                                     onclick="document.querySelector('[name=openrouter_model]').value = '{{ $model }}'"
-                                    class="px-2.5 py-1 bg-green-50 border border-green-200 text-green-800 text-xs font-medium rounded-lg hover:bg-green-100 transition-colors">
+                                    class="tag-chip">
                                 {{ $model }}
                             </button>
                         @endforeach
@@ -188,8 +190,7 @@
             </div>
 
             {{-- Save --}}
-            <button type="submit"
-                    class="w-full py-4 gradient-accent text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all text-base">
+            <button type="submit" class="btn-primary-savora w-full py-4 rounded-2xl text-base">
                 Simpan Settings
             </button>
         </form>
