@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "id.savora.app",
+    "sha256_cert_fingerprints": [
+      "59:26:0F:74:C8:EE:74:F1:D5:C4:2F:81:DC:42:1A:DC:FC:E9:06:33:60:F1:DC:A0:2C:28:9C:66:51:C4:D0:77"
+    ]
+  }
+}]

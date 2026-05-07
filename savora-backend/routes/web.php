@@ -12,10 +12,12 @@ use App\Http\Controllers\App\FavoriteController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\AIChatController;
 use App\Http\Controllers\App\TagController;
+use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
-// ── Root redirect ──────────────────────────────────────────────
-Route::redirect('/', '/app/home');
+// ── Public pages ───────────────────────────────────────────────
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/license', [LandingController::class, 'license'])->name('license');
 
 // ── Admin auth — redirect to unified app login ────────────────
 Route::prefix('admin')->name('admin.')->group(function () {

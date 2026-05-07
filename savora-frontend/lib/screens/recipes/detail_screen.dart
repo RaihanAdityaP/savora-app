@@ -278,6 +278,11 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   }
 
   // ============ SHARE FEATURE ============
+  static const String _webBase = 'https://savora-app-productions.up.railway.app';
+
+  String _getRecipeWebUrl() => '$_webBase/app/recipes/${widget.recipeId}';
+  String _getDeepLink() => 'savora://recipe/${widget.recipeId}';
+
   String _generateShareText() {
     final title = _recipe?['title'] ?? 'Resep Tanpa Judul';
     final profile = _recipe?['profiles'];
@@ -287,43 +292,45 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     final difficulty = (_recipe?['difficulty'] ?? 'mudah').toUpperCase();
     final rating = _averageRating != null ? '${_averageRating!.toStringAsFixed(1)}/5' : '?/5';
     return '''
-🍳 RESEP DARI SAVORA 🍳
-📋 Judul: $title
-👨‍🍳 Chef: $username
-⏱️ Waktu: $time menit
-🍽️ Porsi: $servings porsi
-📊 Tingkat: $difficulty
-⭐ Rating: $rating
-📝 Deskripsi:
-${_recipe?['description'] ?? 'Tidak ada deskripsi.'}
-Lihat resep lengkap:
-savora://recipe/${widget.recipeId}
-'''.trim();
+  🍳 RESEP DARI SAVORA 🍳
+  📋 Judul: $title
+  👨‍🍳 Chef: $username
+  ⏱️ Waktu: $time menit
+  🍽️ Porsi: $servings porsi
+  📊 Tingkat: $difficulty
+  ⭐ Rating: $rating
+  📝 Deskripsi:
+  ${_recipe?['description'] ?? 'Tidak ada deskripsi.'}
+  🔗 Lihat resep: ${_getRecipeWebUrl()}
+  '''.trim();
   }
 
-  String _generateDeepLink() => 'savora://recipe/${widget.recipeId}';
-
   Future<void> _shareLink() async {
-    await SharePlus.instance.share(ShareParams(text: _generateDeepLink(), subject: 'Resep dari Savora: ${_recipe?['title']}'));
+    await SharePlus.instance.share(ShareParams(
+      text: 'Lihat resep ini di Savora: ${_getRecipeWebUrl()}',
+      subject: 'Resep dari Savora: ${_recipe?['title']}',
+    ));
   }
 
   Future<void> _shareDetail() async {
-    await SharePlus.instance.share(ShareParams(text: _generateShareText(), subject: 'Resep dari Savora: ${_recipe?['title']}'));
+    await SharePlus.instance.share(ShareParams(
+      text: _generateShareText(),
+      subject: 'Resep dari Savora: ${_recipe?['title']}',
+    ));
   }
 
   Future<void> _shareImage() async {
     final imageUrl = _recipe?['image_url'];
     if (imageUrl == null) return;
     try {
-      final uri = Uri.parse(imageUrl);
-      final response = await http.get(uri);
+      final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode == 200) {
         final tempDir = await getTemporaryDirectory();
         final file = File('${tempDir.path}/${widget.recipeId}.jpg');
         await file.writeAsBytes(response.bodyBytes);
         await SharePlus.instance.share(ShareParams(
           files: [XFile(file.path)],
-          text: '${_recipe?['title'] ?? 'Resep Savora'} 🍳\nDari Savora - Komunitas Resep Indonesia\nLihat resep lengkap:\n${_generateDeepLink()}',
+          text: '${_recipe?['title'] ?? 'Resep Savora'} 🍳\n🔗 ${_getRecipeWebUrl()}',
           subject: 'Resep dari Savora: ${_recipe?['title']}',
         ));
       } else {
@@ -335,28 +342,41 @@ savora://recipe/${widget.recipeId}
   }
 
   Future<void> _shareToWhatsApp() async {
-    try {
-      await SharePlus.instance.share(ShareParams(text: _generateShareText(), subject: 'Resep dari Savora: ${_recipe?['title']}'));
-    } catch (e) {
-      _showSnackBar('Error saat berbagi ke WhatsApp: $e', isError: true);
-    }
+    await SharePlus.instance.share(ShareParams(
+      text: _generateShareText(),
+      subject: 'Resep dari Savora: ${_recipe?['title']}',
+    ));
   }
 
   Future<void> _shareWithChooser() async {
-    final text = '${_recipe?['title'] ?? 'Resep Savora'} 🍳\n${_recipe?['description'] ?? ''}\nLihat resep lengkap:\n${_generateDeepLink()}';
-    await SharePlus.instance.share(ShareParams(text: text, subject: 'Resep dari Savora: ${_recipe?['title']}'));
+    final text = '${_recipe?['title'] ?? 'Resep Savora'} 🍳\n'
+        '${_recipe?['description'] ?? ''}\n'
+        '🔗 ${_getRecipeWebUrl()}';
+    await SharePlus.instance.share(ShareParams(
+      text: text,
+      subject: 'Resep dari Savora: ${_recipe?['title']}',
+    ));
   }
 
   Future<void> _copyLinkToClipboard() async {
-    await Clipboard.setData(ClipboardData(text: _generateDeepLink()));
+    await Clipboard.setData(ClipboardData(text: _getRecipeWebUrl()));
     _showSnackBar('Link berhasil disalin! 🔗', isError: false);
   }
 
-  Widget _buildShareOption({required IconData icon, required Color color, required String title, required String subtitle, required VoidCallback onTap}) {
+  Widget _buildShareOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () { Navigator.pop(context); onTap(); },
+        onTap: () {
+          Navigator.pop(context);
+          onTap();
+        },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -368,7 +388,11 @@ savora://recipe/${widget.recipeId}
           ),
           child: Row(
             children: [
-              Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color, shape: BoxShape.circle), child: Icon(icon, color: Colors.white, size: 24)),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -395,14 +419,25 @@ savora://recipe/${widget.recipeId}
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
         child: DraggableScrollableSheet(
-          maxChildSize: 0.7, minChildSize: 0.4, initialChildSize: 0.55, expand: false,
+          maxChildSize: 0.7,
+          minChildSize: 0.4,
+          initialChildSize: 0.55,
+          expand: false,
           builder: (_, controller) => Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(12),
-                child: Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
+                child: Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

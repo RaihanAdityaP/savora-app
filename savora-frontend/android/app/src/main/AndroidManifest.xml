@@ -78,26 +78,26 @@
                     android:host="home" />
             </intent-filter>
 
-            <!-- HTTPS DEEP LINK - Recipe (https://savora.app/recipe/123) -->
+            <!-- APP LINKS - Recipe (https://savora-app-productions.up.railway.app/app/recipes/123) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data 
                     android:scheme="https"
-                    android:host="savora.app"
-                    android:pathPrefix="/recipe/" />
+                    android:host="savora-app-productions.up.railway.app"
+                    android:pathPrefix="/app/recipes/" />
             </intent-filter>
 
-            <!-- HTTPS DEEP LINK - Profile (https://savora.app/profile/user123) -->
+            <!-- APP LINKS - Profile (https://savora-app-productions.up.railway.app/app/profile/user123) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data 
                     android:scheme="https"
-                    android:host="savora.app"
-                    android:pathPrefix="/profile/" />
+                    android:host="savora-app-productions.up.railway.app"
+                    android:pathPrefix="/app/profile/" />
             </intent-filter>
 
             <!-- NOTIFICATION CLICK -->
