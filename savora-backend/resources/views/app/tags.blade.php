@@ -6,9 +6,7 @@
     <title>Kelola Tag — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        .gradient-accent { background: linear-gradient(135deg, #E76F51, #F4A261); }
-    </style>
+    @include('components.app-theme')
 </head>
 <body class="bg-[#F5F7FA] text-gray-900">
 
@@ -21,39 +19,30 @@
     <div class="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-10">
 
         {{-- Header card --}}
-        <div class="relative rounded-3xl overflow-hidden mb-6 shadow-xl gradient-accent p-6 text-white">
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full pointer-events-none"></div>
-            <div class="absolute -bottom-12 -left-12 w-40 h-40 bg-white opacity-[0.08] rounded-full pointer-events-none"></div>
-            <div class="relative flex items-center gap-4">
-                <div class="p-3 bg-white/25 rounded-2xl border-2 border-white/40">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold">Kelola Tag</h1>
-                    <p class="text-white/80 text-sm">Buat dan cari tag komunitas</p>
-                </div>
-            </div>
+        <div class="mb-6">
+            <x-app-theme.section-header
+                title="Kelola Tag"
+                icon="<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z\"/></svg>"
+            />
+            <p class="app-body-small text-gray-500 mt-2">Buat dan cari tag komunitas</p>
         </div>
 
         @if(session('status'))
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl text-sm font-medium">
-                {{ session('status') }}
+            <div class="mb-4">
+                <x-app-theme.info-banner message="{{ session('status') }}" icon="bi bi-check-circle" />
             </div>
         @endif
         @if(session('error'))
-            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-sm font-medium">
-                {{ session('error') }}
+            <div class="mb-4">
+                <x-app-theme.info-banner message="{{ session('error') }}" icon="bi bi-exclamation-circle" />
             </div>
         @endif
 
         {{-- Create tag --}}
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 mb-4">
-            <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <div class="w-1 h-5 gradient-accent rounded-full"></div>
-                Tambah Tag Baru
-            </h2>
+        <div class="card-savora p-5 mb-4">
+            <div class="mb-4">
+                <x-app-theme.section-header title="Tambah Tag Baru" icon="bi bi-tag-fill" />
+            </div>
             <form action="{{ route('app.tags.store') }}" method="POST">
                 @csrf
                 <div class="flex gap-3">
@@ -65,10 +54,9 @@
                         </div>
                         <input type="text" name="name" value="{{ old('name') }}"
                                placeholder="Nama tag baru (cth: sarapan, vegan)"
-                               class="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 focus:outline-none focus:border-[#E76F51] focus:bg-white transition-all text-sm font-medium">
+                               class="input-savora pl-10 pr-4 py-3">
                     </div>
-                    <button type="submit"
-                            class="px-5 py-3 gradient-accent text-white font-bold rounded-2xl shadow hover:shadow-lg transition-all flex items-center gap-2 flex-shrink-0">
+                    <button type="submit" class="btn-primary-savora flex items-center gap-2 shrink-0 px-5 py-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -91,7 +79,7 @@
                 </div>
                 <input type="text" name="q" value="{{ $query }}"
                        placeholder="Cari tag yang sudah ada..."
-                       class="w-full pl-12 pr-12 py-3.5 bg-white rounded-2xl border border-gray-200 shadow-sm focus:outline-none focus:border-[#2A9D8F] text-sm font-medium transition-all">
+                       class="input-savora pl-12 pr-12 py-3.5">
                 @if($query)
                     <a href="{{ route('app.tags') }}"
                        class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
@@ -105,20 +93,17 @@
 
         {{-- Tag list --}}
         @if(count($tags) > 0)
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="card-savora overflow-hidden">
                 <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-                    <div class="w-1 h-5 gradient-accent rounded-full"></div>
-                    <h2 class="font-bold text-gray-900 flex-1">
-                        {{ $query ? 'Hasil Pencarian' : 'Tag Populer' }}
-                    </h2>
-                    <span class="px-3 py-1 gradient-accent text-white text-xs font-bold rounded-full">
-                        {{ count($tags) }}
-                    </span>
+                    <div class="flex-1">
+                        <x-app-theme.section-header title="{{ $query ? 'Hasil Pencarian' : 'Tag Populer' }}" icon="bi bi-tags" />
+                    </div>
+                    <span class="badge-savora">{{ count($tags) }}</span>
                 </div>
 
                 @foreach($tags as $tag)
                     <div class="flex items-center gap-4 px-5 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                        <div class="w-9 h-9 gradient-accent rounded-xl flex items-center justify-center flex-shrink-0">
+                        <div class="w-9 h-9 bg-gradient-accent rounded-xl flex items-center justify-center shrink-0">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                             </svg>

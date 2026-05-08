@@ -9,7 +9,9 @@ import 'screens/home_screen.dart';
 import 'screens/recipes/detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/searching_screen.dart';
+import 'screens/settings_screen.dart';
 import 'services/api_service.dart';
+import 'services/app_settings_service.dart';
 import 'services/auth_storage.dart';
 import 'services/notification_service.dart';
 
@@ -81,6 +83,8 @@ Future<void> main() async {
   await NotificationService().initialize();
   debugPrint('Notification service initialized');
 
+  await AppSettingsService.load();
+
   // Test koneksi ke Laravel backend (hanya untuk debug)
   if (const bool.fromEnvironment('dart.vm.product') == false) {
     final connected = await ApiService.healthCheck();
@@ -98,21 +102,26 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  Uri? _initialDeepLink;
+
   @override
   void initState() {
     super.initState();
     debugPrint('MyApp initState called');
-    _handleInitialDeepLink();
+    _loadInitialDeepLink();
     _handleIncomingDeepLinks();
   }
 
-  Future<void> _handleInitialDeepLink() async {
+  Future<void> _loadInitialDeepLink() async {
     try {
       final appLinks     = AppLinks();
       final initialUri   = await appLinks.getInitialLink();
-      if (initialUri == null) return;
-      debugPrint('Initial deep link: $initialUri');
-      _navigateByUri(initialUri);
+      if (initialUri != null) {
+        debugPrint('Initial deep link found: $initialUri');
+        setState(() {
+          _initialDeepLink = initialUri;
+        });
+      }
     } catch (e) {
       debugPrint('Error handling initial deep link: $e');
     }
@@ -137,25 +146,53 @@ class _MyAppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (uri.host == 'recipe' && uri.pathSegments.isNotEmpty) {
         final recipeId = uri.pathSegments[0];
-        navigatorKey.currentState?.push(
+        debugPrint('Navigating to recipe: $recipeId');
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => DetailScreen(recipeId: recipeId)),
+          (route) => false,
         );
       } else if (uri.host == 'profile' && uri.pathSegments.isNotEmpty) {
         final userId = uri.pathSegments[0];
-        navigatorKey.currentState?.push(
+        debugPrint('Navigating to profile: $userId');
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => ProfileScreen(userId: userId)),
+          (route) => false,
         );
       } else if (uri.host == 'search') {
-        navigatorKey.currentState?.push(
+        debugPrint('Navigating to search');
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const SearchingScreen()),
+          (route) => false,
         );
       } else if (uri.host == 'home') {
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
           (route) => false,
         );
+      } else if (uri.host == 'settings') {
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          (route) => false,
+        );
       }
     });
+  }
+
+  Widget _getInitialScreen() {
+    // Jika ada deep link, abaikan home screen biasa
+    if (_initialDeepLink != null) {
+      if (_initialDeepLink!.host == 'recipe' && _initialDeepLink!.pathSegments.isNotEmpty) {
+        return DetailScreen(recipeId: _initialDeepLink!.pathSegments[0]);
+      } else if (_initialDeepLink!.host == 'profile' && _initialDeepLink!.pathSegments.isNotEmpty) {
+        return ProfileScreen(userId: _initialDeepLink!.pathSegments[0]);
+      } else if (_initialDeepLink!.host == 'search') {
+        return const SearchingScreen();
+      } else if (_initialDeepLink!.host == 'settings') {
+        return const SettingsScreen();
+      }
+    }
+    // Fallback ke home/login screen
+    return ApiService.hasToken ? const HomeScreen() : const LoginScreen();
   }
 
   @override
@@ -166,16 +203,38 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: AppSettingsService.notifier,
+      builder: (context, appSettings, _) {
+        final textScale = appSettings.fontSize / 14;
+
+        return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'Savora',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        brightness: appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+        scaffoldBackgroundColor:
+            appSettings.isDarkMode ? const Color(0xFF101418) : const Color(0xFFF5F7FA),
+        cardColor: appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
+          foregroundColor: appSettings.isDarkMode ? Colors.white : const Color(0xFF264653),
+          surfaceTintColor: Colors.transparent,
+        ),
         primarySwatch: Colors.orange,
         useMaterial3: true,
       ),
-      // ── Langsung ke HomeScreen jika ada token ──
-      home: ApiService.hasToken ? const HomeScreen() : const LoginScreen(),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale.clamp(0.85, 1.3).toDouble()),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      // ── Gunakan deep link untuk initial screen jika ada ──
+      home: _getInitialScreen(),
       onGenerateRoute: (settings) {
         debugPrint('Route requested: ${settings.name}');
 
@@ -213,6 +272,12 @@ class _MyAppState extends State<MyApp> {
           );
         }
 
+        if (uri.scheme == 'savora' && uri.host == 'settings') {
+          return MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          );
+        }
+
         if (settings.name == '/recipe') {
           final recipeId = settings.arguments as String?;
           if (recipeId != null) {
@@ -227,9 +292,15 @@ class _MyAppState extends State<MyApp> {
               builder: (context) => ProfileScreen(userId: userId),
             );
           }
+        } else if (settings.name == '/settings') {
+          return MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          );
         }
 
-        return MaterialPageRoute(builder: (context) => const HomeScreen());
+            return MaterialPageRoute(builder: (context) => const HomeScreen());
+          },
+        );
       },
     );
   }

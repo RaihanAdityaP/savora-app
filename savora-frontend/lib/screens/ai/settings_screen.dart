@@ -199,7 +199,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar         : AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.surfaceColor,
         elevation      : 1,
         leading        : IconButton(
           icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),

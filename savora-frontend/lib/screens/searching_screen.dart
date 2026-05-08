@@ -381,7 +381,7 @@ class _SearchingScreenState extends State<SearchingScreen>
           }
 
           return Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppTheme.backgroundLight,
               borderRadius:
                   BorderRadius.vertical(top: Radius.circular(28)),

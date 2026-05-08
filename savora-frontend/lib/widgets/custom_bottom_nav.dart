@@ -4,6 +4,7 @@
   import '../screens/recipes/create_screen.dart';
   import '../screens/favorites/favorites_screen.dart';
   import '../screens/profile_screen.dart';
+  import '../services/app_settings_service.dart';
   import '../widgets/theme.dart';
 
   class CustomBottomNav extends StatefulWidget {
@@ -54,9 +55,10 @@
 
     @override
     Widget build(BuildContext context) {
+      final isEnglish = AppSettingsService.isEnglish;
       return Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.surfaceColor,
           boxShadow: [
             BoxShadow(
               color: AppTheme.primaryCoral.withValues(alpha: 0.08),
@@ -84,13 +86,13 @@
                 _buildNavItem(
                   index: 1,
                   icon: Icons.search_rounded,
-                  label: 'Search',
+                  label: isEnglish ? 'Search' : 'Cari',
                 ),
                 _buildCenterButton(),
                 _buildNavItem(
                   index: 3,
                   icon: Icons.bookmark_rounded,
-                  label: 'Saved',
+                  label: isEnglish ? 'Saved' : 'Simpan',
                 ),
                 _buildProfileButton(),
               ],
@@ -260,7 +262,7 @@
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Profile',
+                  AppSettingsService.isEnglish ? 'Profile' : 'Profil',
                     style: TextStyle(
                       color: isActive ? AppTheme.textPrimary : AppTheme.textSecondary,
                       fontSize: 11,

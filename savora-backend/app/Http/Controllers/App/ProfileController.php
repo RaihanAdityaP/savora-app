@@ -36,8 +36,22 @@ class ProfileController extends Controller
             $followingCount = 0;
 
             try { $recipesCount  = count($this->supabase->select('recipes', ['id'], ['user_id' => $targetId, 'status' => 'approved'])); } catch (Exception) {}
-            try { $followersCount = count($this->supabase->select('follows', ['follower_id'], ['following_id' => $targetId])); } catch (Exception) {}
-            try { $followingCount = count($this->supabase->select('follows', ['following_id'], ['follower_id' => $targetId])); } catch (Exception) {}
+            try {
+                $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $targetId]);
+                $followersCount = collect($followers)
+                    ->pluck('follower_id')
+                    ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $targetId)
+                    ->unique()
+                    ->count();
+            } catch (Exception) {}
+            try {
+                $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $targetId]);
+                $followingCount = collect($following)
+                    ->pluck('following_id')
+                    ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $targetId)
+                    ->unique()
+                    ->count();
+            } catch (Exception) {}
 
             // Resep user
             $recipes = [];

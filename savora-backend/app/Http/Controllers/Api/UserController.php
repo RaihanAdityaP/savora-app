@@ -74,20 +74,34 @@ class UserController extends Controller
 
             // Keep profile endpoint resilient even if supporting tables/views are unavailable.
             $user['followers_count'] = 0;
+            $user['total_followers'] = 0;
             $user['following_count'] = 0;
+            $user['total_following'] = 0;
             $user['recipes_count'] = 0;
 
             try {
                 // Schema table name is 'follows', not 'followers'
                 $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $id]);
-                $user['followers_count'] = count(array_unique(array_column($followers, 'follower_id')));
+                $followersCount = collect($followers)
+                    ->pluck('follower_id')
+                    ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $id)
+                    ->unique()
+                    ->count();
+                $user['followers_count'] = $followersCount;
+                $user['total_followers'] = $followersCount;
             } catch (Exception $e) {
                 // keep default value
             }
 
             try {
                 $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $id]);
-                $user['following_count'] = count(array_unique(array_column($following, 'following_id')));
+                $followingCount = collect($following)
+                    ->pluck('following_id')
+                    ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $id)
+                    ->unique()
+                    ->count();
+                $user['following_count'] = $followingCount;
+                $user['total_following'] = $followingCount;
             } catch (Exception $e) {
                 // keep default value
             }
@@ -193,6 +207,12 @@ class UserController extends Controller
 
         try {
             $followerId = $request->input('follower_id');
+            if ($followerId === $id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot follow yourself',
+                ], 400);
+            }
 
             // Schema table name is 'follows'
             $existing = $this->supabase->select('follows', ['id'], [
@@ -339,7 +359,7 @@ class UserController extends Controller
             $uniqueFollowers = [];
             foreach ($followers as $row) {
                 $followerId = $row['follower_id'] ?? null;
-                if ($followerId && !isset($uniqueFollowers[$followerId])) {
+                if ($followerId && $followerId !== $id && !isset($uniqueFollowers[$followerId])) {
                     $uniqueFollowers[$followerId] = $row;
                 }
             }
@@ -372,7 +392,7 @@ class UserController extends Controller
             $uniqueFollowing = [];
             foreach ($following as $row) {
                 $followingId = $row['following_id'] ?? null;
-                if ($followingId && !isset($uniqueFollowing[$followingId])) {
+                if ($followingId && $followingId !== $id && !isset($uniqueFollowing[$followingId])) {
                     $uniqueFollowing[$followingId] = $row;
                 }
             }

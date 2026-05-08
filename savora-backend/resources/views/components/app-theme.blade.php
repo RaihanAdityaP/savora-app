@@ -12,6 +12,13 @@
     For info banner     : <x-app-theme.info-banner message="..." />
 --}}
 
+@php
+    $savoraTheme = session('user_theme', 'light');
+    $savoraLanguage = session('user_language', 'en');
+    $savoraFontSize = (int) session('user_font_size', 14);
+    $savoraFontSize = max(12, min(18, $savoraFontSize));
+@endphp
+
 <style>
     /* =========================================================
        CSS CUSTOM PROPERTIES  (mirrors AppTheme constants)
@@ -102,6 +109,66 @@
         --text-xl:   20px;
         --text-2xl:  26px;
     }
+
+    @if($savoraTheme === 'dark')
+    :root {
+        --color-bg-light:       #101418;
+        --color-card-bg:        #182027;
+        --color-text-primary:   #F8FAFC;
+        --color-text-secondary: #CBD5E1;
+        --gradient-card:
+            linear-gradient(90deg, rgba(231,111,81,0.12), rgba(42,157,143,0.10));
+        --gradient-input:
+            linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+        --shadow-card: 0 2px 14px rgba(0,0,0,0.28);
+    }
+    @endif
+
+    body {
+        font-size: {{ $savoraFontSize }}px;
+        color: var(--color-text-primary);
+    }
+
+    @if($savoraTheme === 'dark')
+    body,
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-100 {
+        background-color: var(--color-bg-light) !important;
+        color: var(--color-text-primary) !important;
+    }
+
+    .card-savora,
+    .shadow-lg,
+    .shadow-xl,
+    .shadow-2xl,
+    .input-savora,
+    nav.bg-white,
+    header.bg-white,
+    [class*="hover:bg-gray"]:hover {
+        background-color: var(--color-card-bg) !important;
+        color: var(--color-text-primary) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+    }
+
+    .text-gray-900,
+    .text-gray-800,
+    .text-gray-700 {
+        color: var(--color-text-primary) !important;
+    }
+
+    .text-gray-600,
+    .text-gray-500,
+    .text-gray-400 {
+        color: var(--color-text-secondary) !important;
+    }
+
+    .border-gray-100,
+    .border-gray-200,
+    .border-gray-300 {
+        border-color: rgba(255,255,255,0.12) !important;
+    }
+    @endif
 
     /* =========================================================
        TYPOGRAPHY
@@ -306,6 +373,12 @@
     .section-header-savora .icon-box svg {
         color: #ffffff;
         font-size: 18px;
+    }
+    .section-header-savora .icon-box svg {
+        width: 22px;
+        height: 22px;
+        display: block;
+        flex-shrink: 0;
     }
     .section-header-savora .header-title {
         font-size: var(--text-lg);

@@ -281,7 +281,6 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   static const String _webBase = 'https://savora-app-productions.up.railway.app';
 
   String _getRecipeWebUrl() => '$_webBase/app/recipes/${widget.recipeId}';
-  String _getDeepLink() => 'savora://recipe/${widget.recipeId}';
 
   String _generateShareText() {
     final title = _recipe?['title'] ?? 'Resep Tanpa Judul';

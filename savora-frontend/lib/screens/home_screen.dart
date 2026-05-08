@@ -125,7 +125,9 @@ class _HomeScreenState extends State<HomeScreen>
           _username       = profile['username'];
           _myRecipesCount = profile['total_recipes']  ?? 0;
           _bookmarksCount = profile['total_bookmarks'] ?? 0;
-          _followersCount = profile['total_followers'] ?? 0;
+          _followersCount = _toInt(
+            profile['followers_count'] ?? profile['total_followers'],
+          );
         });
       }
     } catch (e) {
@@ -142,7 +144,9 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {
           _myRecipesCount = profile['total_recipes']  ?? 0;
           _bookmarksCount = profile['total_bookmarks'] ?? 0;
-          _followersCount = profile['total_followers'] ?? 0;
+          _followersCount = _toInt(
+            profile['followers_count'] ?? profile['total_followers'],
+          );
         });
       }
     } catch (e) {
@@ -151,6 +155,12 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // ── Feed ─────────────────────────────────────────────────────
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
   Future<void> _loadFeed({bool refresh = false}) async {
     if (refresh) {
       setState(() {
@@ -252,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.backgroundLight,
       appBar: CustomAppBar(userId: _currentUserId),
       body: _isLoading
           ? _buildLoadingState()

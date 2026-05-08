@@ -6,8 +6,8 @@
     <title>Cari Resep — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @include('components.app-theme')
     <style>
-        .gradient-accent { background: linear-gradient(135deg, #E76F51, #F4A261); }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
@@ -22,16 +22,12 @@
     <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
 
         {{-- Header --}}
-        <div class="flex items-center gap-4 mb-6">
-            <div class="p-3 bg-[#E76F51]/10 rounded-2xl border border-[#E76F51]/25">
-                <svg class="w-7 h-7 text-[#E76F51]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Cari Resep</h1>
-                <p class="text-gray-500 text-sm">Temukan resep yang kamu inginkan</p>
-            </div>
+        <div class="mb-6">
+            <x-app-theme.section-header
+                title="Cari Resep"
+                icon="<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\"/></svg>"
+            />
+            <p class="app-body-small text-gray-500 mt-2">Temukan resep yang kamu inginkan</p>
         </div>
 
         {{-- Search form --}}
@@ -45,7 +41,7 @@
                 </div>
                 <input type="text" name="q" value="{{ $query }}"
                        placeholder="Cari resep, bahan, atau chef..."
-                       class="w-full pl-12 pr-4 py-4 bg-white rounded-2xl border border-gray-200 shadow-sm focus:outline-none focus:border-[#E76F51] focus:ring-2 focus:ring-[#E76F51]/20 text-gray-900 placeholder-gray-400 font-medium transition-all">
+                       class="input-savora pl-12 pr-4 py-4">
                 @if($query)
                     <a href="{{ route('app.search') }}" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +54,7 @@
             {{-- Filter toggle --}}
             <div class="flex items-center justify-between mb-4">
                 <button type="button" @click="showFilters = !showFilters"
-                        class="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm text-sm font-semibold text-gray-700 hover:border-[#E76F51] hover:text-[#E76F51] transition-all">
+                        class="btn-outlined-savora text-gray-700 hover:text-[#E76F51]">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
@@ -67,25 +63,25 @@
                         $activeFilters = collect([$categoryId, $tagId, $difficulty, $minCalories, $maxCalories])->filter()->count();
                     @endphp
                     @if($activeFilters > 0)
-                        <span class="px-1.5 py-0.5 gradient-accent text-white text-xs font-bold rounded-full">{{ $activeFilters }}</span>
+                        <span class="badge-savora">{{ $activeFilters }}</span>
                     @endif
                 </button>
 
                 {{-- Sort --}}
                 <select name="sort" onchange="this.form.submit()"
-                        class="px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm text-sm font-semibold text-gray-700 focus:outline-none focus:border-[#E76F51] cursor-pointer">
+                        class="input-savora py-2">
                     <option value="popular" {{ $sortBy === 'popular' ? 'selected' : '' }}>Terpopuler</option>
                     <option value="newest"  {{ $sortBy === 'newest'  ? 'selected' : '' }}>Terbaru</option>
                 </select>
             </div>
 
             {{-- Filters panel --}}
-            <div x-show="showFilters" x-transition class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-4 space-y-4">
+            <div x-show="showFilters" x-transition class="card-savora p-5 mb-4 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {{-- Category --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Kategori</label>
-                        <select name="category_id" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#E76F51]">
+                        <select name="category_id" class="input-savora">
                             <option value="">Semua Kategori</option>
                             @foreach($categories as $cat)
                                 <option value="{{ $cat['id'] }}" {{ $categoryId == $cat['id'] ? 'selected' : '' }}>
@@ -98,7 +94,7 @@
                     {{-- Difficulty --}}
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Tingkat Kesulitan</label>
-                        <select name="difficulty" class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#E76F51]">
+                        <select name="difficulty" class="input-savora">
                             <option value="">Semua Tingkat</option>
                             <option value="easy"   {{ $difficulty === 'easy'   ? 'selected' : '' }}>Mudah</option>
                             <option value="medium" {{ $difficulty === 'medium' ? 'selected' : '' }}>Sedang</option>
@@ -110,21 +106,21 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Min Kalori</label>
                         <input type="number" name="min_calories" value="{{ $minCalories }}" placeholder="0"
-                               class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#E76F51]">
+                               class="input-savora">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Max Kalori</label>
                         <input type="number" name="max_calories" value="{{ $maxCalories }}" placeholder="9999"
-                               class="w-full px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#E76F51]">
+                               class="input-savora">
                     </div>
                 </div>
 
                 <div class="flex gap-3 pt-2">
-                    <button type="submit" class="flex-1 py-2.5 gradient-accent text-white font-bold rounded-xl text-sm hover:shadow-lg transition-all">
+                    <button type="submit" class="btn-primary-savora flex-1 py-2.5 text-sm">
                         Terapkan Filter
                     </button>
                     <a href="{{ route('app.search', ['q' => $query]) }}"
-                       class="px-4 py-2.5 bg-gray-100 text-gray-600 font-semibold rounded-xl text-sm hover:bg-gray-200 transition-all">
+                       class="btn-outlined-savora text-gray-600 text-sm">
                         Reset
                     </a>
                 </div>
@@ -134,12 +130,13 @@
         {{-- Popular tags --}}
         @if(count($popularTags) > 0 && !$query)
             <div class="mb-6">
-                <p class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Tag Populer</p>
+                <div class="flex items-center justify-between mb-3">
+                    <x-app-theme.section-header title="Tag Populer" icon="bi bi-hash" />
+                </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($popularTags as $tag)
                         <a href="{{ route('app.search', ['tag_id' => $tag['id']]) }}"
-                           class="px-3 py-1.5 rounded-full text-sm font-semibold transition-all
-                                  {{ $tagId == $tag['id'] ? 'gradient-accent text-white shadow' : 'bg-white border border-gray-200 text-gray-700 hover:border-[#E76F51] hover:text-[#E76F51]' }}">
+                           class="tag-chip {{ $tagId == $tag['id'] ? 'selected' : '' }}">
                             #{{ $tag['name'] }}
                         </a>
                     @endforeach
@@ -169,14 +166,14 @@
                     $rating   = $recipe['rating_avg'] ?? null;
                 @endphp
                 <a href="{{ route('app.recipe.show', $recipe['id']) }}"
-                   class="flex gap-4 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-all mb-3 active:scale-[0.98]">
+                   class="card-savora flex gap-4 p-4 hover:shadow-md transition-all mb-3 active:scale-[0.98]">
                     {{-- Thumbnail --}}
                     <div class="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-200">
                         @if(!empty($recipe['image_url']))
                             <img src="{{ $recipe['image_url'] }}" alt="{{ $recipe['title'] }}"
                                  class="w-full h-full object-cover">
                         @else
-                            <div class="w-full h-full gradient-accent flex items-center justify-center">
+                            <div class="w-full h-full flex items-center justify-center" style="background: var(--gradient-accent);">
                                 <svg class="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
@@ -186,13 +183,13 @@
 
                     {{-- Info --}}
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-bold text-gray-900 line-clamp-2 text-sm leading-snug mb-1">{{ $recipe['title'] }}</h3>
+                        <h3 class="font-bold line-clamp-2 text-sm leading-snug mb-1" style="color: var(--color-text-primary);">{{ $recipe['title'] }}</h3>
 
                         @if($category)
-                            <span class="inline-block px-2 py-0.5 gradient-accent text-white text-xs font-bold rounded-full mb-1.5">{{ $category }}</span>
+                            <span class="tag-chip selected mb-1.5" style="background: var(--gradient-accent); border-color: transparent;">{{ $category }}</span>
                         @endif
 
-                        <div class="flex items-center gap-3 text-xs text-gray-500 mb-1.5">
+                        <div class="flex items-center gap-3 text-xs mb-1.5" style="color: var(--color-text-secondary);">
                             @if(!empty($recipe['cook_time']))
                                 <span class="flex items-center gap-1">
                                     <svg class="w-3.5 h-3.5 text-[#E76F51]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -215,11 +212,12 @@
                             @if(!empty($author['avatar_url']))
                                 <img src="{{ $author['avatar_url'] }}" class="w-5 h-5 rounded-full object-cover">
                             @else
-                                <div class="w-5 h-5 rounded-full gradient-accent flex items-center justify-center text-white text-[9px] font-bold">
+                                <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                                     style="background: var(--gradient-accent);">
                                     {{ strtoupper(substr($author['username'] ?? 'U', 0, 1)) }}
                                 </div>
                             @endif
-                            <span class="text-xs text-gray-500 font-medium truncate">{{ $author['username'] ?? 'Unknown' }}</span>
+                            <span class="text-xs font-medium truncate" style="color: var(--color-text-secondary);">{{ $author['username'] ?? 'Unknown' }}</span>
                         </div>
                     </div>
                 </a>
@@ -235,17 +233,10 @@
                 </div>
             @endforelse
         @else
-            {{-- Empty state / suggestions --}}
-            <div class="bg-white rounded-3xl p-10 text-center shadow-sm">
-                <div class="w-20 h-20 gradient-accent rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-bold text-gray-800 mb-2">Cari Resep Favoritmu</h3>
-                <p class="text-gray-500 text-sm">Ketik nama resep, bahan, atau gunakan filter di atas</p>
-            </div>
-        @endif
+            <x-app-theme.empty-state
+                icon="bi bi-search"
+                title="Cari Resep Favoritmu"
+                subtitle="Ketik nama resep, bahan, atau gunakan filter di atas" />
 
     </div>
 </body>

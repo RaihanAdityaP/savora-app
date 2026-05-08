@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lisensi — Savora</title>
+    <title>License — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
@@ -23,7 +23,7 @@
     <nav class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-black/40 border-b border-white/5">
         <div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="{{ route('landing') }}" class="flex items-center gap-3">
-                <div class="relative w-9 h-9 rounded-full bg-gradient-to-br from-[{{ \App\View\Components\AppTheme::LOGO_BLUE }}] to-[{{ \App\View\Components\AppTheme::LOGO_ORANGE }}] p-[2px] shadow-lg">
+                <div class="relative w-9 h-9 rounded-full bg-linear-to-br from-[{{ \App\View\Components\AppTheme::LOGO_BLUE }}] to-[{{ \App\View\Components\AppTheme::LOGO_ORANGE }}] p-[2px] shadow-lg">
                     <div class="w-full h-full bg-white rounded-full overflow-hidden flex items-center justify-center">
                         <img src="{{ asset('storage/images/logo.png') }}" alt="Savora"
                              class="w-full h-full object-cover"
@@ -38,15 +38,15 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                     <path d="M19 12H5M12 5l-7 7 7 7"/>
                 </svg>
-                Kembali
+                Back
             </a>
         </div>
     </nav>
 
     {{-- Content --}}
     <main class="max-w-4xl mx-auto px-6 pt-28 pb-20">
-        <h1 class="text-4xl font-black mb-2">Lisensi <span class="gradient-text">& Ketentuan</span></h1>
-        <p class="text-white/50 mb-12">Informasi lisensi open-source yang digunakan dalam aplikasi Savora.</p>
+        <h1 class="text-4xl font-black mb-2">License <span class="gradient-text">& Terms</span></h1>
+        <p class="text-white/50 mb-12">Open-source license information used by the Savora app.</p>
 
         <div class="space-y-6">
 
@@ -90,7 +90,7 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="border-t border-white/10 py-10 px-6 bg-white/[0.03]">
+    <footer class="border-t border-white/10 py-10 px-6 bg-white/3">
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <span class="font-black text-sm tracking-widest gradient-text">SAVORA</span>
             <p class="text-white/50 text-xs">© {{ date('Y') }} Savora. All rights reserved.</p>

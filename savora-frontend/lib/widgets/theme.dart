@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/app_settings_service.dart';
 
 class AppTheme {
   // Primary Colors
@@ -9,8 +10,16 @@ class AppTheme {
   static const Color primaryCoral = Color(0xFFE76F51);
 
   // Background Colors
-  static const Color backgroundLight = Color(0xFFF5F7FA);
-  static const Color cardBackground = Colors.white;
+  static bool get isDarkMode => AppSettingsService.current.isDarkMode;
+  static Color get backgroundLight =>
+      isDarkMode ? const Color(0xFF101418) : const Color(0xFFF5F7FA);
+  static Color get surfaceColor =>
+      isDarkMode ? const Color(0xFF182027) : Colors.white;
+  static Color get subtleSurfaceColor =>
+      isDarkMode ? const Color(0xFF222C35) : Colors.grey.shade100;
+  static Color get borderColor =>
+      isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.grey.shade200;
+  static Color get cardBackground => surfaceColor;
 
   // Text Colors
   static const Color textPrimary = Color(0xFF264653);
@@ -119,8 +128,10 @@ class AppTheme {
 
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
-          color: primaryCoral.withValues(alpha: 0.1),
-          blurRadius: 10,
+          color: isDarkMode
+              ? Colors.black.withValues(alpha: 0.35)
+              : primaryCoral.withValues(alpha: 0.1),
+          blurRadius: isDarkMode ? 18 : 10,
           offset: const Offset(0, 2),
         ),
       ];

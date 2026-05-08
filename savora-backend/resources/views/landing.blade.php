@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Savora — Temukan & Bagikan Resep Favoritmu</title>
-    <meta name="description" content="Savora adalah platform resep masakan berbasis AI. Temukan, buat, dan bagikan resep lezat bersama komunitas.">
+    <title>Savora — Discover & Share Your Favorite Recipes</title>
+    <meta name="description" content="Savora is an AI-powered recipe platform. Discover, create, and share delicious recipes with the community.">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -140,12 +140,6 @@
             border-radius: 2px 0 0 2px;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(-.5deg); }
-            50%       { transform: translateY(-12px) rotate(.5deg); }
-        }
-        .float-anim { animation: float 5s ease-in-out infinite; }
-
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(28px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -196,9 +190,9 @@
     <nav class="navbar-glass fixed top-0 inset-x-0 z-50">
         <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="relative w-9 h-9 rounded-xl p-[2px] shadow-lg"
+                <div class="relative w-9 h-9 rounded-full p-0.5 shadow-lg"
                      style="background: var(--gradient-logo)">
-                    <div class="w-full h-full bg-white rounded-[10px] overflow-hidden flex items-center justify-center">
+                    <div class="w-full h-full bg-white rounded-full overflow-hidden flex items-center justify-center">
                         <img src="{{ asset('storage/images/logo.png') }}"
                              alt="Savora"
                              class="w-full h-full object-cover"
@@ -233,25 +227,25 @@
                      style="color:rgba(255,255,255,.65)">
                     <span class="w-2 h-2 rounded-full"
                           style="background:#4CAF50;box-shadow:0 0 6px #4CAF50"></span>
-                    Tersedia untuk Android
+                    Available on Android
                 </div>
 
                 <h1 class="fade-up-2 text-5xl lg:text-6xl font-black leading-[1.1] mb-6">
-                    Temukan Resep<br>
-                    <span class="gradient-text">Lezat Setiap Hari</span>
+                    Discover Recipes<br>
+                    <span class="gradient-text">Delicious Every Day</span>
                 </h1>
 
                 <p class="fade-up-3 text-lg leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0"
                    style="color:rgba(255,255,255,.55)">
-                    Savora adalah platform resep berbasis AI. Jelajahi ribuan resep,
-                    buat koleksi favoritmu, dan dapatkan rekomendasi personal dari chef AI kami.
+                    Savora is an AI-powered recipe platform. Explore thousands of recipes,
+                    build your favorite collection, and get personal recommendations from our AI chef.
                 </p>
 
                 <div class="fade-up-4 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                     @if(env('APK_DOWNLOAD_URL'))
                     <a href="{{ env('APK_DOWNLOAD_URL') }}" download
                        class="btn-primary-savora rounded-2xl px-7 py-4 text-base shadow-xl">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
                              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
@@ -266,20 +260,20 @@
                         tombol otomatis berubah jadi link download aktif.
                     --}}
                     <span class="btn-apk-disabled">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
                              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        APK Segera Hadir
+                        APK Coming Soon
                     </span>
                     @endif
 
                     <a href="{{ route('app.register') }}"
                        class="btn-outlined-savora rounded-2xl px-7 py-4 text-base">
-                        Coba Versi Web
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5"
+                        Try Web Version
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5"
                              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
@@ -288,7 +282,7 @@
             </div>
 
             {{-- Right — Android phone mockup --}}
-            <div class="flex-shrink-0 float-anim">
+            <div class="shrink-0">
                 <div class="relative" style="width:260px">
 
                     {{-- Physical buttons --}}
@@ -363,14 +357,14 @@
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-16 flex flex-col items-center gap-4">
                 <x-app-theme.section-header
-                    title="Kenapa Savora?"
+                    title="Why Savora?"
                     title-color="#ffffff"
                     icon='<svg class="w-[18px] h-[18px]" fill="#ffffff" viewBox="0 0 24 24">
                         <path d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l7.1-1.01L12 2z"/>
                     </svg>'
                 />
                 <p class="text-base" style="color:rgba(255,255,255,.45)">
-                    Semua yang kamu butuhkan untuk memasak lebih baik
+                    Everything you need to cook better
                 </p>
             </div>
 
@@ -378,38 +372,38 @@
                 @foreach([
                     [
                         'icon'  => 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
-                        'title' => 'AI Chef Pribadi',
-                        'desc'  => 'Chat dengan AI untuk rekomendasi resep, tips memasak, dan substitusi bahan secara real-time.',
+                        'title' => 'Personal AI Chef',
+                        'desc'  => 'Chat with AI for recipe advice, cooking tips, and ingredient substitutions in real time.',
                         'color' => 'var(--color-primary-teal)',
                     ],
                     [
                         'icon'  => 'M4.318 6.318a4.5 4.5 0 0 0 0 6.364L12 20.364l7.682-7.682a4.5 4.5 0 0 0-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 0 0-6.364 0z',
-                        'title' => 'Koleksi Favorit',
-                        'desc'  => 'Simpan resep ke board favoritmu dan akses kapan saja, bahkan saat offline.',
+                        'title' => 'Favorites Collection',
+                        'desc'  => 'Save recipes to your favorites board and access them anytime, even offline.',
                         'color' => 'var(--color-primary-coral)',
                     ],
                     [
                         'icon'  => 'M17 20h5v-2a3 3 0 0 0-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 0 1 5.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 0 1 9.288 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
-                        'title' => 'Komunitas Aktif',
-                        'desc'  => 'Bagikan resepmu, ikuti chef favorit, dan dapatkan feedback dari komunitas memasak.',
+                        'title' => 'Active Community',
+                        'desc'  => 'Share your recipes, follow favorite chefs, and get feedback from fellow cooks.',
                         'color' => 'var(--color-primary-orange)',
                     ],
                     [
                         'icon'  => 'M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z',
-                        'title' => 'Pencarian Cerdas',
-                        'desc'  => 'Cari resep berdasarkan bahan yang ada di dapur, kategori, atau tag spesifik.',
+                        'title' => 'Smart Search',
+                        'desc'  => 'Search recipes by ingredients, category, or specific tags.',
                         'color' => 'var(--color-primary-yellow)',
                     ],
                     [
                         'icon'  => 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 0 0 .95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 0 0-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 0 0-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 0 0-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 0 0 .951-.69l1.519-4.674z',
-                        'title' => 'Rating & Review',
-                        'desc'  => 'Nilai resep dan baca ulasan jujur dari pengguna lain sebelum mulai memasak.',
+                        'title' => 'Ratings & Reviews',
+                        'desc'  => 'Rate recipes and read honest user reviews before you start cooking.',
                         'color' => 'var(--color-primary-yellow)',
                     ],
                     [
                         'icon'  => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6.002 6.002 0 0 0-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9',
-                        'title' => 'Notifikasi Real-time',
-                        'desc'  => 'Dapatkan notifikasi saat ada komentar, like, atau follower baru di profilmu.',
+                        'title' => 'Real-time Notifications',
+                        'desc'  => 'Receive alerts for comments, likes, and new followers on your profile.',
                         'color' => 'var(--color-primary-coral)',
                     ],
                 ] as $f)
@@ -445,7 +439,7 @@
                     </svg>
                 </div>
                 <h2 class="text-3xl font-black mb-3">Download Savora</h2>
-                <p class="mb-9" style="color:rgba(255,255,255,.48)">Tersedia untuk Android. Gratis selamanya.</p>
+                <p class="mb-9" style="color:rgba(255,255,255,.48)">Available on Android. Free forever.</p>
                 <a href="{{ env('APK_DOWNLOAD_URL') }}" download
                    class="btn-primary-savora rounded-2xl px-8 py-4 text-base shadow-xl mx-auto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -458,7 +452,7 @@
                 </a>
                 <div class="mt-8 text-left">
                     @include('components.app-theme.info-banner', [
-                        'message' => 'Aktifkan "Install dari sumber tidak dikenal" di Pengaturan Android sebelum menginstal.',
+                        'message' => 'Enable "Install from unknown sources" in Android Settings before installing.',
                         'icon'    => 'bi bi-shield-check',
                     ])
                 </div>
@@ -473,9 +467,9 @@
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
             <span class="font-black text-sm tracking-widest gradient-text">SAVORA</span>
             <div class="flex items-center gap-6 text-sm" style="color:rgba(255,255,255,.50)">
-                <a href="{{ route('license') }}" class="transition-colors hover:text-white">Lisensi</a>
-                <a href="{{ route('app.login') }}" class="transition-colors hover:text-white">Masuk</a>
-                <a href="{{ route('app.register') }}" class="transition-colors hover:text-white">Daftar</a>
+                <a href="{{ route('license') }}" class="transition-colors hover:text-white">License</a>
+                <a href="{{ route('app.login') }}" class="transition-colors hover:text-white">Log In</a>
+                <a href="{{ route('app.register') }}" class="transition-colors hover:text-white">Register</a>
             </div>
             <p class="text-xs" style="color:rgba(255,255,255,.30)">
                 &copy; {{ date('Y') }} Savora. All rights reserved.

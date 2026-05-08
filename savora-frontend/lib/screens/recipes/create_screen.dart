@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:io' show File;
 import 'dart:async';
 import '../../services/api_service.dart';
+import '../../services/app_settings_service.dart';
 import '../../services/category_client.dart';
 import '../../services/draft_service.dart';
 import '../../widgets/custom_bottom_nav.dart';
@@ -37,6 +38,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   String      _selectedDifficulty = 'mudah';
   bool        _isLoading   = false;
   bool        _isUploading = false;
+  bool        _autoSaveDrafts = true;
   String?     _userAvatarUrl;
 
   List<String>              _selectedTags     = [];
@@ -59,6 +61,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   void initState() {
     super.initState();
     _loadCategories();
+    _loadSettings();
     _loadUserAvatar();
     _loadPopularTags();
     _restoreDraft();          // ← restore draft on open
@@ -92,8 +95,15 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
   /// Jadwalkan auto-save 1.5 detik setelah input berhenti
   void _scheduleDraftSave() {
+    if (!_autoSaveDrafts) return;
     _draftTimer?.cancel();
     _draftTimer = Timer(const Duration(milliseconds: 1500), _saveDraft);
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await AppSettingsService.load();
+    if (!mounted) return;
+    setState(() => _autoSaveDrafts = settings.autoSaveDrafts);
   }
 
   Future<void> _saveDraft() async {

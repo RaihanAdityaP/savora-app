@@ -44,7 +44,12 @@ class HomeController extends Controller
         } catch (Exception) {}
 
         try {
-            $followersCount = count($this->supabase->select('follows', ['follower_id'], ['following_id' => $userId]));
+            $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $userId]);
+            $followersCount = collect($followers)
+                ->pluck('follower_id')
+                ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $userId)
+                ->unique()
+                ->count();
         } catch (Exception) {}
 
         // Load feed — pakai endpoint yang sudah ada di API

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
 import '../screens/notification_screen.dart';
+import '../screens/settings_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/ai/chat_screen.dart';
+import '../services/app_settings_service.dart';
 import '../services/auth_client.dart';
 import '../services/notification_client.dart';
 import '../widgets/theme.dart';
@@ -118,11 +120,13 @@ class _CustomAppBarState extends State<CustomAppBar>
     }
   }
 
+  String _t(String en, String id) => AppSettingsService.t(id, en, id);
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color    : Colors.white,
+        color    : AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
             color     : Colors.black.withValues(alpha: 0.06),
@@ -132,7 +136,7 @@ class _CustomAppBarState extends State<CustomAppBar>
         ],
       ),
       child: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.surfaceColor,
         elevation      : 0,
         leadingWidth   : widget.showBackButton ? kToolbarHeight : 160,
         leading        : widget.showBackButton
@@ -203,10 +207,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                   Container(
                     width     : 40, height: 40,
                     decoration: BoxDecoration(
-                      color       : Colors.grey.shade100,
+                      color       : AppTheme.subtleSurfaceColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.menu_rounded, color: Colors.grey.shade800, size: 22),
+                    child: Icon(
+                      Icons.menu_rounded,
+                      color: AppTheme.isDarkMode ? Colors.white : Colors.grey.shade800,
+                      size: 22,
+                    ),
                   ),
                   if (_unreadCount > 0)
                     Positioned(
@@ -235,7 +243,7 @@ class _CustomAppBarState extends State<CustomAppBar>
               shape       : RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               offset      : const Offset(0, 48),
               elevation   : 4,
-              color       : Colors.white,
+              color       : AppTheme.surfaceColor,
               onSelected  : (value) async {
                 switch (value) {
                   case 'ai_chat':
@@ -244,6 +252,9 @@ class _CustomAppBarState extends State<CustomAppBar>
                   case 'notifications':
                     await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
                     _loadUnreadCount();
+                    break;
+                  case 'settings':
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                     break;
                   case 'logout':
                     _signOut(context);
@@ -265,7 +276,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                         child: const Icon(Icons.psychology_rounded, size: 18, color: Colors.black87),
                       ),
                       const SizedBox(width: 12),
-                      const Text('Chef AI', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(_t('Chef AI', 'Chef AI'), style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -284,8 +295,8 @@ class _CustomAppBarState extends State<CustomAppBar>
                         child: Icon(Icons.notifications_rounded, size: 18, color: Colors.grey.shade800),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text('Notifikasi', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Expanded(
+                        child: Text(_t('Notifications', 'Notifikasi'), style: const TextStyle(fontWeight: FontWeight.w600)),
                       ),
                       if (_unreadCount > 0)
                         Container(
@@ -299,6 +310,26 @@ class _CustomAppBarState extends State<CustomAppBar>
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ),
+                    ],
+                  ),
+                ),
+
+                const PopupMenuDivider(),
+
+                PopupMenuItem(
+                  value: 'settings',
+                  child: Row(
+                    children: [
+                      Container(
+                        padding   : const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color       : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.settings_rounded, size: 18, color: Colors.grey.shade800),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_t('Settings', 'Pengaturan'), style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -319,7 +350,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                         child: Icon(Icons.logout_rounded, size: 18, color: Colors.red.shade600),
                       ),
                       const SizedBox(width: 12),
-                      Text('Keluar', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                      Text(_t('Logout', 'Keluar'), style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red.shade600)),
                     ],
                   ),
                 ),

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'dart:io' show File;
 import '../../services/api_service.dart';
+import '../../services/app_settings_service.dart';
 import '../../services/category_client.dart';
 import '../../services/draft_service.dart'; // ← NEW
 import '../../widgets/custom_bottom_nav.dart';
@@ -38,6 +39,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   String _selectedDifficulty = 'mudah';
   bool _isLoading = false;
   bool _isUploading = false;
+  bool _autoSaveDrafts = true;
   String? _userRole;
   String? _userAvatarUrl;
 
@@ -77,6 +79,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         'user';
 
     _loadInitialTags();
+    _loadSettings();
     _loadCategories();
     _loadUserAvatar();
     _loadPopularTags();
@@ -130,8 +133,15 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   // ── NEW: Draft methods ──────────────────────────────────────
 
   void _scheduleDraftSave() {
+    if (!_autoSaveDrafts) return;
     _draftTimer?.cancel();
     _draftTimer = Timer(const Duration(milliseconds: 1500), _saveDraft);
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await AppSettingsService.load();
+    if (!mounted) return;
+    setState(() => _autoSaveDrafts = settings.autoSaveDrafts);
   }
 
   Future<void> _saveDraft() async {

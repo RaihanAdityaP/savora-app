@@ -108,6 +108,10 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::get('ai/settings',                         [AIChatController::class, 'settings'])->name('ai.settings');
     Route::post('ai/settings',                        [AIChatController::class, 'saveSettings'])->name('ai.settings.save');
 
+    // ── Settings ──────────────────────────────────────────
+    Route::get('settings',  [App\Http\Controllers\App\SettingsController::class, 'show'])->name('settings');
+    Route::post('settings', [App\Http\Controllers\App\SettingsController::class, 'save'])->name('settings.save');
+
     // ── Tags ──────────────────────────────────────────────
     Route::get('tags',  [TagController::class, 'index'])->name('tags');
     Route::post('tags', [TagController::class, 'store'])->name('tags.store');

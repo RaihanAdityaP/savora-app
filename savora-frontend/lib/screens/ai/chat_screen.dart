@@ -532,7 +532,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.surfaceColor,
       elevation      : 1,
       leading        : IconButton(
         icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),

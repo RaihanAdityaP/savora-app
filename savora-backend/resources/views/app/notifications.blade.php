@@ -6,10 +6,7 @@
     <title>Notifikasi — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        .gradient-accent { background: linear-gradient(135deg, #E76F51, #F4A261); }
-        .gradient-teal   { background: linear-gradient(135deg, #2A9D8F, #3DB9A9); }
-    </style>
+    @include('components.app-theme')
 </head>
 <body class="bg-[#F5F7FA] text-gray-900">
 
@@ -24,28 +21,23 @@
         {{-- Header --}}
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-[#2A9D8F]/10 rounded-2xl border border-[#2A9D8F]/25">
-                    <svg class="w-7 h-7 text-[#2A9D8F]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Notifikasi</h1>
-                    @if($unreadCount > 0)
-                        <span class="inline-block mt-1 px-3 py-0.5 bg-[#F4A261]/10 border border-[#F4A261]/30 text-[#F4A261] text-xs font-bold rounded-full">
-                            {{ $unreadCount }} baru
-                        </span>
-                    @endif
-                </div>
+                <x-app-theme.section-header
+                    title="Notifikasi"
+                    icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>'
+                />
+                @if(($unreadCount ?? 0) > 0)
+                    <span class="badge-savora">{{ $unreadCount }} baru</span>
+                @endif
             </div>
 
             {{-- Actions --}}
             <div class="flex items-center gap-2" x-data="{ open: false }">
-                @if($unreadCount > 0)
+                @if(($unreadCount ?? 0) > 0)
                     <form action="{{ route('app.notifications.read-all') }}" method="POST">
                         @csrf
                         <button type="submit"
-                                class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all text-[#2A9D8F]"
+                                class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all"
+                                style="color: var(--color-primary-teal)"
                                 title="Tandai semua dibaca">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
@@ -76,9 +68,10 @@
             </div>
         </div>
 
+        {{-- Status flash --}}
         @if(session('status'))
-            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl text-sm font-medium">
-                {{ session('status') }}
+            <div class="mb-4">
+                <x-app-theme.info-banner message="{{ session('status') }}" icon="bi bi-check-circle" />
             </div>
         @endif
 
@@ -87,14 +80,16 @@
             @php
                 $isRead = $notif['is_read'] ?? false;
                 $type   = $notif['type'] ?? 'system';
+
+                // Inline CSS colors — hindari dynamic Tailwind class generation
                 $colorMap = [
-                    'recipe_approved'          => ['bg' => 'bg-green-500',  'light' => 'bg-green-50',  'border' => 'border-green-200',  'text' => 'text-green-600'],
-                    'recipe_rejected'          => ['bg' => 'bg-red-500',    'light' => 'bg-red-50',    'border' => 'border-red-200',    'text' => 'text-red-600'],
-                    'new_follower'             => ['bg' => 'bg-[#2A9D8F]',  'light' => 'bg-teal-50',   'border' => 'border-teal-200',   'text' => 'text-teal-600'],
-                    'new_recipe_from_following'=> ['bg' => 'bg-[#F4A261]',  'light' => 'bg-orange-50', 'border' => 'border-orange-200', 'text' => 'text-orange-600'],
-                    'admin'                    => ['bg' => 'bg-[#E76F51]',  'light' => 'bg-red-50',    'border' => 'border-red-200',    'text' => 'text-red-600'],
+                    'recipe_approved'           => ['bg' => '#22c55e', 'light' => 'rgba(34,197,94,0.08)',   'border' => 'rgba(34,197,94,0.35)',   'text' => '#16a34a'],
+                    'recipe_rejected'           => ['bg' => '#ef4444', 'light' => 'rgba(239,68,68,0.08)',   'border' => 'rgba(239,68,68,0.35)',   'text' => '#dc2626'],
+                    'new_follower'              => ['bg' => '#2A9D8F', 'light' => 'rgba(42,157,143,0.08)',  'border' => 'rgba(42,157,143,0.35)',  'text' => '#2A9D8F'],
+                    'new_recipe_from_following' => ['bg' => '#F4A261', 'light' => 'rgba(244,162,97,0.08)',  'border' => 'rgba(244,162,97,0.35)',  'text' => '#d97706'],
+                    'admin'                     => ['bg' => '#E76F51', 'light' => 'rgba(231,111,81,0.08)',  'border' => 'rgba(231,111,81,0.35)',  'text' => '#E76F51'],
                 ];
-                $colors = $colorMap[$type] ?? ['bg' => 'bg-gray-400', 'light' => 'bg-gray-50', 'border' => 'border-gray-200', 'text' => 'text-gray-500'];
+                $c = $colorMap[$type] ?? ['bg' => '#9ca3af', 'light' => 'rgba(156,163,175,0.08)', 'border' => 'rgba(156,163,175,0.30)', 'text' => '#6b7280'];
 
                 $iconMap = [
                     'recipe_approved'           => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -105,26 +100,25 @@
                 ];
                 $iconPath = $iconMap[$type] ?? 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9';
 
-                // Time ago
                 try {
-                    $createdAt = \Carbon\Carbon::parse($notif['created_at']);
-                    $diff = $createdAt->diffForHumans();
+                    $diff = \Carbon\Carbon::parse($notif['created_at'])->diffForHumans();
                 } catch (\Exception $e) {
                     $diff = $notif['created_at'] ?? '';
                 }
             @endphp
 
-            <div class="relative mb-3 rounded-2xl overflow-hidden border-2 transition-all
-                        {{ $isRead ? 'bg-white border-gray-200' : 'bg-white border-' . explode('-', $colors['border'])[1] . '-300 shadow-md' }}">
+            <div class="card-savora relative mb-3 overflow-hidden transition-all"
+                 style="{{ !$isRead ? 'border-color:' . $c['border'] . '; box-shadow: 0 4px 16px ' . $c['light'] . ';' : '' }}">
 
                 @if(!$isRead)
-                    <div class="absolute inset-0 {{ $colors['light'] }} opacity-30 pointer-events-none"></div>
+                    <div class="absolute inset-0 pointer-events-none" style="background: {{ $c['light'] }}"></div>
                 @endif
 
                 <div class="relative p-4 flex items-start gap-4">
                     {{-- Icon --}}
-                    <div class="w-12 h-12 rounded-2xl {{ $colors['light'] }} border-2 {{ $colors['border'] }} flex items-center justify-center flex-shrink-0">
-                        <svg class="w-6 h-6 {{ $colors['text'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-12 h-12 flex items-center justify-center flex-shrink-0"
+                         style="background: {{ $c['light'] }}; border: 2px solid {{ $c['border'] }}; border-radius: var(--radius-md)">
+                        <svg class="w-6 h-6" style="color: {{ $c['text'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $iconPath }}"/>
                         </svg>
                     </div>
@@ -132,19 +126,20 @@
                     {{-- Content --}}
                     <div class="flex-1 min-w-0">
                         <div class="flex items-start justify-between gap-2">
-                            <p class="font-{{ $isRead ? 'semibold' : 'bold' }} text-gray-900 text-sm leading-snug">
+                            <p class="text-sm leading-snug" style="font-weight: {{ $isRead ? 600 : 700 }}; color: var(--color-text-primary)">
                                 {{ $notif['title'] ?? 'Notifikasi' }}
                             </p>
                             @if(!$isRead)
-                                <div class="w-2.5 h-2.5 rounded-full {{ $colors['bg'] }} flex-shrink-0 mt-1 shadow-sm"></div>
+                                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+                                     style="background: {{ $c['bg'] }}; box-shadow: 0 0 6px {{ $c['bg'] }}99"></div>
                             @endif
                         </div>
-                        <p class="text-gray-500 text-sm mt-1 leading-relaxed">{{ $notif['message'] ?? '' }}</p>
+                        <p class="text-sm mt-1 leading-relaxed" style="color: var(--color-text-secondary)">{{ $notif['message'] ?? '' }}</p>
                         <div class="flex items-center gap-1 mt-2">
-                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5" style="color: var(--color-text-secondary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span class="text-xs text-gray-400 font-medium">{{ $diff }}</span>
+                            <span class="app-body-small font-medium">{{ $diff }}</span>
                         </div>
                     </div>
                 </div>
@@ -154,7 +149,8 @@
                     @if(!$isRead)
                         <form action="{{ route('app.notifications.read', $notif['id']) }}" method="POST" class="flex-1">
                             @csrf
-                            <button type="submit" class="w-full py-2.5 text-xs font-semibold text-[#2A9D8F] hover:bg-teal-50 transition-colors">
+                            <button type="submit" class="w-full py-2.5 text-xs font-semibold hover:bg-teal-50 transition-colors"
+                                    style="color: var(--color-primary-teal)">
                                 Tandai Dibaca
                             </button>
                         </form>
@@ -168,16 +164,13 @@
                     </form>
                 </div>
             </div>
+
         @empty
-            <div class="bg-white rounded-3xl p-12 text-center shadow-sm">
-                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-bold text-gray-700 mb-2">Tidak ada notifikasi</h3>
-                <p class="text-gray-400 text-sm">Notifikasi akan muncul di sini</p>
-            </div>
+            <x-app-theme.empty-state
+                icon="bi bi-bell-slash"
+                title="Tidak ada notifikasi"
+                subtitle="Notifikasi akan muncul di sini"
+            />
         @endforelse
 
     </div>
