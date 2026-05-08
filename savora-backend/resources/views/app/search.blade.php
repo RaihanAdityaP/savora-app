@@ -19,21 +19,21 @@
         :username="session('user_username') ?? null"
     />
 
-    <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
+    <div class="max-w-3xl mx-auto px-4 pt-4 pb-24 md:pb-10">
 
         {{-- Header --}}
-        <div class="mb-6">
+        <div class="mb-6 px-1">
             <x-app-theme.section-header
                 title="Cari Resep"
-                icon="<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z\"/></svg>"
+                icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>'
             />
-            <p class="app-body-small text-gray-500 mt-2">Temukan resep yang kamu inginkan</p>
+            <p class="app-body-small mt-2 pl-[56px]" style="color: var(--color-text-secondary);">Temukan resep yang kamu inginkan</p>
         </div>
 
         {{-- Search form --}}
-        <form method="GET" action="{{ route('app.search') }}" x-data="{ showFilters: false }">
+        <form method="GET" action="{{ route('app.search') }}" x-data="{ showFilters: false }" class="card-savora p-4 sm:p-5 mb-6">
             {{-- Search input --}}
-            <div class="relative mb-4">
+            <div class="relative mb-3">
                 <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -52,9 +52,9 @@
             </div>
 
             {{-- Filter toggle --}}
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
                 <button type="button" @click="showFilters = !showFilters"
-                        class="btn-outlined-savora text-gray-700 hover:text-[#E76F51]">
+                        class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:text-[#E76F51] hover:border-[#E76F51]/40 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                     </svg>
@@ -69,7 +69,7 @@
 
                 {{-- Sort --}}
                 <select name="sort" onchange="this.form.submit()"
-                        class="input-savora py-2">
+                        class="input-savora py-2 max-w-[180px]">
                     <option value="popular" {{ $sortBy === 'popular' ? 'selected' : '' }}>Terpopuler</option>
                     <option value="newest"  {{ $sortBy === 'newest'  ? 'selected' : '' }}>Terbaru</option>
                 </select>
@@ -131,7 +131,10 @@
         @if(count($popularTags) > 0 && !$query)
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
-                    <x-app-theme.section-header title="Tag Populer" icon="bi bi-hash" />
+                    <x-app-theme.section-header
+                        title="Tag Populer"
+                        icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 9h14M5 15h14M10 3L8 21M16 3l-2 18"/></svg>'
+                    />
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($popularTags as $tag)
@@ -237,6 +240,7 @@
                 icon="bi bi-search"
                 title="Cari Resep Favoritmu"
                 subtitle="Ketik nama resep, bahan, atau gunakan filter di atas" />
+        @endif
 
     </div>
 </body>

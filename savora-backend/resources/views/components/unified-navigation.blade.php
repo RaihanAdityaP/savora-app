@@ -42,7 +42,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
 
                 {{-- LOGO --}}
                 <a href="{{ route('app.home') }}" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
-                    <div class="relative w-10 h-10 rounded-full bg-linear-to-br from-[#2B6CB0] to-[#FF6B35] p-1 shadow-lg">
+                    <div class="relative w-10 h-10 rounded-full bg-gradient-to-br from-[#2B6CB0] to-[#FF6B35] p-1 shadow-lg">
                         <div class="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
                             <img src="{{ asset('storage/images/logo.png') }}" alt="Savora" class="object-cover w-8 h-8"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
@@ -215,7 +215,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
             {{-- Create (center FAB) --}}
             <div class="flex flex-col items-center flex-1 pb-1">
                 <a href="{{ route('app.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
-                    <div class="w-14 h-14 bg-linear-to-rrom-[#E76F51] to-[#F4A261] rounded-full shadow-xl flex items-center justify-center text-white ring-4 ring-white">
+                    <div class="w-14 h-14 bg-gradient-to-r from-[#E76F51] to-[#F4A261] rounded-full shadow-xl flex items-center justify-center text-white ring-4 ring-white">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>
