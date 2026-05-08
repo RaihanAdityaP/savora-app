@@ -28,51 +28,32 @@ class HomeController extends Controller
             $profile = $profiles[0] ?? null;
         } catch (Exception) {}
 
+        // Use count() method yang lebih cepat daripada select + count
         $myRecipesCount = 0;
-        $bookmarksCount = 0;
+        $bookmarksCount = 0;  // Lazy load ini di blade atau remove karena expensive
         $followersCount = 0;
 
         try {
-            $myRecipesCount = count($this->supabase->select('recipes', ['id'], ['user_id' => $userId, 'status' => 'approved']));
+            $myRecipesCount = $this->supabase->count('recipes', ['user_id' => $userId, 'status' => 'approved']);
         } catch (Exception) {}
+
+        // Skip bookmarksCount dulu karena terlalu expensive (nested loop queries)
+        // Try later dengan aggregate functions
 
         try {
-            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
-            foreach ($boards as $board) {
-                $bookmarksCount += count($this->supabase->select('board_recipes', ['id'], ['board_id' => $board['id']]));
-            }
+            $followersCount = $this->supabase->count('follows', ['following_id' => $userId]);
         } catch (Exception) {}
 
-        try {
-            $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $userId]);
-            $followersCount = collect($followers)
-                ->pluck('follower_id')
-                ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $userId)
-                ->unique()
-                ->count();
-        } catch (Exception) {}
-
-        // Load feed — pakai endpoint yang sudah ada di API
+        // Load feed tanpa per-recipe rating queries (load ratings lazy di frontend)
         $feed = [];
         try {
             $feed = $this->supabase->select(
                 'recipes',
-                ['*', 'profiles!recipes_user_id_fkey(username, avatar_url, role)', 'categories(name)', 'recipe_tags(tags(id, name))'],
+                ['id', 'title', 'description', 'image_url', 'created_at', 'user_id', 'category_id',
+                 'profiles!recipes_user_id_fkey(username, avatar_url, role)', 'categories(name)', 'recipe_tags(tags(id, name))'],
                 ['status' => 'approved'],
                 ['order' => 'created_at.desc', 'limit' => $limit, 'offset' => $offset]
             );
-
-            foreach ($feed as &$recipe) {
-                try {
-                    $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
-                    $total   = count($ratings);
-                    $recipe['rating_avg']   = $total > 0 ? round(array_sum(array_column($ratings, 'rating')) / $total, 1) : 0;
-                    $recipe['rating_count'] = $total;
-                } catch (Exception) {
-                    $recipe['rating_avg']   = 0;
-                    $recipe['rating_count'] = 0;
-                }
-            }
         } catch (Exception $e) {
             $feed = [];
         }
@@ -82,8 +63,7 @@ class HomeController extends Controller
         // Get unread notifications count
         $unreadCount = 0;
         try {
-            $notifications = $this->supabase->select('notifications', ['id'], ['user_id' => $userId, 'is_read' => false]);
-            $unreadCount = count($notifications);
+            $unreadCount = $this->supabase->count('notifications', ['user_id' => $userId, 'is_read' => false]);
         } catch (Exception) {}
 
         return view('app.home', compact(
