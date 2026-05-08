@@ -44,11 +44,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
 // ─────────────────────────────────────────────────────────────
 // PUBLIC WEB PAGES (no login required)
 // ─────────────────────────────────────────────────────────────
-Route::prefix('web')->name('web.')->group(function () {
-    Route::get('search', [SearchController::class, 'index'])->name('search');
-    Route::get('recipes/{id}', [RecipeController::class, 'show'])->name('recipe.show');
-    Route::get('profile/{userId}', [ProfileController::class, 'show'])->name('profile.user');
-});
+Route::get('search', [SearchController::class, 'index'])->name('web.search');
+Route::get('recipes/{id}', [RecipeController::class, 'show'])->name('web.recipe.show');
+Route::get('profile/{userId}', [ProfileController::class, 'show'])->name('web.profile.user');
 
 // Guest only
 Route::prefix('app')->name('app.')->group(function () {
