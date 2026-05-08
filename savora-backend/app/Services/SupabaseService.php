@@ -141,7 +141,7 @@ class SupabaseService
             $url = "{$this->supabaseUrl}/rest/v1/{$table}?select=id";
             $url .= $this->buildFilters($filters);
 
-            $response = Http::withHeaders(array_merge(
+            $response = Http::timeout(30)->withHeaders(array_merge(
                 $this->getHeaders($useServiceKey),
                 ['Prefer' => 'count=exact']
             ))->head($url);
@@ -171,7 +171,7 @@ class SupabaseService
     ): array {
         try {
             $url      = "{$this->supabaseUrl}/rest/v1/{$table}";
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))->post($url, $data);
+            $response = Http::timeout(30)->withHeaders($this->getHeaders($useServiceKey))->post($url, $data);
 
             if ($response->successful()) {
                 return $response->json() ?? [];
@@ -198,7 +198,7 @@ class SupabaseService
         try {
             $url = "{$this->supabaseUrl}/rest/v1/{$table}";
 
-            $response = Http::withHeaders(array_merge(
+            $response = Http::timeout(30)->withHeaders(array_merge(
                 $this->getHeaders($useServiceKey),
                 ['Prefer' => "resolution=merge-duplicates,return=representation"]
             ))->post($url . "?on_conflict={$onConflict}", $data);
@@ -233,7 +233,7 @@ class SupabaseService
                 $url .= '?' . ltrim($filterStr, '&');
             }
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))->patch($url, $data);
+            $response = Http::timeout(30)->withHeaders($this->getHeaders($useServiceKey))->patch($url, $data);
 
             if ($response->successful()) {
                 return $response->json() ?? [];
@@ -264,7 +264,7 @@ class SupabaseService
                 $url .= '?' . ltrim($filterStr, '&');
             }
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))->delete($url);
+            $response = Http::timeout(30)->withHeaders($this->getHeaders($useServiceKey))->delete($url);
 
             if ($response->successful()) {
                 return true;
@@ -289,7 +289,7 @@ class SupabaseService
     ): mixed {
         try {
             $url      = "{$this->supabaseUrl}/rest/v1/rpc/{$functionName}";
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))->post($url, $params);
+            $response = Http::timeout(30)->withHeaders($this->getHeaders($useServiceKey))->post($url, $params);
 
             if ($response->successful()) {
                 return $response->json();
