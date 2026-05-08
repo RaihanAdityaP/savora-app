@@ -45,6 +45,11 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
 // APP (User Web)
 // ─────────────────────────────────────────────────────────────
 
+// Public web pages for shared and browser access
+Route::get('search', [SearchController::class, 'index'])->name('web.search');
+Route::get('recipes/{id}', [RecipeController::class, 'show'])->name('web.recipe.show');
+Route::get('profile/{userId}', [ProfileController::class, 'show'])->name('web.profile.user');
+
 // Guest only
 Route::prefix('app')->name('app.')->group(function () {
     Route::get('login',    [LoginController::class, 'showLogin'])->name('login');
@@ -64,7 +69,7 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::get('search', [SearchController::class, 'index'])->name('search');
 
     // ── Recipes ──────────────────────────────────────────
-    Route::get('recipes/create',      [RecipeController::class, 'create'])->name('recipe.create');
+    Route::get('web/recipes/create',  [RecipeController::class, 'create'])->name('web.recipe.create');
     Route::post('recipes',            [RecipeController::class, 'store'])->name('recipe.store');
     Route::get('recipes/{id}',        [RecipeController::class, 'show'])->name('recipe.show');
     Route::get('recipes/{id}/edit',   [RecipeController::class, 'edit'])->name('recipe.edit');
@@ -75,6 +80,7 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::post('recipes/{id}/rate',  [RecipeController::class, 'rate'])->name('recipe.rate');
 
     // ── Profile ───────────────────────────────────────────
+    Route::get('web/profile',         [ProfileController::class, 'show'])->name('web.profile');
     Route::get('profile',             [ProfileController::class, 'show'])->name('profile');
     Route::get('profile/{userId}',    [ProfileController::class, 'show'])->name('profile.user');
     Route::post('profile',            [ProfileController::class, 'update'])->name('profile.update');

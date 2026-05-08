@@ -90,7 +90,7 @@
             <div class="flex items-start justify-between gap-3 mb-3">
                 <h1 class="text-2xl font-bold leading-tight flex-1" style="color: var(--color-text-primary);">{{ $recipe['title'] }}</h1>
                 @if($canEdit)
-                    <div class="flex gap-2 flex-shrink-0">
+                    <div class="flex gap-2 shrink-0">
                         <a href="{{ route('app.recipe.edit', $recipe['id']) }}"
                            class="p-2 rounded-xl transition-all"
                            style="background: rgba(231,111,81,0.10); color: var(--color-primary-coral);">
@@ -145,7 +145,7 @@
             </div>
 
             {{-- Author --}}
-            <a href="{{ route('app.profile.user', $author['id'] ?? 0) }}"
+            <a href="{{ route('web.profile.user', $author['id'] ?? 0) }}"
                class="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-100 transition-colors"
                style="background: var(--color-bg-light);">
                 @if(!empty($author['avatar_url']))
@@ -195,7 +195,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($tags as $tag)
-                        <a href="{{ route('app.search', ['tag_id' => $tag['id']]) }}" class="tag-chip selected">
+                        <a href="{{ route('web.search', ['tag_id' => $tag['id']]) }}" class="tag-chip selected">
                             #{{ $tag['name'] }}
                         </a>
                     @endforeach
@@ -214,7 +214,7 @@
                 <ul class="space-y-2">
                     @foreach($ingredients as $i => $ingredient)
                         <li class="flex items-start gap-3">
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5"
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5"
                                  style="background: var(--gradient-accent);">{{ $i + 1 }}</div>
                             <span class="text-sm leading-relaxed" style="color: var(--color-text-primary);">{{ is_array($ingredient) ? ($ingredient['name'] ?? json_encode($ingredient)) : $ingredient }}</span>
                         </li>
@@ -234,7 +234,7 @@
                 <ol class="space-y-4">
                     @foreach($steps as $i => $step)
                         <li class="flex gap-4">
-                            <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                            <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-white text-sm font-bold shrink-0"
                                  style="background: var(--gradient-accent);">{{ $i + 1 }}</div>
                             <div class="flex-1 pt-1">
                                 <p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">{{ is_array($step) ? ($step['description'] ?? $step['step'] ?? json_encode($step)) : $step }}</p>
@@ -300,7 +300,7 @@
             <form action="{{ route('app.recipe.comment', $recipe['id']) }}" method="POST" class="mb-5">
                 @csrf
                 <div class="flex gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                          style="background: var(--gradient-accent);">
                         {{ strtoupper(substr(session('user_username', 'U'), 0, 1)) }}
                     </div>
@@ -316,9 +316,9 @@
                 @php $commenter = $comment['profiles'] ?? []; @endphp
                 <div class="flex gap-3 mb-4 last:mb-0">
                     @if(!empty($commenter['avatar_url']))
-                        <img src="{{ $commenter['avatar_url'] }}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                        <img src="{{ $commenter['avatar_url'] }}" class="w-9 h-9 rounded-full object-cover shrink-0">
                     @else
-                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                              style="background: var(--gradient-accent);">
                             {{ strtoupper(substr($commenter['username'] ?? 'U', 0, 1)) }}
                         </div>

@@ -29,7 +29,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
             document.getElementById('logout-form').submit();
         },
         profileUrl() {
-            return this.userId ? '/app/profile/' + this.userId : '#';
+            return this.userId ? '/profile/' + this.userId : '#';
         }
     }" @click.outside="showProfileMenu = false; showMobileMenu = false">
 
@@ -42,7 +42,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
 
                 {{-- LOGO --}}
                 <a href="{{ route('app.home') }}" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
-                    <div class="relative w-10 h-10 rounded-full bg-gradient-to-br from-[#2B6CB0] to-[#FF6B35] p-1 shadow-lg">
+                    <div class="relative w-10 h-10 rounded-full bg-linear-to-br from-[#2B6CB0] to-[#FF6B35] p-1 shadow-lg">
                         <div class="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden">
                             <img src="{{ asset('storage/images/logo.png') }}" alt="Savora" class="object-cover w-8 h-8"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
@@ -73,7 +73,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                     <div class="relative hidden md:block">
                         <button @click.stop="showProfileMenu = !showProfileMenu"
                                 class="flex items-center gap-1.5 p-1 rounded-full hover:bg-gray-100 transition-colors focus:outline-none">
-                            <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300 flex-shrink-0">
+                            <div class="w-9 h-9 rounded-full overflow-hidden bg-gray-200 border-2 border-gray-300 shrink-0">
                                 <template x-if="avatarUrl && avatarUrl !== 'null' && avatarUrl !== ''">
                                     <img :src="avatarUrl" alt="Profile" class="w-full h-full object-cover">
                                 </template>
@@ -107,7 +107,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                             {{-- User info header --}}
                             <a :href="profileUrl()" @click="showProfileMenu = false"
                                class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                                <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
                                     <template x-if="avatarUrl && avatarUrl !== 'null' && avatarUrl !== ''">
                                         <img :src="avatarUrl" alt="Profile" class="w-full h-full object-cover">
                                     </template>
@@ -144,7 +144,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                                 @if(!empty($item['dynamic']))
                                     <a :href="profileUrl()" @click="showProfileMenu = false"
                                        class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700">
-                                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                                         </svg>
                                         <span class="font-medium text-sm">{{ $item['label'] }}</span>
@@ -153,7 +153,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                                     <a href="{{ route($item['route']) }}" @click="showProfileMenu = false"
                                        class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors
                                               {{ request()->routeIs($item['route']) ? 'text-[#E76F51] bg-orange-50' : 'text-gray-700' }}">
-                                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                                         </svg>
                                         <span class="font-medium text-sm flex-1">{{ $item['label'] }}</span>
@@ -170,7 +170,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                             <div class="border-t border-gray-100 mt-1"></div>
                             <button @click="handleLogout(); showProfileMenu = false"
                                     class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-red-600">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                 </svg>
@@ -203,9 +203,9 @@ $isEnglish        = session('user_language', 'en') === 'en';
             </a>
 
             {{-- Search --}}
-            <a href="{{ route('app.search') }}"
+            <a href="{{ route('web.search') }}"
                class="flex flex-col items-center gap-0.5 flex-1 py-1.5 active:scale-95 transition-transform">
-                <svg class="w-6 h-6 {{ request()->routeIs('app.search') ? 'text-[#E76F51]' : 'text-gray-400' }}"
+                <svg class="w-6 h-6 {{ request()->routeIs('web.search') ? 'text-[#E76F51]' : 'text-gray-400' }}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -214,8 +214,8 @@ $isEnglish        = session('user_language', 'en') === 'en';
 
             {{-- Create (center FAB) --}}
             <div class="flex flex-col items-center flex-1 pb-1">
-                <a href="{{ route('app.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
-                    <div class="w-14 h-14 bg-gradient-to-r from-[#E76F51] to-[#F4A261] rounded-full shadow-xl flex items-center justify-center text-white ring-4 ring-white">
+                <a href="{{ route('web.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
+                    <div class="w-14 h-14 bg-linear-to-rrom-[#E76F51] to-[#F4A261] rounded-full shadow-xl flex items-center justify-center text-white ring-4 ring-white">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -237,7 +237,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
             <div class="relative flex-1">
                 <button @click.stop="showMobileMenu = !showMobileMenu"
                         class="flex flex-col items-center gap-0.5 w-full py-1.5 active:scale-95 transition-transform">
-                    <div class="w-7 h-7 rounded-full overflow-hidden border-2 flex-shrink-0
+                    <div class="w-7 h-7 rounded-full overflow-hidden border-2 shrink-0
                                 {{ request()->routeIs('app.profile*') ? 'border-[#E76F51]' : 'border-gray-300' }}">
                         <template x-if="avatarUrl && avatarUrl !== 'null' && avatarUrl !== ''">
                             <img :src="avatarUrl" alt="Profile" class="w-full h-full object-cover">
@@ -268,7 +268,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                     {{-- User info header --}}
                     <a :href="profileUrl()" @click="showMobileMenu = false"
                        class="flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                        <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
                             <template x-if="avatarUrl && avatarUrl !== 'null' && avatarUrl !== ''">
                                 <img :src="avatarUrl" alt="Profile" class="w-full h-full object-cover">
                             </template>
@@ -292,7 +292,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                         @if(!empty($item['dynamic']))
                             <a :href="profileUrl()" @click="showMobileMenu = false"
                                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-gray-700">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                                 </svg>
                                 <span class="font-medium text-sm">{{ $item['label'] }}</span>
@@ -301,7 +301,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                             <a href="{{ route($item['route']) }}" @click="showMobileMenu = false"
                                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors
                                       {{ request()->routeIs($item['route']) ? 'text-[#E76F51] bg-orange-50' : 'text-gray-700' }}">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                                 </svg>
                                 <span class="font-medium text-sm flex-1">{{ $item['label'] }}</span>
@@ -320,7 +320,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
                     {{-- Logout — di dalam dropdown menu --}}
                     <button @click="handleLogout(); showMobileMenu = false"
                             class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-red-600">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>

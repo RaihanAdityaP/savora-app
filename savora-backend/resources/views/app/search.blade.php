@@ -31,7 +31,7 @@
         </div>
 
         {{-- Search form --}}
-        <form method="GET" action="{{ route('app.search') }}" x-data="{ showFilters: false }">
+        <form method="GET" action="{{ route('web.search') }}" x-data="{ showFilters: false }">
             {{-- Search input --}}
             <div class="relative mb-4">
                 <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -43,7 +43,7 @@
                        placeholder="Cari resep, bahan, atau chef..."
                        class="input-savora pl-12 pr-4 py-4">
                 @if($query)
-                    <a href="{{ route('app.search') }}" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
+                    <a href="{{ route('web.search') }}" class="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -119,7 +119,7 @@
                     <button type="submit" class="btn-primary-savora flex-1 py-2.5 text-sm">
                         Terapkan Filter
                     </button>
-                    <a href="{{ route('app.search', ['q' => $query]) }}"
+                    <a href="{{ route('web.search', ['q' => $query]) }}"
                        class="btn-outlined-savora text-gray-600 text-sm">
                         Reset
                     </a>
@@ -135,7 +135,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($popularTags as $tag)
-                        <a href="{{ route('app.search', ['tag_id' => $tag['id']]) }}"
+                        <a href="{{ route('web.search', ['tag_id' => $tag['id']]) }}"
                            class="tag-chip {{ $tagId == $tag['id'] ? 'selected' : '' }}">
                             #{{ $tag['name'] }}
                         </a>
@@ -165,7 +165,7 @@
                     $tags     = collect($recipe['recipe_tags'] ?? [])->pluck('tags.name')->filter()->take(3)->toArray();
                     $rating   = $recipe['rating_avg'] ?? null;
                 @endphp
-                <a href="{{ route('app.recipe.show', $recipe['id']) }}"
+                <a href="{{ route('web.recipe.show', $recipe['id']) }}"
                    class="card-savora flex gap-4 p-4 hover:shadow-md transition-all mb-3 active:scale-[0.98]">
                     {{-- Thumbnail --}}
                     <div class="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-200">
