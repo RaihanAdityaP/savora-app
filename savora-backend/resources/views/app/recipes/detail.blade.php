@@ -195,7 +195,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     @foreach($tags as $tag)
-                        <a href="{{ route('web.search', ['tag_id' => $tag['id']]) }}" class="tag-chip selected">
+                        <a href="{{ route('app.search', ['tag_id' => $tag['id']]) }}" class="tag-chip selected">
                             #{{ $tag['name'] }}
                         </a>
                     @endforeach
