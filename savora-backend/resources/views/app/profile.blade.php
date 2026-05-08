@@ -282,7 +282,7 @@
                     title="Belum ada resep yang dipublikasikan"
                 >
                     @if($isOwnProfile)
-                        <a href="{{ route('web.recipe.create') }}" class="btn-primary-savora mt-2" style="padding: 10px 20px">
+                        <a href="{{ route('app.recipe.create') }}" class="btn-primary-savora mt-2" style="padding: 10px 20px">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                             </svg>

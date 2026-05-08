@@ -203,9 +203,9 @@ $isEnglish        = session('user_language', 'en') === 'en';
             </a>
 
             {{-- Search --}}
-            <a href="{{ route('web.search') }}"
+            <a href="{{ route('app.search') }}"
                class="flex flex-col items-center gap-0.5 flex-1 py-1.5 active:scale-95 transition-transform">
-                <svg class="w-6 h-6 {{ request()->routeIs('web.search') ? 'text-[#E76F51]' : 'text-gray-400' }}"
+                <svg class="w-6 h-6 {{ request()->routeIs('app.search') ? 'text-[#E76F51]' : 'text-gray-400' }}"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
@@ -214,7 +214,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
 
             {{-- Create (center FAB) --}}
             <div class="flex flex-col items-center flex-1 pb-1">
-                <a href="{{ route('web.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
+                <a href="{{ route('app.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
                     <div class="w-14 h-14 bg-linear-to-rrom-[#E76F51] to-[#F4A261] rounded-full shadow-xl flex items-center justify-center text-white ring-4 ring-white">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
