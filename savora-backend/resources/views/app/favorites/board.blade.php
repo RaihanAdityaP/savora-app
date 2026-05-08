@@ -40,7 +40,7 @@
                             <p class="text-white/80 text-sm mt-1">{{ $board['description'] }}</p>
                         @endif
                     </div>
-                    <div class="flex gap-2 flex-shrink-0">
+                    <div class="flex gap-2 shrink-0">
                         {{-- Back --}}
                         <a href="{{ route('app.favorites') }}"
                            class="p-2.5 rounded-xl border transition-all hover:bg-white/30"
@@ -85,7 +85,7 @@
         @endif
         @if(session('error'))
             <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-sm font-medium flex items-center gap-2">
-                <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                 </svg>
                 {{ session('error') }}
@@ -102,7 +102,7 @@
                 <a href="{{ route('app.recipe.show', $recipe['id']) }}" class="flex gap-4 p-4">
 
                     {{-- Thumbnail --}}
-                    <div class="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                    <div class="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-100">
                         @if(!empty($recipe['image_url']))
                             <img src="{{ $recipe['image_url'] }}" alt="{{ $recipe['title'] }}"
                                  class="w-full h-full object-cover">
@@ -140,7 +140,7 @@
                         @endif
                     </div>
 
-                    <svg class="w-4 h-4 flex-shrink-0 self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    <svg class="w-4 h-4 shrink-0 self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                          style="color: #D1D5DB;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>

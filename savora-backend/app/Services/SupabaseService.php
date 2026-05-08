@@ -114,7 +114,7 @@ class SupabaseService
             if (isset($options['limit']))  $url .= "&limit={$options['limit']}";
             if (isset($options['offset'])) $url .= "&offset={$options['offset']}";
 
-            $response = Http::withHeaders($this->getHeaders($useServiceKey))->get($url);
+            $response = Http::timeout(30)->withHeaders($this->getHeaders($useServiceKey))->get($url);
 
             if ($response->successful()) {
                 return $response->json() ?? [];

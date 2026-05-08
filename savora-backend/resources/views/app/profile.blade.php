@@ -244,7 +244,7 @@
                 @endphp
                 <a href="{{ route('app.recipe.show', $recipe['id']) }}"
                    class="flex gap-4 p-3 rounded-2xl hover:bg-gray-50 transition-colors mb-2 last:mb-0 active:scale-[0.98]">
-                    <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-200">
+                    <div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-gray-200">
                         @if(!empty($recipe['image_url']))
                             <img src="{{ $recipe['image_url'] }}" alt="{{ $recipe['title'] }}" class="w-full h-full object-cover">
                         @else
@@ -271,7 +271,7 @@
                             </div>
                         @endif
                     </div>
-                    <svg class="w-4 h-4 text-gray-300 flex-shrink-0 self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 text-gray-300 shrink-0 self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 </a>
@@ -282,7 +282,7 @@
                     title="Belum ada resep yang dipublikasikan"
                 >
                     @if($isOwnProfile)
-                        <a href="{{ route('app.recipe.create') }}" class="btn-primary-savora mt-2" style="padding: 10px 20px">
+                        <a href="{{ route('web.recipe.create') }}" class="btn-primary-savora mt-2" style="padding: 10px 20px">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                             </svg>

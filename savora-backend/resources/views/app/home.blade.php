@@ -251,7 +251,7 @@
                 title="Belum Ada Resep"
                 subtitle="Jadilah yang pertama membagikan resep lezat!"
             >
-                <a href="{{ route('app.recipe.create') }}" class="btn-primary-savora mt-2">
+                <a href="{{ route('web.recipe.create') }}" class="btn-primary-savora mt-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
