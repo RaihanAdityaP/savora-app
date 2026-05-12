@@ -23,12 +23,15 @@
     />
 
     <div class="max-w-3xl mx-auto px-4 py-6 pb-28 md:pb-10" x-data="{ showCreate: false }">
+        @php
+            $boardHeaderIcon = "<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'/></svg>";
+        @endphp
 
         {{-- Page Header --}}
         <div class="mb-6">
             <x-app-theme.section-header
                 title="Koleksi Resep"
-                icon="<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10'/></svg>"
+                :icon="$boardHeaderIcon"
             />
             <p class="mt-2 text-sm" style="color: var(--color-text-secondary); padding-left: 56px;">
                 Kumpulan resep favorit Anda

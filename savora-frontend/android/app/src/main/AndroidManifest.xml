@@ -29,75 +29,76 @@
               android:resource="@style/NormalTheme"
               />
             
-            <!-- LAUNCHER INTENT -->
+            <!-- LAUNCHER -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- DEEP LINK - Recipe Detail (savora://recipe/123) -->
+            <!-- ─── deeplink ───────────────────────────────────────── -->
+
+            <!-- savora://recipe/{id} -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
-                    android:scheme="savora"
-                    android:host="recipe"
-                    android:pathPrefix="/" />
+                <data android:scheme="savora" android:host="recipe" />
             </intent-filter>
 
-            <!-- DEEP LINK - User Profile (savora://profile/user123) -->
+            <!-- savora://profile/{id} -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
-                    android:scheme="savora"
-                    android:host="profile"
-                    android:pathPrefix="/" />
+                <data android:scheme="savora" android:host="profile" />
             </intent-filter>
 
-            <!-- DEEP LINK - Search (savora://search) -->
+            <!-- savora://search -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
-                    android:scheme="savora"
-                    android:host="search"
-                    android:pathPrefix="/" />
+                <data android:scheme="savora" android:host="search" />
             </intent-filter>
 
-            <!-- DEEP LINK - Home (savora://home) -->
+            <!-- savora://home -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
-                    android:scheme="savora"
-                    android:host="home" />
+                <data android:scheme="savora" android:host="home" />
             </intent-filter>
 
-            <!-- APP LINKS - Recipe (https://savora-app-productions.up.railway.app/app/recipes/123) -->
+            <!-- ══════════════════════════════════════════════════
+                 APP LINKS  (https://...)
+                 android:autoVerify="true" supaya Android verifikasi
+                 domain dan buka app langsung tanpa dialog pilihan.
+
+                 PENTING: path harus cocok dengan PUBLIC routes di
+                 Laravel, yaitu /recipes/{id} dan /profile/{id},
+                 BUKAN /app/recipes/{id} yang butuh login.
+            ══════════════════════════════════════════════════ -->
+
+            <!-- https://savora-app-productions.up.railway.app/recipes/{id} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
+                <data
                     android:scheme="https"
                     android:host="savora-app-productions.up.railway.app"
-                    android:pathPrefix="/app/recipes/" />
+                    android:pathPrefix="/recipes/" />
             </intent-filter>
 
-            <!-- APP LINKS - Profile (https://savora-app-productions.up.railway.app/app/profile/user123) -->
+            <!-- https://savora-app-productions.up.railway.app/profile/{id} -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data 
+                <data
                     android:scheme="https"
                     android:host="savora-app-productions.up.railway.app"
-                    android:pathPrefix="/app/profile/" />
+                    android:pathPrefix="/profile/" />
             </intent-filter>
 
             <!-- NOTIFICATION CLICK -->

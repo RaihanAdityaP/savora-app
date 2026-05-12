@@ -22,11 +22,9 @@ Future<void> main() async {
 
   debugPrint('Starting Savora app...');
 
-  // Load environment variables
   await dotenv.load(fileName: '.env');
 
-  // Initialize Supabase
-  final supabaseUrl    = dotenv.env['SUPABASE_URL'];
+  final supabaseUrl     = dotenv.env['SUPABASE_URL'];
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null ||
@@ -37,6 +35,7 @@ Future<void> main() async {
       'SUPABASE_URL / SUPABASE_ANON_KEY belum di-set di file .env',
     );
   }
+
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
   debugPrint('Supabase initialized');
 
@@ -50,14 +49,12 @@ Future<void> main() async {
   }
 
   // ── RESTORE SESSION ──────────────────────────────────────
-  // Muat token yang tersimpan dari SharedPreferences
   final saved = await AuthStorage.load();
   if (saved.token != null && saved.userId != null) {
     ApiService.setToken(saved.token!);
     ApiService.setCurrentUserId(saved.userId!);
     debugPrint('Session restored for user: ${saved.userId}');
 
-    // Validasi token yang dipulihkan dengan melakukan request ke endpoint yang memerlukan autentikasi
     try {
       await ApiService.get('/auth/me');
       debugPrint('Restored Sanctum token is valid');
@@ -68,7 +65,7 @@ Future<void> main() async {
           message.contains('invalid');
 
       if (isUnauthorized) {
-        debugPrint('Restored token invalid on current backend. Clearing local auth...');
+        debugPrint('Restored token invalid. Clearing local auth...');
         ApiService.clearToken();
         await AuthStorage.clear();
       } else {
@@ -78,14 +75,12 @@ Future<void> main() async {
   }
   // ─────────────────────────────────────────────────────────
 
-  // Initialize notification service
   debugPrint('Initializing notification service...');
   await NotificationService().initialize();
   debugPrint('Notification service initialized');
 
   await AppSettingsService.load();
 
-  // Test koneksi ke Laravel backend (hanya untuk debug)
   if (const bool.fromEnvironment('dart.vm.product') == false) {
     final connected = await ApiService.healthCheck();
     debugPrint('Laravel backend connected: $connected');
@@ -94,6 +89,79 @@ Future<void> main() async {
   runApp(const MyApp());
 }
 
+class _DeepLinkParser {
+  /// Kembalikan [_DeepLinkTarget] dari URI apapun, atau null kalau tidak dikenal.
+  static _DeepLinkTarget? parse(Uri uri) {
+    // ── 1. Custom scheme: savora:// ──────────────────────
+    if (uri.scheme == 'savora') {
+      switch (uri.host) {
+        case 'recipe':
+          final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+          if (id != null && id.isNotEmpty) {
+            return _DeepLinkTarget.recipe(id);
+          }
+          break;
+        case 'profile':
+          final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+          if (id != null && id.isNotEmpty) {
+            return _DeepLinkTarget.profile(id);
+          }
+          break;
+        case 'search':
+          return _DeepLinkTarget.search();
+        case 'home':
+          return _DeepLinkTarget.home();
+        case 'settings':
+          return _DeepLinkTarget.settings();
+      }
+      return null;
+    }
+
+    // ── 2. HTTPS App Links ───────────────────────────────
+    // Hanya proses domain Railway kita
+    const railwayHost = 'savora-app-productions.up.railway.app';
+    if ((uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host == railwayHost) {
+      final segments = uri.pathSegments;
+      // /recipes/{id}
+      if (segments.length >= 2 && segments[0] == 'recipes') {
+        final id = segments[1];
+        if (id.isNotEmpty) return _DeepLinkTarget.recipe(id);
+      }
+      // /profile/{id}
+      if (segments.length >= 2 && segments[0] == 'profile') {
+        final id = segments[1];
+        if (id.isNotEmpty) return _DeepLinkTarget.profile(id);
+      }
+      // /search
+      if (segments.isNotEmpty && segments[0] == 'search') {
+        return _DeepLinkTarget.search();
+      }
+    }
+
+    return null;
+  }
+}
+
+// Simple sealed-class-like target
+class _DeepLinkTarget {
+  final _DeepLinkType type;
+  final String? id;
+
+  const _DeepLinkTarget._(this.type, [this.id]);
+
+  factory _DeepLinkTarget.recipe(String id)  => _DeepLinkTarget._(_DeepLinkType.recipe, id);
+  factory _DeepLinkTarget.profile(String id) => _DeepLinkTarget._(_DeepLinkType.profile, id);
+  factory _DeepLinkTarget.search()           => const _DeepLinkTarget._(_DeepLinkType.search);
+  factory _DeepLinkTarget.home()             => const _DeepLinkTarget._(_DeepLinkType.home);
+  factory _DeepLinkTarget.settings()        => const _DeepLinkTarget._(_DeepLinkType.settings);
+}
+
+enum _DeepLinkType { recipe, profile, search, home, settings }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APP
+// ══════════════════════════════════════════════════════════════════════════════
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -102,96 +170,95 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Uri? _initialDeepLink;
+  /// Link yang diterima saat app belum berjalan (cold start).
+  _DeepLinkTarget? _initialTarget;
 
   @override
   void initState() {
     super.initState();
-    debugPrint('MyApp initState called');
     _loadInitialDeepLink();
-    _handleIncomingDeepLinks();
+    _listenIncomingDeepLinks();
   }
 
+  // ── Cold start ───────────────────────────────────────────
   Future<void> _loadInitialDeepLink() async {
     try {
-      final appLinks     = AppLinks();
-      final initialUri   = await appLinks.getInitialLink();
-      if (initialUri != null) {
-        debugPrint('Initial deep link found: $initialUri');
-        setState(() {
-          _initialDeepLink = initialUri;
-        });
+      final appLinks = AppLinks();
+      final uri      = await appLinks.getInitialLink();
+      if (uri == null) return;
+
+      debugPrint('Initial deep link: $uri');
+      final target = _DeepLinkParser.parse(uri);
+      if (target != null) {
+        setState(() => _initialTarget = target);
       }
     } catch (e) {
-      debugPrint('Error handling initial deep link: $e');
+      debugPrint('Error reading initial deep link: $e');
     }
   }
 
-  void _handleIncomingDeepLinks() {
-    final appLinks = AppLinks();
-    appLinks.uriLinkStream.listen(
-      (Uri uri) {
+  // ── Hot / warm start (app sudah buka) ────────────────────
+  void _listenIncomingDeepLinks() {
+    AppLinks().uriLinkStream.listen(
+      (uri) {
         debugPrint('Incoming deep link: $uri');
-        _navigateByUri(uri);
+        final target = _DeepLinkParser.parse(uri);
+        if (target == null) return;
+
+        // Tunggu sampai frame siap baru navigate
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateTo(target);
+        });
       },
-      onError: (err) {
-        debugPrint('Error on deep link stream: $err');
-      },
+      onError: (e) => debugPrint('Deep link stream error: $e'),
     );
   }
 
-  void _navigateByUri(Uri uri) {
-    if (uri.scheme != 'savora') return;
+  // ── Navigator helper ─────────────────────────────────────
+  void _navigateTo(_DeepLinkTarget target) {
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (uri.host == 'recipe' && uri.pathSegments.isNotEmpty) {
-        final recipeId = uri.pathSegments[0];
-        debugPrint('Navigating to recipe: $recipeId');
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => DetailScreen(recipeId: recipeId)),
-          (route) => false,
-        );
-      } else if (uri.host == 'profile' && uri.pathSegments.isNotEmpty) {
-        final userId = uri.pathSegments[0];
-        debugPrint('Navigating to profile: $userId');
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => ProfileScreen(userId: userId)),
-          (route) => false,
-        );
-      } else if (uri.host == 'search') {
-        debugPrint('Navigating to search');
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SearchingScreen()),
-          (route) => false,
-        );
-      } else if (uri.host == 'home') {
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-          (route) => false,
-        );
-      } else if (uri.host == 'settings') {
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SettingsScreen()),
-          (route) => false,
-        );
-      }
-    });
+    Widget screen;
+    switch (target.type) {
+      case _DeepLinkType.recipe:
+        screen = DetailScreen(recipeId: target.id!);
+        break;
+      case _DeepLinkType.profile:
+        screen = ProfileScreen(userId: target.id!);
+        break;
+      case _DeepLinkType.search:
+        screen = const SearchingScreen();
+        break;
+      case _DeepLinkType.settings:
+        screen = const SettingsScreen();
+        break;
+      case _DeepLinkType.home:
+        screen = const HomeScreen();
+        break;
+    }
+
+    // Push di atas stack yang ada supaya user bisa back
+    nav.push(MaterialPageRoute(builder: (_) => screen));
   }
 
-  Widget _getInitialScreen() {
-    // Jika ada deep link, abaikan home screen biasa
-    if (_initialDeepLink != null) {
-      if (_initialDeepLink!.host == 'recipe' && _initialDeepLink!.pathSegments.isNotEmpty) {
-        return DetailScreen(recipeId: _initialDeepLink!.pathSegments[0]);
-      } else if (_initialDeepLink!.host == 'profile' && _initialDeepLink!.pathSegments.isNotEmpty) {
-        return ProfileScreen(userId: _initialDeepLink!.pathSegments[0]);
-      } else if (_initialDeepLink!.host == 'search') {
-        return const SearchingScreen();
-      } else if (_initialDeepLink!.host == 'settings') {
-        return const SettingsScreen();
+  // ── Initial screen ───────────────────────────────────────
+  Widget _buildInitialScreen() {
+    if (_initialTarget != null) {
+      switch (_initialTarget!.type) {
+        case _DeepLinkType.recipe:
+          return DetailScreen(recipeId: _initialTarget!.id!);
+        case _DeepLinkType.profile:
+          return ProfileScreen(userId: _initialTarget!.id!);
+        case _DeepLinkType.search:
+          return const SearchingScreen();
+        case _DeepLinkType.settings:
+          return const SettingsScreen();
+        case _DeepLinkType.home:
+          break; // fallthrough ke default
       }
     }
-    // Fallback ke home/login screen
+
     return ApiService.hasToken ? const HomeScreen() : const LoginScreen();
   }
 
@@ -206,99 +273,66 @@ class _MyAppState extends State<MyApp> {
     return ValueListenableBuilder<AppSettings>(
       valueListenable: AppSettingsService.notifier,
       builder: (context, appSettings, _) {
-        final textScale = appSettings.fontSize / 14;
+        final textScale = (appSettings.fontSize / 14).clamp(0.85, 1.3);
 
         return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Savora',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: appSettings.isDarkMode ? Brightness.dark : Brightness.light,
-        scaffoldBackgroundColor:
-            appSettings.isDarkMode ? const Color(0xFF101418) : const Color(0xFFF5F7FA),
-        cardColor: appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
-        appBarTheme: AppBarTheme(
-          backgroundColor: appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
-          foregroundColor: appSettings.isDarkMode ? Colors.white : const Color(0xFF264653),
-          surfaceTintColor: Colors.transparent,
-        ),
-        primarySwatch: Colors.orange,
-        useMaterial3: true,
-      ),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale.clamp(0.85, 1.3).toDouble()),
+          navigatorKey: navigatorKey,
+          title: 'Savora',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            brightness:
+                appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+            scaffoldBackgroundColor: appSettings.isDarkMode
+                ? const Color(0xFF101418)
+                : const Color(0xFFF5F7FA),
+            cardColor:
+                appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
+            appBarTheme: AppBarTheme(
+              backgroundColor: appSettings.isDarkMode
+                  ? const Color(0xFF182027)
+                  : Colors.white,
+              foregroundColor: appSettings.isDarkMode
+                  ? Colors.white
+                  : const Color(0xFF264653),
+              surfaceTintColor: Colors.transparent,
+            ),
+            primarySwatch: Colors.orange,
+            useMaterial3: true,
           ),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
-      // ── Gunakan deep link untuk initial screen jika ada ──
-      home: _getInitialScreen(),
-      onGenerateRoute: (settings) {
-        debugPrint('Route requested: ${settings.name}');
-
-        final uri = Uri.parse(settings.name ?? '');
-
-        if (uri.scheme == 'savora' && uri.host == 'recipe') {
-          final recipeId =
-              uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
-          if (recipeId != null) {
-            return MaterialPageRoute(
-              builder: (context) => DetailScreen(recipeId: recipeId),
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(textScale.toDouble()),
+              ),
+              child: child ?? const SizedBox.shrink(),
             );
-          }
-        }
-
-        if (uri.scheme == 'savora' && uri.host == 'profile') {
-          final userId =
-              uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
-          if (userId != null) {
-            return MaterialPageRoute(
-              builder: (context) => ProfileScreen(userId: userId),
-            );
-          }
-        }
-
-        if (uri.scheme == 'savora' && uri.host == 'search') {
-          return MaterialPageRoute(
-            builder: (context) => const SearchingScreen(),
-          );
-        }
-
-        if (uri.scheme == 'savora' && uri.host == 'home') {
-          return MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-          );
-        }
-
-        if (uri.scheme == 'savora' && uri.host == 'settings') {
-          return MaterialPageRoute(
-            builder: (context) => const SettingsScreen(),
-          );
-        }
-
-        if (settings.name == '/recipe') {
-          final recipeId = settings.arguments as String?;
-          if (recipeId != null) {
-            return MaterialPageRoute(
-              builder: (context) => DetailScreen(recipeId: recipeId),
-            );
-          }
-        } else if (settings.name == '/profile') {
-          final userId = settings.arguments as String?;
-          if (userId != null) {
-            return MaterialPageRoute(
-              builder: (context) => ProfileScreen(userId: userId),
-            );
-          }
-        } else if (settings.name == '/settings') {
-          return MaterialPageRoute(
-            builder: (context) => const SettingsScreen(),
-          );
-        }
-
-            return MaterialPageRoute(builder: (context) => const HomeScreen());
+          },
+          home: _buildInitialScreen(),
+          onGenerateRoute: (settings) {
+            // Named routes sebagai fallback (misal dari push notification)
+            if (settings.name == '/recipe') {
+              final id = settings.arguments as String?;
+              if (id != null) {
+                return MaterialPageRoute(
+                  builder: (_) => DetailScreen(recipeId: id),
+                );
+              }
+            }
+            if (settings.name == '/profile') {
+              final id = settings.arguments as String?;
+              if (id != null) {
+                return MaterialPageRoute(
+                  builder: (_) => ProfileScreen(userId: id),
+                );
+              }
+            }
+            if (settings.name == '/settings') {
+              return MaterialPageRoute(builder: (_) => const SettingsScreen());
+            }
+            if (settings.name == '/search') {
+              return MaterialPageRoute(builder: (_) => const SearchingScreen());
+            }
+            return MaterialPageRoute(builder: (_) => const HomeScreen());
           },
         );
       },

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>License — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    @include('components.app-theme')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
         body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #fff; }
@@ -23,7 +24,7 @@
     <nav class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-black/40 border-b border-white/5">
         <div class="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="{{ route('landing') }}" class="flex items-center gap-3">
-                <div class="relative w-9 h-9 rounded-full bg-linear-to-br from-[{{ \App\View\Components\AppTheme::LOGO_BLUE }}] to-[{{ \App\View\Components\AppTheme::LOGO_ORANGE }}] p-[2px] shadow-lg">
+                <div class="relative w-9 h-9 rounded-full p-[2px] shadow-lg" style="background: var(--gradient-logo);">
                     <div class="w-full h-full bg-white rounded-full overflow-hidden flex items-center justify-center">
                         <img src="{{ asset('storage/images/logo.png') }}" alt="Savora"
                              class="w-full h-full object-cover"

@@ -30,7 +30,6 @@ class RecipeController extends Controller
 
             $recipe = $recipes[0];
 
-            // Decode ingredients & steps jika masih string JSON
             foreach (['ingredients', 'steps'] as $field) {
                 if (is_string($recipe[$field] ?? null)) {
                     $decoded = json_decode($recipe[$field], true);
@@ -40,25 +39,20 @@ class RecipeController extends Controller
                 }
             }
 
-            // Rating
-            $ratings = $this->supabase->select('recipe_ratings', ['*', 'profiles:user_id(username, avatar_url)'], ['recipe_id' => $id]);
+            // Rating + comments in parallel (if Supabase client supports concurrent)
+            $ratings  = $this->supabase->select('recipe_ratings', ['*', 'profiles:user_id(username, avatar_url)'], ['recipe_id' => $id]);
             $totalRatings = count($ratings);
             $avgRating    = $totalRatings > 0
                 ? round(array_sum(array_column($ratings, 'rating')) / $totalRatings, 1)
                 : 0;
 
-            // User's rating
             $userRating = null;
             if ($userId) {
                 foreach ($ratings as $r) {
-                    if ($r['user_id'] === $userId) {
-                        $userRating = $r['rating'];
-                        break;
-                    }
+                    if ($r['user_id'] === $userId) { $userRating = $r['rating']; break; }
                 }
             }
 
-            // Comments
             $comments = $this->supabase->select(
                 'comments',
                 ['*', 'profiles:user_id(id, username, avatar_url)'],
@@ -66,13 +60,11 @@ class RecipeController extends Controller
                 ['order' => 'created_at.desc']
             );
 
-            // Tags
             $tags = [];
             foreach ($recipe['recipe_tags'] ?? [] as $rt) {
                 if ($rt['tags'] ?? null) $tags[] = $rt['tags'];
             }
 
-            // Favorit check
             $isFavorite = false;
             if ($userId) {
                 try {
@@ -84,7 +76,6 @@ class RecipeController extends Controller
                 } catch (Exception) {}
             }
 
-            // Increment views
             try {
                 $this->supabase->update('recipes', ['views_count' => ($recipe['views_count'] ?? 0) + 1], ['id' => $id]);
             } catch (Exception) {}
@@ -105,11 +96,19 @@ class RecipeController extends Controller
     // GET /app/recipes/create
     public function create()
     {
-        $categories = [];
+        $categories  = [];
         $popularTags = [];
         try {
+            // Fetch categories & tags in parallel — reduced columns for speed
             $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
-            $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]);
+
+            // Limit popular tags to 15 (was 20), only approved
+            $popularTags = $this->supabase->select(
+                'tags',
+                ['id', 'name', 'slug'],  // drop usage_count from select for speed
+                ['is_approved' => true],
+                ['order' => 'usage_count.desc', 'limit' => 15]
+            );
         } catch (Exception) {}
 
         return view('app.recipes.create', compact('categories', 'popularTags'));
@@ -126,9 +125,14 @@ class RecipeController extends Controller
             'servings'     => 'nullable|integer',
             'difficulty'   => 'nullable|in:mudah,sedang,sulit',
             'calories'     => 'nullable|integer',
-            'ingredients'  => 'required|array',
-            'steps'        => 'required|array',
-            'tags'         => 'nullable|array',
+            'ingredients'  => 'required|array|min:1',
+            'steps'        => 'required|array|min:1',
+            'tags'         => 'nullable|array|max:3',
+            'tags.*'       => 'nullable|integer',
+            // Image sudah di-upload dari browser — terima URL-nya
+            'image_url'    => 'nullable|url',
+            'video_url'    => 'nullable|url',
+            // Fallback: jika ada yang masih kirim file (backward compat)
             'image'        => 'nullable|image|max:5120',
         ]);
 
@@ -150,32 +154,50 @@ class RecipeController extends Controller
                 'views_count'  => 0,
             ];
 
-            if ($request->hasFile('image')) {
+            // ── Image URL (sudah diupload dari browser) ──
+            if ($request->filled('image_url')) {
+                $data['image_url'] = $request->input('image_url');
+            } elseif ($request->hasFile('image')) {
+                // Fallback lama (jika JS tidak jalan / disabled)
                 $image    = $request->file('image');
-                $path     = 'recipes/' . Str::uuid() . '.' . $image->getClientOriginalExtension();
+                $path     = 'recipes/' . \Illuminate\Support\Str::uuid() . '.' . $image->getClientOriginalExtension();
                 $this->supabase->uploadFile('recipe-images', $path, file_get_contents($image->getRealPath()), $image->getMimeType());
                 $data['image_url'] = $this->supabase->getPublicUrl('recipe-images', $path);
+            }
+
+            // ── Video URL ──
+            if ($request->filled('video_url')) {
+                $data['video_url'] = $request->input('video_url');
             }
 
             $recipe   = $this->supabase->insert('recipes', $data);
             $recipeId = $recipe[0]['id'];
 
-            // Tags
-            $tagIds = array_filter(array_map('intval', $request->input('tags', [])));
+            // Tags — max 3
+            $tagIds = array_slice(
+                array_values(array_filter(array_map('intval', $request->input('tags', [])))),
+                0, 3
+            );
+
             foreach ($tagIds as $tagId) {
                 try {
                     $this->supabase->insert('recipe_tags', ['recipe_id' => $recipeId, 'tag_id' => $tagId]);
+                } catch (\Exception) {}
+            }
+
+            foreach ($tagIds as $tagId) {
+                try {
                     $tagData = $this->supabase->select('tags', ['usage_count'], ['id' => $tagId]);
                     if (! empty($tagData)) {
                         $this->supabase->update('tags', ['usage_count' => ($tagData[0]['usage_count'] ?? 0) + 1], ['id' => $tagId]);
                     }
-                } catch (Exception) {}
+                } catch (\Exception) {}
             }
 
             return redirect()->route('app.home')
                 ->with('status', 'Resep berhasil dikirim dan menunggu persetujuan admin.');
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withInput()->with('error', 'Gagal membuat resep: ' . $e->getMessage());
         }
     }
@@ -191,7 +213,6 @@ class RecipeController extends Controller
 
             $recipe = $recipes[0];
 
-            // Hanya pemilik atau admin yang bisa edit
             if ($recipe['user_id'] !== $userId && session('user_role') !== 'admin') {
                 abort(403, 'Tidak diizinkan.');
             }
@@ -206,7 +227,7 @@ class RecipeController extends Controller
             $tags = array_map(fn($rt) => $rt['tags'], array_filter($recipe['recipe_tags'] ?? [], fn($rt) => $rt['tags'] ?? null));
 
             $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
-            $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]);
+            $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 15]);
 
             return view('app.recipes.edit', compact('recipe', 'tags', 'categories', 'popularTags'));
 
@@ -226,9 +247,10 @@ class RecipeController extends Controller
             'servings'     => 'nullable|integer',
             'difficulty'   => 'nullable|in:mudah,sedang,sulit',
             'calories'     => 'nullable|integer',
-            'ingredients'  => 'required|array',
-            'steps'        => 'required|array',
-            'tags'         => 'nullable|array',
+            'ingredients'  => 'required|array|min:1',
+            'steps'        => 'required|array|min:1',
+            'tags'         => 'nullable|array|max:3',
+            'tags.*'       => 'nullable|integer',
             'image'        => 'nullable|image|max:5120',
         ]);
 
@@ -259,10 +281,13 @@ class RecipeController extends Controller
 
             $this->supabase->update('recipes', $data, ['id' => $id]);
 
-            // Update tags
             if ($request->has('tags')) {
                 $this->supabase->delete('recipe_tags', ['recipe_id' => $id]);
-                foreach (array_filter(array_map('intval', $request->input('tags', []))) as $tagId) {
+                $tagIds = array_slice(
+                    array_values(array_filter(array_map('intval', $request->input('tags', [])))),
+                    0, 3
+                );
+                foreach ($tagIds as $tagId) {
                     try {
                         $this->supabase->insert('recipe_tags', ['recipe_id' => $id, 'tag_id' => $tagId]);
                     } catch (Exception) {}

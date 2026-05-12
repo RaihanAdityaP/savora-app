@@ -11,7 +11,9 @@ class UserAuth
     public function handle(Request $request, Closure $next): Response
     {
         if (! session('user_id')) {
-            return redirect()->route('app.login')
+            // redirect()->guest() menyimpan intended URL ke session
+            // sehingga setelah login bisa redirect()->intended() ke sini lagi
+            return redirect()->guest(route('app.login'))
                 ->with('error', 'Silakan login terlebih dahulu.');
         }
 

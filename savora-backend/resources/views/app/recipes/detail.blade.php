@@ -171,12 +171,6 @@
             </a>
         </div>
 
-        <div class="card-savora p-5 mb-4 border border-orange-200 bg-orange-50 text-orange-900">
-            <div class="text-sm leading-relaxed">
-                <strong>Catatan:</strong> Untuk translate resep ke Inggris: bisa banget. Tapi itu beda dari language UI. UI language cuma menerjemahkan label seperti “Search”, “Settings”, “Ingredients”. Isi resep seperti judul, deskripsi, bahan, langkah itu data user, jadi perlu fitur translate konten. Cara paling rapi: tambah tombol “Translate to English” di detail resep, kirim title/description/ingredients/steps ke service AI/translation, lalu cache hasilnya supaya tidak translate ulang terus.
-            </div>
-        </div>
-
         {{-- Description --}}
         @if(!empty($recipe['description']))
             <div class="card-savora p-5 mb-4">

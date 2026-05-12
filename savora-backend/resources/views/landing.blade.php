@@ -52,7 +52,6 @@
             border-color: rgba(231,111,81,.30);
         }
 
-        /* ── Android phone frame ── */
         .android-frame {
             background: #111;
             border: 2px solid rgba(255,255,255,.15);
@@ -65,7 +64,6 @@
             position: relative;
         }
 
-        /* Android status bar area */
         .android-statusbar {
             background: rgba(0,0,0,.6);
             height: 28px;
@@ -77,7 +75,6 @@
             z-index: 10;
         }
 
-        /* Android camera punch-hole */
         .android-camera {
             width: 10px;
             height: 10px;
@@ -86,7 +83,6 @@
             border: 1px solid rgba(255,255,255,.15);
         }
 
-        /* Android nav bar at bottom */
         .android-navbar {
             background: rgba(0,0,0,.5);
             height: 24px;
@@ -111,7 +107,6 @@
             object-position: top center;
         }
 
-        /* Power button + volume on the right side */
         .android-btn-power {
             position: absolute;
             right: -3px;
@@ -168,7 +163,6 @@
             margin: 0 auto;
         }
 
-        /* APK button disabled style */
         .btn-apk-disabled {
             display: inline-flex;
             align-items: center;
@@ -182,13 +176,105 @@
             color: rgba(255,255,255,.30);
             cursor: not-allowed;
         }
+
+        /* ── Support section ── */
+        .support-section {
+            background:
+                radial-gradient(ellipse 60% 50% at 50% 100%, rgba(244,162,97,.10) 0%, transparent 70%),
+                rgba(255,255,255,.015);
+            border-top: 1px solid rgba(255,255,255,.06);
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .support-card {
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .support-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(231,111,81,.10) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .trakteer-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #E76F51 0%, #F4A261 50%, #E9C46A 100%);
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.0625rem;
+            text-decoration: none;
+            padding: 16px 36px;
+            border-radius: 9999px;
+            box-shadow: 0 8px 32px rgba(231,111,81,.35), 0 2px 8px rgba(0,0,0,.4);
+            transition: transform .2s, box-shadow .2s;
+            position: relative;
+            z-index: 1;
+        }
+        .trakteer-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 16px 48px rgba(231,111,81,.45), 0 4px 16px rgba(0,0,0,.4);
+        }
+        .trakteer-btn:active { transform: translateY(0) scale(0.99); }
+        .support-tier {
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 1rem;
+            padding: 16px 20px;
+            text-align: center;
+            transition: border-color .2s, transform .2s;
+        }
+        .support-tier:hover { border-color: rgba(231,111,81,.30); transform: translateY(-2px); }
+        .coin-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: rgba(233,196,106,.12);
+            border: 1px solid rgba(233,196,106,.22);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-6px); }
+        }
+        .float-anim { animation: float 3.5s ease-in-out infinite; }
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0    rgba(231,111,81,.45); }
+            70%  { box-shadow: 0 0 0 14px rgba(231,111,81,0); }
+            100% { box-shadow: 0 0 0 0    rgba(231,111,81,0); }
+        }
+        .pulse-ring { animation: pulse-ring 2.4s ease-out infinite; }
+
+        @media (max-width: 420px) {
+            .nav-shell {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            .nav-actions { gap: 0.4rem; }
+            .nav-license { display: none; }
+            .nav-login {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.8125rem;
+            }
+            .nav-register {
+                padding: 0.4rem 0.75rem !important;
+                font-size: 0.8125rem !important;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body class="hero-bg min-h-screen">
 
     {{-- NAVBAR --}}
     <nav class="navbar-glass fixed top-0 inset-x-0 z-50">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="nav-shell max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-2">
             <div class="flex items-center gap-3">
                 <div class="relative w-9 h-9 rounded-full p-0.5 shadow-lg"
                      style="background: var(--gradient-logo)">
@@ -203,15 +289,18 @@
                 </div>
                 <span class="font-black text-lg tracking-widest gradient-text">SAVORA</span>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="nav-actions flex items-center gap-3">
+                <a href="#support"
+                   class="nav-license text-sm transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+                   style="color:rgba(255,255,255,.55)">Support</a>
                 <a href="{{ route('license') }}"
-                   class="text-sm transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+                   class="nav-license text-sm transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
                    style="color:rgba(255,255,255,.55)">Lisensi</a>
                 <a href="{{ route('app.login') }}"
-                   class="text-sm transition-all px-4 py-2 rounded-xl border hover:bg-white/5"
+                   class="nav-login text-sm transition-all px-4 py-2 rounded-xl border hover:bg-white/5"
                    style="color:rgba(255,255,255,.80);border-color:rgba(255,255,255,.12)">Masuk</a>
                 <a href="{{ route('app.register') }}"
-                   class="btn-primary-savora"
+                   class="nav-register btn-primary-savora"
                    style="padding:8px 18px;border-radius:var(--radius-md);font-size:var(--text-sm)">Daftar</a>
             </div>
         </div>
@@ -254,11 +343,6 @@
                         Download APK
                     </a>
                     @else
-                    {{--
-                        Kalau APK_DOWNLOAD_URL belum diset di .env, tombol ini disabled.
-                        Begitu kamu set APK_DOWNLOAD_URL=https://... di .env,
-                        tombol otomatis berubah jadi link download aktif.
-                    --}}
                     <span class="btn-apk-disabled">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
                              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -284,36 +368,26 @@
             {{-- Right — Android phone mockup --}}
             <div class="shrink-0">
                 <div class="relative" style="width:260px">
-
-                    {{-- Physical buttons --}}
                     <div class="android-btn-power"></div>
                     <div class="android-btn-vol-up"></div>
                     <div class="android-btn-vol-dn"></div>
 
-                    {{-- Phone body --}}
                     <div class="android-frame">
-
-                        {{-- Status bar --}}
                         <div class="android-statusbar">
                             <div class="android-camera"></div>
-                            {{-- Time --}}
                             <span style="font-size:10px;color:rgba(255,255,255,.7);font-family:'Inter',sans-serif;font-weight:600">10:35</span>
-                            {{-- Icons area --}}
                             <div style="display:flex;align-items:center;gap:4px">
-                                {{-- Signal --}}
                                 <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
                                     <rect x="0" y="6" width="2" height="4" rx=".5" fill="rgba(255,255,255,.7)"/>
                                     <rect x="3" y="4" width="2" height="6" rx=".5" fill="rgba(255,255,255,.7)"/>
                                     <rect x="6" y="2" width="2" height="8" rx=".5" fill="rgba(255,255,255,.7)"/>
                                     <rect x="9" y="0" width="2" height="10" rx=".5" fill="rgba(255,255,255,.7)"/>
                                 </svg>
-                                {{-- WiFi --}}
                                 <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
                                     <path d="M6 8.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill="rgba(255,255,255,.7)"/>
                                     <path d="M2.5 5.5C3.5 4.5 4.7 4 6 4s2.5.5 3.5 1.5" stroke="rgba(255,255,255,.7)" stroke-width="1.2" stroke-linecap="round"/>
                                     <path d="M.5 3.5C2 2 3.9 1 6 1s4 1 5.5 2.5" stroke="rgba(255,255,255,.5)" stroke-width="1.2" stroke-linecap="round"/>
                                 </svg>
-                                {{-- Battery --}}
                                 <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
                                     <rect x=".5" y=".5" width="13" height="9" rx="1.5" stroke="rgba(255,255,255,.7)"/>
                                     <rect x="1.5" y="1.5" width="9" height="7" rx="1" fill="rgba(255,255,255,.7)"/>
@@ -322,13 +396,11 @@
                             </div>
                         </div>
 
-                        {{-- Screenshot --}}
                         <img src="{{ asset('storage/images/homescreen.jpg') }}"
                              alt="Savora App"
                              class="phone-screen-img"
                              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
 
-                        {{-- Fallback --}}
                         <div style="display:none;height:440px;background:#0f0f0f;flex-direction:column;align-items:center;justify-content:center;gap:12px">
                             <div class="w-14 h-14 rounded-2xl flex items-center justify-center"
                                  style="background:var(--gradient-accent)">
@@ -340,7 +412,6 @@
                             <p class="font-black tracking-widest gradient-text text-sm">SAVORA</p>
                         </div>
 
-                        {{-- Android nav gesture bar --}}
                         <div class="android-navbar">
                             <div class="android-navbar-pill"></div>
                         </div>
@@ -425,6 +496,130 @@
 
     <div class="section-glow"></div>
 
+    {{-- SUPPORT THE DEVELOPER --}}
+    <section id="support" class="support-section py-28 px-6">
+        <div class="max-w-3xl mx-auto">
+
+            {{-- Header --}}
+            <div class="text-center mb-14">
+                <div class="float-anim inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-7"
+                     style="background:linear-gradient(135deg,rgba(233,196,106,.15),rgba(244,162,97,.12));border:1px solid rgba(233,196,106,.22)">
+                    <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+                        <path d="M8 14h22l-2.5 14A3 3 0 0 1 24.5 31h-11A3 3 0 0 1 10.5 28L8 14z"
+                              stroke="#F4A261" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M30 17h2a3 3 0 0 1 0 6h-2"
+                              stroke="#F4A261" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M15 8c0-2 2-2 2-4M19 8c0-2 2-2 2-4M23 8c0-2 2-2 2-4"
+                              stroke="#E9C46A" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+
+                <p class="text-sm font-semibold tracking-widest mb-3"
+                   style="color:var(--color-primary-orange)">SUPPORT THE DEVELOPER</p>
+
+                <h2 class="text-4xl lg:text-5xl font-black mb-5 leading-tight">
+                    Keep Savora<br>
+                    <span class="gradient-text">Growing</span>
+                </h2>
+
+                <p class="text-base leading-relaxed max-w-lg mx-auto"
+                   style="color:rgba(255,255,255,.50)">
+                    Savora is built with love by an indie developer. Your support helps keep
+                    the servers running, new features shipping, and the app free for everyone.
+                </p>
+            </div>
+
+            {{-- Main card --}}
+            <div class="support-card p-10 lg:p-14 text-center mb-10">
+
+                {{-- 3 pillars --}}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
+                    <div class="support-tier">
+                        <div class="coin-icon mx-auto mb-3">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                 stroke="#E9C46A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                                <line x1="2" y1="10" x2="22" y2="10"/>
+                            </svg>
+                        </div>
+                        <p class="font-bold text-sm mb-1">Server Costs</p>
+                        <p class="text-xs" style="color:rgba(255,255,255,.40)">Keep the app online 24/7</p>
+                    </div>
+
+                    <div class="support-tier">
+                        <div class="coin-icon mx-auto mb-3">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                 stroke="#E9C46A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="16 18 22 12 16 6"/>
+                                <polyline points="8 6 2 12 8 18"/>
+                            </svg>
+                        </div>
+                        <p class="font-bold text-sm mb-1">New Features</p>
+                        <p class="text-xs" style="color:rgba(255,255,255,.40)">Fund ongoing development</p>
+                    </div>
+
+                    <div class="support-tier">
+                        <div class="coin-icon mx-auto mb-3">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                 stroke="#E9C46A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <p class="font-bold text-sm mb-1">Stay Free</p>
+                        <p class="text-xs" style="color:rgba(255,255,255,.40)">No paywalls, forever</p>
+                    </div>
+                </div>
+
+                {{-- CTA --}}
+                <div class="flex flex-col items-center gap-5">
+                    <a href="https://trakteer.id/rendyt"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="trakteer-btn pulse-ring">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 8h1a4 4 0 0 1 0 8h-1"/>
+                            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/>
+                            <line x1="6" y1="2" x2="6" y2="4"/>
+                            <line x1="10" y1="2" x2="10" y2="4"/>
+                            <line x1="14" y1="2" x2="14" y2="4"/>
+                        </svg>
+                        Buy Me a Coffee on Trakteer
+                    </a>
+
+                    <p class="text-xs" style="color:rgba(255,255,255,.30)">
+                        You'll be redirected to
+                        <span style="color:rgba(255,255,255,.50);font-weight:600">trakteer.id/rendyt</span>
+                        &nbsp;·&nbsp; Secure &amp; no account required
+                    </p>
+                </div>
+
+
+            </div>
+
+            {{-- Reassurance note --}}
+            <div class="flex items-start gap-4 px-6 py-5 rounded-2xl"
+                 style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
+                <div class="shrink-0 mt-0.5">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <p class="text-sm leading-relaxed" style="color:rgba(255,255,255,.40)">
+                    Your contribution is entirely voluntary — Savora will always be free to use.
+                    Every coffee you buy goes directly to the developer to improve this app and keep it ad-free.
+                    Thank you so much, it genuinely means the world. ☕
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="section-glow"></div>
+
     {{-- DOWNLOAD CTA --}}
     @if(env('APK_DOWNLOAD_URL'))
     <section class="py-24 px-6">
@@ -467,6 +662,7 @@
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
             <span class="font-black text-sm tracking-widest gradient-text">SAVORA</span>
             <div class="flex items-center gap-6 text-sm" style="color:rgba(255,255,255,.50)">
+                <a href="#support" class="transition-colors hover:text-white">Support</a>
                 <a href="{{ route('license') }}" class="transition-colors hover:text-white">License</a>
                 <a href="{{ route('app.login') }}" class="transition-colors hover:text-white">Log In</a>
                 <a href="{{ route('app.register') }}" class="transition-colors hover:text-white">Register</a>

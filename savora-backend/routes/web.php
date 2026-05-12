@@ -12,14 +12,40 @@ use App\Http\Controllers\App\FavoriteController;
 use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\AIChatController;
 use App\Http\Controllers\App\TagController;
+use App\Http\Controllers\App\UploadTokenController;
 use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
+
+// ── ANDROID APP LINKS VERIFICATION ───────────────────────────────────────────────
+Route::get('/.well-known/assetlinks.json', function () {
+    return response()->json([
+        [
+            'relation' => ['delegate_permission/common.handle_all_urls'],
+            'target'   => [
+                'namespace'              => 'android_app',
+                'package_name'           => 'id.savora.app',
+                'sha256_cert_fingerprints' => [
+                    env('ANDROID_SHA256_FINGERPRINT', 'REPLACE_WITH_YOUR_SHA256_FINGERPRINT'),
+                ],
+            ],
+        ],
+    ]);
+})->name('assetlinks');
+
+Route::prefix('errors')->name('errors.')->group(function () {
+    Route::view('403', 'app.errors.403')->name('403');
+    Route::view('404', 'app.errors.404')->name('404');
+    Route::view('419', 'app.errors.419')->name('419');
+    Route::view('429', 'app.errors.429')->name('429');
+    Route::view('500', 'app.errors.500')->name('500');
+    Route::view('503', 'app.errors.503')->name('503');
+});
 
 // ── Public pages ───────────────────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/license', [LandingController::class, 'license'])->name('license');
 
-// ── Admin auth — redirect to unified app login ────────────────
+// ── Admin auth ─────────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', fn() => redirect()->route('app.login'))->name('login');
     Route::post('logout', [AdminLoginController::class, 'logout'])->name('logout');
@@ -41,14 +67,20 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::post('tags/{id}/delete',   [AdminTagController::class, 'destroy'])->name('tags.destroy');
 });
 
-// ─────────────────────────────────────────────────────────────
-// PUBLIC WEB PAGES (no login required)
-// ─────────────────────────────────────────────────────────────
-Route::get('search', [SearchController::class, 'index'])->name('web.search');
-Route::get('recipes/{id}', [RecipeController::class, 'show'])->name('web.recipe.show');
-Route::get('profile/{userId}', [ProfileController::class, 'show'])->name('web.profile.user');
+// ══════════════════════════════════════════════════════════════════════════════
+// PUBLIC WEB PAGES (tanpa login)
+//
+// PENTING: URL /recipes/{id} dan /profile/{id} ini yang dipakai sebagai
+// share link. Harus bisa diakses tanpa login agar:
+//   1. Android App Links bisa buka app langsung
+//   2. Browser bisa render preview saat app tidak terinstall
+//   3. Pengguna yang belum login bisa lihat konten dulu, baru diminta login
+// ══════════════════════════════════════════════════════════════════════════════
+Route::get('/search',         [SearchController::class, 'index'])->name('web.search');
+Route::get('/recipes/{id}',   [RecipeController::class, 'show'])->name('web.recipe.show');
+Route::get('/profile/{userId}',[ProfileController::class, 'show'])->name('web.profile.user');
 
-// Guest only
+// ── App auth (guest only) ──────────────────────────────────────
 Route::prefix('app')->name('app.')->group(function () {
     Route::get('login',    [LoginController::class, 'showLogin'])->name('login');
     Route::post('login',   [LoginController::class, 'login'])->name('login.post');
@@ -57,17 +89,14 @@ Route::prefix('app')->name('app.')->group(function () {
     Route::post('logout',  [LoginController::class, 'logout'])->name('logout');
 });
 
-// Protected user routes
+// ── Protected user routes ──────────────────────────────────────
 Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
 
-    // ── Home / Feed ──────────────────────────────────────
     Route::get('home', [HomeController::class, 'index'])->name('home');
 
-    // ── Search ───────────────────────────────────────────
     Route::get('search', [SearchController::class, 'index'])->name('search');
 
-    // ── Recipes ──────────────────────────────────────────
-    // IMPORTANT: static segments (create, {id}/edit) MUST come before wildcard {id}
+    // Recipes — static routes SEBELUM wildcard {id}
     Route::get('recipes/create',       [RecipeController::class, 'create'])->name('recipe.create');
     Route::post('recipes',             [RecipeController::class, 'store'])->name('recipe.store');
     Route::get('recipes/{id}/edit',    [RecipeController::class, 'edit'])->name('recipe.edit');
@@ -76,35 +105,32 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::post('recipes/{id}/comment',[RecipeController::class, 'postComment'])->name('recipe.comment');
     Route::post('recipes/{id}/rate',   [RecipeController::class, 'rate'])->name('recipe.rate');
     Route::post('comments/{id}/delete',[RecipeController::class, 'deleteComment'])->name('comment.delete');
-    // Wildcard last
     Route::get('recipes/{id}',         [RecipeController::class, 'show'])->name('recipe.show');
 
-    // ── Profile ───────────────────────────────────────────
+    // Profile
     Route::get('profile',                    [ProfileController::class, 'show'])->name('profile');
     Route::post('profile',                   [ProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/{userId}/follow',   [ProfileController::class, 'follow'])->name('profile.follow');
     Route::post('profile/{userId}/unfollow', [ProfileController::class, 'unfollow'])->name('profile.unfollow');
-    // Wildcard last
     Route::get('profile/{userId}',           [ProfileController::class, 'show'])->name('profile.user');
 
-    // ── Favorites ─────────────────────────────────────────
+    // Favorites
     Route::get('favorites',                         [FavoriteController::class, 'index'])->name('favorites');
     Route::post('favorites/boards',                 [FavoriteController::class, 'createBoard'])->name('favorites.board.create');
     Route::post('favorites/save',                   [FavoriteController::class, 'save'])->name('favorites.save');
     Route::post('favorites/remove',                 [FavoriteController::class, 'remove'])->name('favorites.remove');
     Route::post('favorites/boards/{boardId}',       [FavoriteController::class, 'updateBoard'])->name('favorites.board.update');
     Route::post('favorites/boards/{boardId}/delete',[FavoriteController::class, 'deleteBoard'])->name('favorites.board.delete');
-    // Wildcard last
     Route::get('favorites/{boardId}',               [FavoriteController::class, 'show'])->name('favorites.board');
 
-    // ── Notifications ─────────────────────────────────────
+    // Notifications
     Route::get('notifications',              [NotificationController::class, 'index'])->name('notifications');
     Route::post('notifications/read-all',    [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('notifications/delete-all',  [NotificationController::class, 'destroyAll'])->name('notifications.delete-all');
     Route::post('notifications/{id}/read',   [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('notifications/{id}/delete', [NotificationController::class, 'destroy'])->name('notifications.delete');
 
-    // ── AI Chat ───────────────────────────────────────────
+    // AI Chat
     Route::get('ai',                             [AIChatController::class, 'index'])->name('ai');
     Route::post('ai/delete-all',                 [AIChatController::class, 'deleteAll'])->name('ai.delete-all');
     Route::get('ai/settings',                    [AIChatController::class, 'settings'])->name('ai.settings');
@@ -113,14 +139,16 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::post('ai/conversations/{id}/send',    [AIChatController::class, 'sendMessage'])->name('ai.send');
     Route::post('ai/conversations/{id}/rename',  [AIChatController::class, 'renameConversation'])->name('ai.rename');
     Route::post('ai/conversations/{id}/delete',  [AIChatController::class, 'deleteConversation'])->name('ai.delete');
-    // Wildcard last
     Route::get('ai/conversations/{id}',          [AIChatController::class, 'showConversation'])->name('ai.conversation');
 
-    // ── Settings ──────────────────────────────────────────
+    // ── Upload Token ──────────────────────────────────
+    Route::post('upload-token', [UploadTokenController::class, 'generate'])->name('upload-token.generate');
+
+    // Settings
     Route::get('settings',  [App\Http\Controllers\App\SettingsController::class, 'show'])->name('settings');
     Route::post('settings', [App\Http\Controllers\App\SettingsController::class, 'save'])->name('settings.save');
 
-    // ── Tags ──────────────────────────────────────────────
+    // Tags
     Route::get('tags',  [TagController::class, 'index'])->name('tags');
     Route::post('tags', [TagController::class, 'store'])->name('tags.store');
 });

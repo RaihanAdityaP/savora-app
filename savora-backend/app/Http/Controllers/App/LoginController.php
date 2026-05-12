@@ -57,10 +57,9 @@ class LoginController extends Controller
                     ->with('error', 'Gagal mendapatkan data user.');
             }
 
-            // Cek profile di Supabase
             $profiles = $this->supabase->select(
                 'profiles',
-                ['id', 'username', 'full_name', 'role', 'is_banned', 'avatar_url'],
+                ['id', 'username', 'full_name', 'role', 'is_banned', 'banned_reason', 'avatar_url'],
                 ['id' => $userId]
             );
 
@@ -72,12 +71,12 @@ class LoginController extends Controller
             $profile = $profiles[0];
 
             if ($profile['is_banned'] ?? false) {
-            return back()->withInput(['email' => $email])
-                ->with('banned', true)
-                ->with('banned_reason', $profile['banned_reason'] ?? 'Tidak disebutkan');
-        }
+                return back()->withInput(['email' => $email])
+                    ->with('banned', true)
+                    ->with('banned_reason', $profile['banned_reason'] ?? 'Tidak disebutkan');
+            }
 
-            // Redirect admin ke admin panel
+            // Admin → ke admin panel
             if (($profile['role'] ?? '') === 'admin') {
                 session()->regenerate();
                 session([
@@ -88,6 +87,7 @@ class LoginController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
+            // User biasa
             session()->regenerate();
             session([
                 'user_id'       => $profile['id'],
@@ -96,7 +96,9 @@ class LoginController extends Controller
                 'user_avatar'   => $profile['avatar_url'] ?? null,
             ]);
 
-            return redirect()->route('app.home');
+            // redirect()->intended() akan redirect ke URL yang dicoba sebelum
+            // kena middleware UserAuth. Fallback ke app.home jika tidak ada.
+            return redirect()->intended(route('app.home'));
 
         } catch (Exception $e) {
             return back()->withInput(['email' => $email])
