@@ -19,48 +19,36 @@ class FavoriteController extends Controller
 
     /**
      * Get user's favorite recipes (from all boards)
-     * GET /api/favorites/user/{userId}
+     * GET /api/favorites
+     *
+     * Fixed: was fetching ALL board_recipes rows then filtering PHP-side.
+     * Now filters by board_id IN (...) at query level.
      */
     public function getUserFavorites(Request $request)
     {
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);
-            // Get all user's boards
-            $boards = $this->supabase->select('recipe_boards',
-                ['id'],
-                ['user_id' => $userId]
-            );
+
+            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
 
             if (empty($boards)) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                ]);
+                return response()->json(['success' => true, 'data' => []]);
             }
 
             $boardIds = array_column($boards, 'id');
-            
-            // Get all recipes from all boards
-            $allBoardRecipes = $this->supabase->select('board_recipes',
+
+            // Filter at DB level — no PHP-side filtering of the whole table
+            $boardRecipes = $this->supabase->select(
+                'board_recipes',
                 ['*, recipes(*, profiles!recipes_user_id_fkey(*), categories(*))'],
-                [],
+                ['board_id' => ['operator' => 'in', 'values' => $boardIds]],
                 ['order' => 'added_at.desc']
             );
 
-            // Filter by user's boards
-            $favorites = array_filter($allBoardRecipes, function($br) use ($boardIds) {
-                return in_array($br['board_id'], $boardIds);
-            });
+            return response()->json(['success' => true, 'data' => $boardRecipes]);
 
-            return response()->json([
-                'success' => true,
-                'data' => array_values($favorites),
-            ]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -71,72 +59,41 @@ class FavoriteController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid',
+            'user_id'   => 'required|uuid',
             'recipe_id' => 'required|uuid',
-            'board_id' => 'nullable|uuid',
+            'board_id'  => 'nullable|uuid',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $userId = $request->input('user_id');
+            $userId   = $request->input('user_id');
             $recipeId = $request->input('recipe_id');
-            $boardId = $request->input('board_id');
+            $boardId  = $request->input('board_id');
 
-            // If no board specified, use or create default board
             if (!$boardId) {
-                $defaultBoards = $this->supabase->select('recipe_boards', 
-                    ['id'], 
-                    ['user_id' => $userId, 'name' => 'Favorit Saya']
-                );
-
+                $defaultBoards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId, 'name' => 'Favorit Saya']);
                 if (empty($defaultBoards)) {
-                    // Create default board
-                    $board = $this->supabase->insert('recipe_boards', [
-                        'user_id' => $userId,
-                        'name' => 'Favorit Saya',
-                        'description' => 'Board favorit default',
-                    ]);
+                    $board   = $this->supabase->insert('recipe_boards', ['user_id' => $userId, 'name' => 'Favorit Saya', 'description' => 'Board favorit default']);
                     $boardId = $board[0]['id'];
                 } else {
                     $boardId = $defaultBoards[0]['id'];
                 }
             }
 
-            // Check if already in board
-            $existing = $this->supabase->select('board_recipes', ['id'], [
-                'board_id' => $boardId,
-                'recipe_id' => $recipeId,
-            ]);
-
+            $existing = $this->supabase->select('board_recipes', ['id'], ['board_id' => $boardId, 'recipe_id' => $recipeId]);
             if (!empty($existing)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Recipe already in this board',
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'Recipe already in this board'], 400);
             }
 
-            $favorite = $this->supabase->insert('board_recipes', [
-                'board_id' => $boardId,
-                'recipe_id' => $recipeId,
-            ]);
+            $favorite = $this->supabase->insert('board_recipes', ['board_id' => $boardId, 'recipe_id' => $recipeId]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Recipe added to favorites',
-                'data' => $favorite[0],
-            ], 201);
+            return response()->json(['success' => true, 'message' => 'Recipe added to favorites', 'data' => $favorite[0]], 201);
+
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -147,68 +104,44 @@ class FavoriteController extends Controller
     public function destroy(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'board_id' => 'required|uuid',
+            'board_id'  => 'required|uuid',
             'recipe_id' => 'required|uuid',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
             $this->supabase->delete('board_recipes', [
-                'board_id' => $request->input('board_id'),
+                'board_id'  => $request->input('board_id'),
                 'recipe_id' => $request->input('recipe_id'),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Recipe removed from board',
-            ]);
+            return response()->json(['success' => true, 'message' => 'Recipe removed from board']);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     /**
      * Get user's recipe boards
-     * GET /api/favorites/boards/{userId}
+     * GET /api/favorites/boards
      */
     public function getBoards(Request $request)
     {
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);
-            $boards = $this->supabase->select('recipe_boards',
-                ['*'],
-                ['user_id' => $userId],
-                ['order' => 'created_at.desc']
-            );
+            $boards = $this->supabase->select('recipe_boards', ['*'], ['user_id' => $userId], ['order' => 'created_at.desc']);
 
-            // Add recipe count for each board
             foreach ($boards as &$board) {
-                $recipes = $this->supabase->select('board_recipes',
-                    ['id'],
-                    ['board_id' => $board['id']]
-                );
+                $recipes             = $this->supabase->select('board_recipes', ['id'], ['board_id' => $board['id']]);
                 $board['recipe_count'] = count($recipes);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $boards,
-            ]);
+            return response()->json(['success' => true, 'data' => $boards]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -219,36 +152,25 @@ class FavoriteController extends Controller
     public function createBoard(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|uuid',
-            'name' => 'required|string|max:100',
+            'user_id'     => 'required|uuid',
+            'name'        => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
             $board = $this->supabase->insert('recipe_boards', [
-                'user_id' => $request->input('user_id'),
-                'name' => $request->input('name'),
+                'user_id'     => $request->input('user_id'),
+                'name'        => $request->input('name'),
                 'description' => $request->input('description'),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Board created successfully',
-                'data' => $board[0],
-            ], 201);
+            return response()->json(['success' => true, 'message' => 'Board created successfully', 'data' => $board[0]], 201);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -259,32 +181,19 @@ class FavoriteController extends Controller
     public function updateBoard(Request $request, $boardId)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string|max:100',
+            'name'        => 'nullable|string|max:100',
             'description' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            $data = $request->only(['name', 'description']);
-            $board = $this->supabase->update('recipe_boards', $data, ['id' => $boardId]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Board updated successfully',
-                'data' => $board,
-            ]);
+            $board = $this->supabase->update('recipe_boards', $request->only(['name', 'description']), ['id' => $boardId]);
+            return response()->json(['success' => true, 'message' => 'Board updated successfully', 'data' => $board]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -295,21 +204,12 @@ class FavoriteController extends Controller
     public function deleteBoard($boardId)
     {
         try {
-            // Delete all board_recipes first
             $this->supabase->delete('board_recipes', ['board_id' => $boardId]);
-            
-            // Delete the board
             $this->supabase->delete('recipe_boards', ['id' => $boardId]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Board deleted successfully',
-            ]);
+            return response()->json(['success' => true, 'message' => 'Board deleted successfully']);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -320,21 +220,16 @@ class FavoriteController extends Controller
     public function getBoardRecipes($boardId)
     {
         try {
-            $boardRecipes = $this->supabase->select('board_recipes',
+            $boardRecipes = $this->supabase->select(
+                'board_recipes',
                 ['*, recipes(*, profiles!recipes_user_id_fkey(*), categories(*))'],
                 ['board_id' => $boardId],
                 ['order' => 'added_at.desc']
             );
 
-            return response()->json([
-                'success' => true,
-                'data' => $boardRecipes,
-            ]);
+            return response()->json(['success' => true, 'data' => $boardRecipes]);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -349,42 +244,27 @@ class FavoriteController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
-            // Check if already in board
             $existing = $this->supabase->select('board_recipes', ['id'], [
-                'board_id' => $boardId,
+                'board_id'  => $boardId,
                 'recipe_id' => $request->input('recipe_id'),
             ]);
 
             if (!empty($existing)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Recipe already in this board',
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'Recipe already in this board'], 400);
             }
 
             $boardRecipe = $this->supabase->insert('board_recipes', [
-                'board_id' => $boardId,
+                'board_id'  => $boardId,
                 'recipe_id' => $request->input('recipe_id'),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Recipe added to board',
-                'data' => $boardRecipe[0],
-            ], 201);
+            return response()->json(['success' => true, 'message' => 'Recipe added to board', 'data' => $boardRecipe[0]], 201);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -395,20 +275,10 @@ class FavoriteController extends Controller
     public function removeRecipeFromBoard($boardId, $recipeId)
     {
         try {
-            $this->supabase->delete('board_recipes', [
-                'board_id' => $boardId,
-                'recipe_id' => $recipeId,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Recipe removed from board',
-            ]);
+            $this->supabase->delete('board_recipes', ['board_id' => $boardId, 'recipe_id' => $recipeId]);
+            return response()->json(['success' => true, 'message' => 'Recipe removed from board']);
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -423,53 +293,35 @@ class FavoriteController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Validation error', 'errors' => $validator->errors()], 422);
         }
 
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);
 
-            $boards = $this->supabase->select('recipe_boards',
-                ['id'],
-                ['user_id' => $userId]
-            );
-
+            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
             if (empty($boards)) {
-                return response()->json([
-                    'success' => true,
-                    'data' => ['is_saved' => false],
-                ]);
+                return response()->json(['success' => true, 'data' => ['is_saved' => false]]);
             }
 
             $boardIds = array_column($boards, 'id');
-            $saved = false;
+            $saved    = false;
 
             foreach ($boardIds as $boardId) {
                 $existing = $this->supabase->select('board_recipes', ['id'], [
-                    'board_id' => $boardId,
+                    'board_id'  => $boardId,
                     'recipe_id' => $request->input('recipe_id'),
                 ]);
-
                 if (!empty($existing)) {
                     $saved = true;
                     break;
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => ['is_saved' => $saved],
-            ]);
+            return response()->json(['success' => true, 'data' => ['is_saved' => $saved]]);
+
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-
 }

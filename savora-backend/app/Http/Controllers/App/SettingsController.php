@@ -15,7 +15,6 @@ class SettingsController extends Controller
         $user = auth()->user();
         
         // Get user settings from session or database
-        // TODO: Replace with actual database queries
         $userSettings = [
             'theme' => session('user_theme', 'light'),
             'language' => session('user_language', 'en'),
@@ -51,7 +50,6 @@ class SettingsController extends Controller
         ]);
 
         // Store settings in session
-        // TODO: Replace with actual database storage
         session([
             'user_theme' => $validated['theme'],
             'user_language' => $validated['language'],

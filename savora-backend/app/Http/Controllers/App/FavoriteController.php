@@ -14,8 +14,8 @@ class FavoriteController extends Controller
     // GET /app/favorites
     public function index()
     {
-        $userId  = session('user_id');
-        $boards  = [];
+        $userId   = session('user_id');
+        $boards   = [];
         $previews = [];
 
         try {
@@ -27,9 +27,24 @@ class FavoriteController extends Controller
             );
 
             foreach ($boards as &$board) {
-                $recipes = $this->supabase->select('board_recipes', ['recipes(id, image_url, title)'], ['board_id' => $board['id']], ['limit' => 4]);
-                $board['recipe_count'] = count($this->supabase->select('board_recipes', ['id'], ['board_id' => $board['id']]));
-                $previews[$board['id']] = array_map(fn($br) => $br['recipes'], $recipes);
+                $boardId = $board['id'];
+
+                $board['recipe_count'] = count(
+                    $this->supabase->select('board_recipes', ['id'], ['board_id' => $boardId])
+                );
+
+                $rows = $this->supabase->select(
+                    'board_recipes',
+                    ['recipes(id, image_url, title)'],
+                    ['board_id' => $boardId],
+                    ['limit' => 4]
+                );
+
+                // Guard against null — board_recipes.recipes may be null if recipe was deleted
+                $previews[$boardId] = array_values(array_filter(
+                    array_map(fn($br) => $br['recipes'] ?? null, $rows),
+                    fn($r) => $r !== null
+                ));
             }
         } catch (Exception) {}
 
@@ -54,7 +69,11 @@ class FavoriteController extends Controller
                 ['order' => 'added_at.desc']
             );
 
-            $recipes = array_map(fn($br) => $br['recipes'], $boardRecipes);
+            // Guard against null recipes (deleted recipe still in board)
+            $recipes = array_values(array_filter(
+                array_map(fn($br) => $br['recipes'] ?? null, $boardRecipes),
+                fn($r) => $r !== null
+            ));
 
             return view('app.favorites.board', compact('board', 'recipes', 'boardRecipes'));
 
@@ -85,7 +104,7 @@ class FavoriteController extends Controller
         }
     }
 
-    // POST /app/favorites/boards/{boardId}/update
+    // POST /app/favorites/boards/{boardId}
     public function updateBoard(Request $request, string $boardId)
     {
         $request->validate([
@@ -133,8 +152,7 @@ class FavoriteController extends Controller
             $recipeId = $request->input('recipe_id');
             $boardId  = $request->input('board_id');
 
-            // Kalau tidak ada board_id, pakai atau buat board default
-            if (! $boardId) {
+            if (!$boardId) {
                 $defaults = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId, 'name' => 'Favorit Saya']);
                 if (empty($defaults)) {
                     $board   = $this->supabase->insert('recipe_boards', ['user_id' => $userId, 'name' => 'Favorit Saya']);
@@ -144,9 +162,8 @@ class FavoriteController extends Controller
                 }
             }
 
-            // Cek sudah ada
             $existing = $this->supabase->select('board_recipes', ['id'], ['board_id' => $boardId, 'recipe_id' => $recipeId]);
-            if (! empty($existing)) {
+            if (!empty($existing)) {
                 return back()->with('error', 'Resep sudah ada di koleksi ini.');
             }
 

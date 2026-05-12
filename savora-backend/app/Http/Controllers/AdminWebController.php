@@ -29,7 +29,6 @@ class AdminWebController extends Controller
         $users = collect();
 
         try {
-            // FIX: 'email' does not exist on profiles table — removed.
             $users = collect($this->supabase->select(
                 'profiles',
                 ['id', 'username', 'full_name', 'is_banned', 'banned_reason', 'is_premium', 'role', 'avatar_url', 'created_at'],
@@ -44,7 +43,7 @@ class AdminWebController extends Controller
                 )->values();
             }
 
-            $users = match($status) {
+            $users = match ($status) {
                 'active'  => $users->where('is_banned', '!=', true)->values(),
                 'banned'  => $users->where('is_banned', true)->values(),
                 'premium' => $users->where('is_premium', true)->values(),
@@ -120,17 +119,31 @@ class AdminWebController extends Controller
 
     public function toggleUserBan(Request $request, string $id): RedirectResponse
     {
-        $isBanned   = $request->boolean('is_banned');
-        $reasonType = (string) $request->input('reason_type', 'other');
+        $isBanned     = $request->boolean('is_banned');
+        $reasonType   = (string) $request->input('reason_type', 'other');
         $customReason = trim((string) $request->input('reason', ''));
-        $reasonText = $this->banReasonFromType($reasonType, $customReason);
+        $reasonText   = $this->banReasonFromType($reasonType, $customReason);
+
+        // Admin UUID from session — profiles.banned_by is a UUID FK, cannot be a string literal
+        $adminId = session('admin_id');
 
         try {
             if ($isBanned) {
-                $this->supabase->update('profiles', ['is_banned' => false, 'banned_reason' => null, 'banned_at' => null, 'banned_by' => null], ['id' => $id], true);
+                $this->supabase->update('profiles', [
+                    'is_banned'     => false,
+                    'banned_reason' => null,
+                    'banned_at'     => null,
+                    'banned_by'     => null,
+                ], ['id' => $id], true);
             } else {
-                $this->supabase->update('profiles', ['is_banned' => true, 'banned_reason' => $reasonText, 'banned_at' => Carbon::now()->format('Y-m-d H:i:s'), 'banned_by' => 'web_admin_dashboard'], ['id' => $id], true);
+                $this->supabase->update('profiles', [
+                    'is_banned'     => true,
+                    'banned_reason' => $reasonText,
+                    'banned_at'     => Carbon::now()->format('Y-m-d H:i:s'),
+                    'banned_by'     => $adminId,  // UUID FK — must be a valid profiles.id
+                ], ['id' => $id], true);
             }
+
             return back()->with('status', $isBanned ? 'User berhasil di-unban.' : 'User berhasil di-ban.');
         } catch (Exception $e) {
             return back()->with('error', 'Aksi gagal: ' . $e->getMessage());
@@ -154,42 +167,67 @@ class AdminWebController extends Controller
     {
         $action = (string) $request->input('action', 'approved');
         $reason = trim((string) $request->input('reason', 'Tidak memenuhi standar'));
+
+        // Admin UUID from session — recipes.moderated_by is a UUID FK to profiles(id)
+        $adminId = session('admin_id');
+
         try {
-            $payload = ['moderated_by' => 'web_admin_dashboard', 'moderated_at' => Carbon::now()->format('Y-m-d H:i:s')];
-            $action === 'approved'
-                ? ($payload['status'] = 'approved') && ($payload['rejection_reason'] = null)
-                : ($payload['status'] = 'rejected') && ($payload['rejection_reason'] = $reason);
-            $this->supabase->update('recipes', $payload, ['id' => $id], true);
+            if ($action === 'approved') {
+                $this->supabase->update('recipes', [
+                    'status'           => 'approved',
+                    'rejection_reason' => null,
+                    'moderated_by'     => $adminId,  // UUID FK
+                    'moderated_at'     => Carbon::now()->format('Y-m-d H:i:s'),
+                ], ['id' => $id], true);
+            } else {
+                $this->supabase->update('recipes', [
+                    'status'           => 'rejected',
+                    'rejection_reason' => $reason,
+                    'moderated_by'     => $adminId,  // UUID FK
+                    'moderated_at'     => Carbon::now()->format('Y-m-d H:i:s'),
+                ], ['id' => $id], true);
+            }
+
             return back()->with('status', $action === 'approved' ? 'Resep disetujui.' : 'Resep ditolak.');
         } catch (Exception $e) {
             return back()->with('error', 'Moderasi resep gagal: ' . $e->getMessage());
         }
     }
 
+    // ── Private helpers ───────────────────────────────────────────────────────
+
     private function loadStats(): array
     {
-        $stats = ['total_users' => 0, 'banned_users' => 0, 'pending_recipes' => 0, 'total_recipes' => 0, 'pending_tags' => 0];
+        $stats = [
+            'total_users'     => 0,
+            'banned_users'    => 0,
+            'pending_recipes' => 0,
+            'total_recipes'   => 0,
+            'pending_tags'    => 0,
+        ];
         $error = null;
+
         try {
             $stats['total_users']     = count($this->supabase->select('profiles', ['id']));
             $stats['banned_users']    = count($this->supabase->select('profiles', ['id'], ['is_banned' => true]));
-            $stats['pending_recipes'] = count($this->supabase->select('recipes', ['id'], ['status' => 'pending']));
-            $stats['total_recipes']   = count($this->supabase->select('recipes', ['id']));
-            $stats['pending_tags']    = count($this->supabase->select('tags', ['id'], ['is_approved' => false]));
+            $stats['pending_recipes'] = count($this->supabase->select('recipes',  ['id'], ['status' => 'pending']));
+            $stats['total_recipes']   = count($this->supabase->select('recipes',  ['id']));
+            $stats['pending_tags']    = count($this->supabase->select('tags',     ['id'], ['is_approved' => false]));
         } catch (Exception $e) {
             $error = $e->getMessage();
         }
+
         return [$stats, $error];
     }
 
     private function banReasonFromType(string $type, string $customReason): string
     {
         return match ($type) {
-            'spam'                 => 'Spam',
-            'inappropriate_content'=> 'Inappropriate Content',
-            'harassment'           => 'Harassment',
-            'fake_account'         => 'Fake Account',
-            default                => $customReason !== '' ? $customReason : 'Moderated from web dashboard',
+            'spam'                  => 'Spam',
+            'inappropriate_content' => 'Inappropriate Content',
+            'harassment'            => 'Harassment',
+            'fake_account'          => 'Fake Account',
+            default                 => $customReason !== '' ? $customReason : 'Moderated from web dashboard',
         };
     }
 

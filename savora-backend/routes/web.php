@@ -36,9 +36,9 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::post('users/{id}/toggle-premium', [AdminWebController::class, 'togglePremium'])->name('users.toggle-premium');
     Route::post('recipes/{id}/moderate',     [AdminWebController::class, 'moderateRecipe'])->name('recipes.moderate');
 
-    Route::get('tags',               [AdminTagController::class, 'index'])->name('tags');
-    Route::post('tags/{id}/moderate',[AdminTagController::class, 'moderate'])->name('tags.moderate');
-    Route::post('tags/{id}/delete',  [AdminTagController::class, 'destroy'])->name('tags.destroy');
+    Route::get('tags',                [AdminTagController::class, 'index'])->name('tags');
+    Route::post('tags/{id}/moderate', [AdminTagController::class, 'moderate'])->name('tags.moderate');
+    Route::post('tags/{id}/delete',   [AdminTagController::class, 'destroy'])->name('tags.destroy');
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -67,49 +67,54 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::get('search', [SearchController::class, 'index'])->name('search');
 
     // ── Recipes ──────────────────────────────────────────
-    Route::get('recipes/create',      [RecipeController::class, 'create'])->name('recipe.create');
-    Route::post('recipes',            [RecipeController::class, 'store'])->name('recipe.store');
-    Route::get('recipes/{id}',        [RecipeController::class, 'show'])->name('recipe.show');
-    Route::get('recipes/{id}/edit',   [RecipeController::class, 'edit'])->name('recipe.edit');
-    Route::post('recipes/{id}',       [RecipeController::class, 'update'])->name('recipe.update');       // POST + _method=PUT
-    Route::post('recipes/{id}/delete',[RecipeController::class, 'destroy'])->name('recipe.destroy');
+    // IMPORTANT: static segments (create, {id}/edit) MUST come before wildcard {id}
+    Route::get('recipes/create',       [RecipeController::class, 'create'])->name('recipe.create');
+    Route::post('recipes',             [RecipeController::class, 'store'])->name('recipe.store');
+    Route::get('recipes/{id}/edit',    [RecipeController::class, 'edit'])->name('recipe.edit');
+    Route::post('recipes/{id}',        [RecipeController::class, 'update'])->name('recipe.update');
+    Route::post('recipes/{id}/delete', [RecipeController::class, 'destroy'])->name('recipe.destroy');
     Route::post('recipes/{id}/comment',[RecipeController::class, 'postComment'])->name('recipe.comment');
+    Route::post('recipes/{id}/rate',   [RecipeController::class, 'rate'])->name('recipe.rate');
     Route::post('comments/{id}/delete',[RecipeController::class, 'deleteComment'])->name('comment.delete');
-    Route::post('recipes/{id}/rate',  [RecipeController::class, 'rate'])->name('recipe.rate');
+    // Wildcard last
+    Route::get('recipes/{id}',         [RecipeController::class, 'show'])->name('recipe.show');
 
     // ── Profile ───────────────────────────────────────────
-    Route::get('profile',             [ProfileController::class, 'show'])->name('profile');
-    Route::get('profile/{userId}',    [ProfileController::class, 'show'])->name('profile.user');
-    Route::post('profile',            [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('profile',                    [ProfileController::class, 'show'])->name('profile');
+    Route::post('profile',                   [ProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/{userId}/follow',   [ProfileController::class, 'follow'])->name('profile.follow');
     Route::post('profile/{userId}/unfollow', [ProfileController::class, 'unfollow'])->name('profile.unfollow');
+    // Wildcard last
+    Route::get('profile/{userId}',           [ProfileController::class, 'show'])->name('profile.user');
 
     // ── Favorites ─────────────────────────────────────────
-    Route::get('favorites',                        [FavoriteController::class, 'index'])->name('favorites');
-    Route::get('favorites/{boardId}',              [FavoriteController::class, 'show'])->name('favorites.board');
-    Route::post('favorites/boards',                [FavoriteController::class, 'createBoard'])->name('favorites.board.create');
-    Route::post('favorites/boards/{boardId}',      [FavoriteController::class, 'updateBoard'])->name('favorites.board.update');
+    Route::get('favorites',                         [FavoriteController::class, 'index'])->name('favorites');
+    Route::post('favorites/boards',                 [FavoriteController::class, 'createBoard'])->name('favorites.board.create');
+    Route::post('favorites/save',                   [FavoriteController::class, 'save'])->name('favorites.save');
+    Route::post('favorites/remove',                 [FavoriteController::class, 'remove'])->name('favorites.remove');
+    Route::post('favorites/boards/{boardId}',       [FavoriteController::class, 'updateBoard'])->name('favorites.board.update');
     Route::post('favorites/boards/{boardId}/delete',[FavoriteController::class, 'deleteBoard'])->name('favorites.board.delete');
-    Route::post('favorites/save',                  [FavoriteController::class, 'save'])->name('favorites.save');
-    Route::post('favorites/remove',                [FavoriteController::class, 'remove'])->name('favorites.remove');
+    // Wildcard last
+    Route::get('favorites/{boardId}',               [FavoriteController::class, 'show'])->name('favorites.board');
 
     // ── Notifications ─────────────────────────────────────
-    Route::get('notifications',                    [NotificationController::class, 'index'])->name('notifications');
-    Route::post('notifications/{id}/read',         [NotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::post('notifications/read-all',          [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
-    Route::post('notifications/{id}/delete',       [NotificationController::class, 'destroy'])->name('notifications.delete');
-    Route::post('notifications/delete-all',        [NotificationController::class, 'destroyAll'])->name('notifications.delete-all');
+    Route::get('notifications',              [NotificationController::class, 'index'])->name('notifications');
+    Route::post('notifications/read-all',    [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('notifications/delete-all',  [NotificationController::class, 'destroyAll'])->name('notifications.delete-all');
+    Route::post('notifications/{id}/read',   [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/{id}/delete', [NotificationController::class, 'destroy'])->name('notifications.delete');
 
     // ── AI Chat ───────────────────────────────────────────
-    Route::get('ai',                                  [AIChatController::class, 'index'])->name('ai');
-    Route::post('ai/conversations',                   [AIChatController::class, 'createConversation'])->name('ai.create');
-    Route::get('ai/conversations/{id}',               [AIChatController::class, 'showConversation'])->name('ai.conversation');
-    Route::post('ai/conversations/{id}/send',         [AIChatController::class, 'sendMessage'])->name('ai.send');
-    Route::post('ai/conversations/{id}/rename',       [AIChatController::class, 'renameConversation'])->name('ai.rename');
-    Route::post('ai/conversations/{id}/delete',       [AIChatController::class, 'deleteConversation'])->name('ai.delete');
-    Route::post('ai/delete-all',                      [AIChatController::class, 'deleteAll'])->name('ai.delete-all');
-    Route::get('ai/settings',                         [AIChatController::class, 'settings'])->name('ai.settings');
-    Route::post('ai/settings',                        [AIChatController::class, 'saveSettings'])->name('ai.settings.save');
+    Route::get('ai',                             [AIChatController::class, 'index'])->name('ai');
+    Route::post('ai/delete-all',                 [AIChatController::class, 'deleteAll'])->name('ai.delete-all');
+    Route::get('ai/settings',                    [AIChatController::class, 'settings'])->name('ai.settings');
+    Route::post('ai/settings',                   [AIChatController::class, 'saveSettings'])->name('ai.settings.save');
+    Route::post('ai/conversations',              [AIChatController::class, 'createConversation'])->name('ai.create');
+    Route::post('ai/conversations/{id}/send',    [AIChatController::class, 'sendMessage'])->name('ai.send');
+    Route::post('ai/conversations/{id}/rename',  [AIChatController::class, 'renameConversation'])->name('ai.rename');
+    Route::post('ai/conversations/{id}/delete',  [AIChatController::class, 'deleteConversation'])->name('ai.delete');
+    // Wildcard last
+    Route::get('ai/conversations/{id}',          [AIChatController::class, 'showConversation'])->name('ai.conversation');
 
     // ── Settings ──────────────────────────────────────────
     Route::get('settings',  [App\Http\Controllers\App\SettingsController::class, 'show'])->name('settings');
