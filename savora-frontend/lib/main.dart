@@ -96,8 +96,10 @@ class _DeepLinkParser {
     if (uri.scheme == 'savora') {
       switch (uri.host) {
         case 'recipe':
+        case 'recipes':
           final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
-          if (id != null && id.isNotEmpty) {
+          const blockedRecipeSlugs = {'create', 'new', 'edit'};
+          if (id != null && id.isNotEmpty && !blockedRecipeSlugs.contains(id.toLowerCase())) {
             return _DeepLinkTarget.recipe(id);
           }
           break;
@@ -118,21 +120,23 @@ class _DeepLinkParser {
     }
 
     // ── 2. HTTPS App Links ───────────────────────────────
-    // Hanya proses domain Railway kita
     const railwayHost = 'savora-app-productions.up.railway.app';
     if ((uri.scheme == 'https' || uri.scheme == 'http') &&
         uri.host == railwayHost) {
       final segments = uri.pathSegments;
-      // /recipes/{id}
-      if (segments.length >= 2 && segments[0] == 'recipes') {
+
+      // /r/{id} — share link resep (path khusus, tidak bentrok dengan /recipes/create dll)
+      if (segments.length >= 2 && segments[0] == 'r') {
         final id = segments[1];
         if (id.isNotEmpty) return _DeepLinkTarget.recipe(id);
       }
+
       // /profile/{id}
       if (segments.length >= 2 && segments[0] == 'profile') {
         final id = segments[1];
         if (id.isNotEmpty) return _DeepLinkTarget.profile(id);
       }
+
       // /search
       if (segments.isNotEmpty && segments[0] == 'search') {
         return _DeepLinkTarget.search();
@@ -238,7 +242,6 @@ class _MyAppState extends State<MyApp> {
         break;
     }
 
-    // Push di atas stack yang ada supaya user bisa back
     nav.push(MaterialPageRoute(builder: (_) => screen));
   }
 
@@ -255,7 +258,7 @@ class _MyAppState extends State<MyApp> {
         case _DeepLinkType.settings:
           return const SettingsScreen();
         case _DeepLinkType.home:
-          break; // fallthrough ke default
+          break;
       }
     }
 
@@ -309,7 +312,6 @@ class _MyAppState extends State<MyApp> {
           },
           home: _buildInitialScreen(),
           onGenerateRoute: (settings) {
-            // Named routes sebagai fallback (misal dari push notification)
             if (settings.name == '/recipe') {
               final id = settings.arguments as String?;
               if (id != null) {

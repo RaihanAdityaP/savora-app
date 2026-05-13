@@ -70,12 +70,13 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
 // ══════════════════════════════════════════════════════════════════════════════
 // PUBLIC WEB PAGES (tanpa login)
 //
-// PENTING: URL /recipes/{id} dan /profile/{id} ini yang dipakai sebagai
-// share link. Harus bisa diakses tanpa login agar:
-//   1. Android App Links bisa buka app langsung
-//   2. Browser bisa render preview saat app tidak terinstall
-//   3. Pengguna yang belum login bisa lihat konten dulu, baru diminta login
+// /r/{id}       — share link dari Flutter app, diintercept Android App Links,
+//                 fallback ke browser jika app tidak terinstall.
+// /recipes/{id} — canonical web detail, hanya dibuka di browser (tidak ada
+//                 App Links intent-filter untuk path ini).
+// /profile/{id} — sama, dibuka di browser / App Links untuk profile.
 // ══════════════════════════════════════════════════════════════════════════════
+Route::get('/r/{id}',         [RecipeController::class, 'show'])->name('web.recipe.share');
 Route::get('/search',         [SearchController::class, 'index'])->name('web.search');
 Route::get('/recipes/{id}',   [RecipeController::class, 'show'])->name('web.recipe.show');
 Route::get('/profile/{userId}',[ProfileController::class, 'show'])->name('web.profile.user');

@@ -249,6 +249,32 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     }
   }
 
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await CategoryClient.getCategories();
+      if (mounted) {
+        setState(() => _categories = categories);
+      }
+    } catch (e) {
+      debugPrint('Error loading categories: $e');
+    }
+  }
+
+  Future<void> _loadUserAvatar() async {
+    try {
+      final userId = ApiService.currentUserId;
+      if (userId != null) {
+        final response = await ApiService.get('/users/$userId/profile');
+        if (mounted) {
+          final data = response['data'] ?? response;
+          setState(() => _userAvatarUrl = data['avatar_url']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading user avatar: $e');
+    }
+  }
+
   Future<void> _searchTags(String query) async {
     if (query.isEmpty) {
       setState(() { _isSearchingTags = false; _userCreatedTags.clear(); });

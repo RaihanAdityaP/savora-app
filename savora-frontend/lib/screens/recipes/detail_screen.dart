@@ -280,7 +280,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   // ============ SHARE FEATURE ============
   static const String _webBase = 'https://savora-app-productions.up.railway.app';
 
-  String _getRecipeWebUrl() => '$_webBase/app/recipes/${widget.recipeId}';
+  String _getRecipeWebUrl() => '$_webBase/r/${widget.recipeId}';
 
   String _generateShareText() {
     final title = _recipe?['title'] ?? 'Resep Tanpa Judul';
@@ -300,7 +300,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   ⭐ Rating: $rating
   📝 Deskripsi:
   ${_recipe?['description'] ?? 'Tidak ada deskripsi.'}
-  🔗 Lihat resep: ${_getRecipeWebUrl()}
+  🔗 Link resep: ${_getRecipeWebUrl()}
   '''.trim();
   }
 
