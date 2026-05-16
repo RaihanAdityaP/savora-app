@@ -120,131 +120,14 @@
 
         {{-- Feed --}}
         @forelse($feed ?? [] as $recipe)
-            @php
-                $author      = $recipe['profiles'] ?? [];
-                $category    = $recipe['categories']['name'] ?? null;
-                $tags        = collect($recipe['recipe_tags'] ?? [])->pluck('tags.name')->filter()->take(3)->toArray();
-                $rating      = $recipe['rating_avg'] ?? null;
-                $ratingCount = $recipe['rating_count'] ?? 0;
-            @endphp
-
-            <a href="{{ route('app.recipe.show', $recipe['id']) }}"
-               class="card-savora block overflow-hidden hover:shadow-lg transition-all duration-300 mb-4 active:scale-[0.98]">
-
-                {{-- Image --}}
-                <div class="relative h-52 overflow-hidden" style="background: #e5e7eb">
-                    @if(!empty($recipe['image_url']))
-                        <img src="{{ $recipe['image_url'] }}" alt="{{ $recipe['title'] }}"
-                             class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
-                    @else
-                        <div class="w-full h-full flex items-center justify-center"
-                             style="background: var(--gradient-primary)">
-                            <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                    @endif
-
-                    @if($category)
-                        <span class="absolute top-3 left-3 px-3 py-1 text-white text-xs font-bold shadow"
-                              style="background: var(--gradient-accent); border-radius: var(--radius-full)">
-                            {{ $category }}
-                        </span>
-                    @endif
-
-                    @if($rating && $rating > 0)
-                        <div class="absolute bottom-3 left-3 bg-yellow-400 text-yellow-900 px-2.5 py-1 text-xs font-bold flex items-center gap-1 shadow"
-                             style="border-radius: var(--radius-full)">
-                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            {{ number_format($rating, 1) }}
-                            @if($ratingCount > 0)<span class="opacity-75">({{ $ratingCount }})</span>@endif
-                        </div>
-                    @endif
-
-                    @if(!empty($recipe['difficulty']))
-                        @php
-                            $diffColors = ['easy' => '#22c55e', 'medium' => '#eab308', 'hard' => '#ef4444'];
-                            $diffLabels = ['easy' => 'Mudah', 'medium' => 'Sedang', 'hard' => 'Sulit'];
-                            $diff = strtolower($recipe['difficulty']);
-                        @endphp
-                        <span class="absolute bottom-3 right-3 px-2.5 py-1 text-white text-xs font-bold shadow"
-                              style="background: {{ $diffColors[$diff] ?? '#6b7280' }}; border-radius: var(--radius-full)">
-                            {{ $diffLabels[$diff] ?? ucfirst($diff) }}
-                        </span>
-                    @endif
-                </div>
-
-                {{-- Content --}}
-                <div class="p-4">
-                    <h3 class="font-bold text-lg mb-1 line-clamp-2" style="color: var(--color-text-primary)">{{ $recipe['title'] ?? 'Resep' }}</h3>
-
-                    @if(!empty($recipe['description']))
-                        <p class="text-sm mb-3 line-clamp-2" style="color: var(--color-text-secondary)">{{ $recipe['description'] }}</p>
-                    @endif
-
-                    {{-- Meta --}}
-                    <div class="flex items-center gap-4 text-sm mb-3" style="color: var(--color-text-secondary)">
-                        @if(!empty($recipe['cook_time']))
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" style="color: var(--color-primary-coral)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span>{{ $recipe['cook_time'] }} mnt</span>
-                            </div>
-                        @endif
-                        @if(!empty($recipe['servings']))
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" style="color: var(--color-primary-coral)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                </svg>
-                                <span>{{ $recipe['servings'] }} porsi</span>
-                            </div>
-                        @endif
-                        @if(!empty($recipe['calories']))
-                            <div class="flex items-center gap-1">
-                                <svg class="w-4 h-4" style="color: var(--color-primary-coral)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
-                                </svg>
-                                <span>{{ $recipe['calories'] }} kal</span>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Tags --}}
-                    @if(count($tags) > 0)
-                        <div class="flex flex-wrap gap-1.5 mb-3">
-                            @foreach($tags as $tag)
-                                <span class="tag-chip" style="padding: 3px 10px; font-size: 11px; border-radius: var(--radius-full); border-color: rgba(231,111,81,0.20); background: rgba(231,111,81,0.08); color: var(--color-primary-coral)">
-                                    #{{ $tag }}
-                                </span>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    {{-- Author --}}
-                    <div class="flex items-center gap-2 pt-3 border-t border-gray-100">
-                        @if(!empty($author['avatar_url']))
-                            <img src="{{ $author['avatar_url'] }}" alt="{{ $author['username'] }}"
-                                 class="w-8 h-8 rounded-full object-cover border-2"
-                                 style="border-color: rgba(231,111,81,0.30)">
-                        @else
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                 style="background: var(--gradient-accent)">
-                                {{ strtoupper(substr($author['username'] ?? 'U', 0, 1)) }}
-                            </div>
-                        @endif
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary)">{{ $author['username'] ?? 'Unknown' }}</p>
-                        </div>
-                        @if(!empty($author['role']) && $author['role'] === 'admin')
-                            <span class="role-badge admin">Admin</span>
-                        @endif
-                    </div>
-                </div>
-            </a>
-
+            <x-recipe-card
+                :recipe="$recipe"
+                :rating="$recipe['rating_avg'] ?? null"
+                :current-user-id="session('user_id')"
+                :favorite-boards="$favoriteBoards ?? []"
+                :saved-board-ids="$recipeSavedBoards[$recipe['id']] ?? []"
+                :detail-href="route('app.recipe.show', $recipe['id'])"
+            />
         @empty
             <x-app-theme.empty-state
                 icon="bi bi-journal-richtext"

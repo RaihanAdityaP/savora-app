@@ -66,12 +66,18 @@ class RecipeController extends Controller
             }
 
             $isFavorite = false;
+            $favoriteBoards = [];
+            $savedBoardIds = [];
             if ($userId) {
                 try {
-                    $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
+                    $boards = $this->supabase->select('recipe_boards', ['id', 'name', 'description'], ['user_id' => $userId], ['order' => 'created_at.asc']);
+                    $favoriteBoards = $boards;
                     foreach ($boards as $board) {
                         $check = $this->supabase->select('board_recipes', ['id'], ['board_id' => $board['id'], 'recipe_id' => $id]);
-                        if (! empty($check)) { $isFavorite = true; break; }
+                        if (! empty($check)) {
+                            $isFavorite = true;
+                            $savedBoardIds[] = $board['id'];
+                        }
                     }
                 } catch (Exception) {}
             }
@@ -85,7 +91,7 @@ class RecipeController extends Controller
             return view('app.recipes.detail', compact(
                 'recipe', 'ratings', 'avgRating', 'totalRatings',
                 'userRating', 'comments', 'tags', 'isFavorite',
-                'userId', 'currentUserRole'
+                'userId', 'currentUserRole', 'favoriteBoards', 'savedBoardIds'
             ));
 
         } catch (Exception $e) {

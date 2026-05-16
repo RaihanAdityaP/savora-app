@@ -240,20 +240,35 @@
         @endif
 
         {{-- Save to collection --}}
-        <div class="card-savora p-5 mb-4">
+        <div id="simpan-resep" class="card-savora p-5 mb-4" x-data="{ openBoardSelector: false }">
             <div class="mb-3">
                 <x-app-theme.section-header title="Simpan Resep" :icon="$svgBookmark" />
             </div>
-            <form action="{{ route('app.favorites.save') }}" method="POST">
-                @csrf
-                <input type="hidden" name="recipe_id" value="{{ $recipe['id'] }}">
-                <button type="submit" class="btn-primary-savora w-full py-3 rounded-2xl">
-                    <svg class="w-5 h-5" fill="{{ $isFavorite ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                    </svg>
-                    {{ $isFavorite ? 'Tersimpan di Koleksi' : 'Simpan ke Koleksi' }}
-                </button>
-            </form>
+            <button type="button"
+                    class="btn-primary-savora w-full py-3 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+                    @click="openBoardSelector = true"
+                    {{ $userId ? '' : 'disabled' }}>
+                <svg class="w-5 h-5" fill="{{ $isFavorite ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+                {{ $isFavorite ? 'Tersimpan di Koleksi' : 'Simpan ke Koleksi' }}
+            </button>
+
+            @if(!$userId)
+                <p class="text-sm mt-3" style="color: var(--color-text-secondary);">
+                    <a href="{{ route('app.login') }}" class="font-semibold underline">Login</a> untuk menyimpan resep ke koleksi.
+                </p>
+            @elseif(empty($favoriteBoards))
+                <p class="text-sm mt-3" style="color: var(--color-text-secondary);">
+                    Belum ada koleksi — buka pemilih lalu <a href="{{ route('app.favorites') }}" class="font-semibold underline">buat koleksi baru</a>.
+                </p>
+            @endif
+
+            <x-save-collection-sheet
+                :recipe-id="$recipe['id']"
+                :boards="$favoriteBoards"
+                :saved-board-ids="$savedBoardIds ?? []"
+            />
         </div>
 
         {{-- Rating --}}
@@ -345,5 +360,10 @@
         </div>
 
     </div>
+    <script>
+        if (location.hash === '#simpan-resep') {
+            document.getElementById('simpan-resep')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    </script>
 </body>
 </html>

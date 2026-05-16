@@ -273,7 +273,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       if (diff.inDays < 1)    return '${diff.inHours} jam lalu';
       return '${diff.inDays} hari lalu';
     } catch (_) {
-      return isoString ?? '';
+      return isoString;
     }
   }
 

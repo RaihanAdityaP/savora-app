@@ -152,14 +152,9 @@ class FavoriteController extends Controller
             $recipeId = $request->input('recipe_id');
             $boardId  = $request->input('board_id');
 
-            if (!$boardId) {
-                $defaults = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId, 'name' => 'Favorit Saya']);
-                if (empty($defaults)) {
-                    $board   = $this->supabase->insert('recipe_boards', ['user_id' => $userId, 'name' => 'Favorit Saya']);
-                    $boardId = $board[0]['id'];
-                } else {
-                    $boardId = $defaults[0]['id'];
-                }
+            $ownedBoard = $this->supabase->select('recipe_boards', ['id'], ['id' => $boardId, 'user_id' => $userId]);
+            if (empty($ownedBoard)) {
+                return back()->with('error', 'Koleksi tidak valid.');
             }
 
             $existing = $this->supabase->select('board_recipes', ['id'], ['board_id' => $boardId, 'recipe_id' => $recipeId]);

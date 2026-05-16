@@ -60,7 +60,7 @@ class HomeController extends Controller
             // Keep default 0 when favorites lookup fails.
         }
 
-        // Load feed tanpa per-recipe rating queries (load ratings lazy di frontend)
+        // Feed + agregasi rating per resep (untuk kartu home)
         $feed = [];
         try {
             $feed = $this->supabase->select(
@@ -74,6 +74,82 @@ class HomeController extends Controller
             $feed = [];
         }
 
+        $recipeIds = array_column($feed, 'id');
+        $recipeIds = array_values(array_filter($recipeIds));
+
+        if (! empty($recipeIds)) {
+            $sums   = [];
+            $counts = [];
+            try {
+                $ratingRows = $this->supabase->select(
+                    'recipe_ratings',
+                    ['recipe_id', 'rating'],
+                    ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+                );
+                foreach ($ratingRows as $row) {
+                    $rid = $row['recipe_id'] ?? null;
+                    if ($rid === null) {
+                        continue;
+                    }
+                    $r = (float) ($row['rating'] ?? 0);
+                    if (! isset($sums[$rid])) {
+                        $sums[$rid]   = 0.0;
+                        $counts[$rid] = 0;
+                    }
+                    $sums[$rid] += $r;
+                    $counts[$rid]++;
+                }
+            } catch (Exception) {
+            }
+
+            foreach ($feed as $i => $row) {
+                $rid = $row['id'] ?? null;
+                if ($rid !== null && ! empty($counts[$rid])) {
+                    $feed[$i]['rating_avg']   = round($sums[$rid] / $counts[$rid], 1);
+                    $feed[$i]['rating_count'] = $counts[$rid];
+                } else {
+                    $feed[$i]['rating_avg']   = null;
+                    $feed[$i]['rating_count'] = 0;
+                }
+            }
+        }
+
+        $favoriteBoards      = [];
+        $recipeSavedBoards   = [];
+        if ($userId && ! empty($recipeIds)) {
+            try {
+                $favoriteBoards = $this->supabase->select(
+                    'recipe_boards',
+                    ['id', 'name', 'description'],
+                    ['user_id' => $userId],
+                    ['order' => 'created_at.asc']
+                );
+                $boardIds = array_column($favoriteBoards, 'id');
+                if (! empty($boardIds)) {
+                    $links = $this->supabase->select(
+                        'board_recipes',
+                        ['board_id', 'recipe_id'],
+                        [
+                            'board_id'   => ['operator' => 'in', 'values' => $boardIds],
+                            'recipe_id'  => ['operator' => 'in', 'values' => $recipeIds],
+                        ]
+                    );
+                    foreach ($links as $link) {
+                        $rid = $link['recipe_id'] ?? null;
+                        $bid = $link['board_id'] ?? null;
+                        if ($rid === null || $bid === null) {
+                            continue;
+                        }
+                        if (! isset($recipeSavedBoards[$rid])) {
+                            $recipeSavedBoards[$rid] = [];
+                        }
+                        $recipeSavedBoards[$rid][] = $bid;
+                    }
+                }
+            } catch (Exception) {
+            }
+        }
+
         $hasMore = count($feed) === $limit;
 
         // Get unread notifications count
@@ -84,7 +160,8 @@ class HomeController extends Controller
 
         return view('app.home', compact(
             'profile', 'feed', 'offset', 'hasMore',
-            'myRecipesCount', 'bookmarksCount', 'followersCount', 'unreadCount'
+            'myRecipesCount', 'bookmarksCount', 'followersCount', 'unreadCount',
+            'favoriteBoards', 'recipeSavedBoards'
         ));
     }
 }
