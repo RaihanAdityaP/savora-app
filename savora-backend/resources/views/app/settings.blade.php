@@ -1,9 +1,12 @@
+@php
+    $isEnglish = ($userSettings['language'] ?? session('user_language', 'en')) === 'en';
+@endphp
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengaturan - Savora</title>
+    <title>{{ $isEnglish ? 'Settings' : 'Pengaturan' }} - Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
@@ -11,48 +14,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
         h1, h2 { font-family: 'Poppins', sans-serif; }
-
-        .gear-spin {
-            animation: gearSpin 8s linear infinite;
-            transform-origin: center;
-        }
-        .gear-spin-reverse {
-            animation: gearSpin 6s linear infinite reverse;
-            transform-origin: center;
-        }
-        @keyframes gearSpin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .pulse-dot {
-            animation: pulseDot 2s ease-in-out infinite;
-        }
-        @keyframes pulseDot {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.3); }
-        }
-        .pulse-dot:nth-child(2) { animation-delay: 0.3s; }
-        .pulse-dot:nth-child(3) { animation-delay: 0.6s; }
-
-        .float-card {
-            animation: floatCard 3s ease-in-out infinite;
-        }
-        @keyframes floatCard {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-        }
-
-        .shimmer-row {
-            background: linear-gradient(90deg, rgba(231,111,81,0.08) 25%, rgba(231,111,81,0.18) 50%, rgba(231,111,81,0.08) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
-            border-radius: 8px;
-        }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
     </style>
 </head>
 <body class="min-h-screen" style="background: var(--color-bg-light);">
@@ -76,87 +37,150 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold">Pengaturan</h1>
-                    <p class="text-white/80 text-xs">Atur pengalaman Savora kamu</p>
+                    <h1 class="text-xl font-bold">{{ $isEnglish ? 'Settings' : 'Pengaturan' }}</h1>
+                    <p class="text-white/80 text-xs">{{ $isEnglish ? 'Customize your Savora experience' : 'Atur pengalaman Savora kamu' }}</p>
                 </div>
             </div>
         </div>
 
-        {{-- Coming Soon Card --}}
-        <div class="card-savora overflow-hidden">
+        @if(session('status') || session('error'))
+            <div class="mb-4">
+                <x-app-theme.info-banner
+                    message="{{ session('status') ?? session('error') }}"
+                    icon="{{ session('error') ? 'bi bi-exclamation-circle' : 'bi bi-check-circle' }}" />
+            </div>
+        @endif
 
-            {{-- Gear Illustration --}}
-            <div class="flex justify-center items-center py-10" style="background: linear-gradient(135deg, rgba(231,111,81,0.06) 0%, rgba(244,162,97,0.06) 100%);">
-                <div class="relative w-40 h-40 flex items-center justify-center">
+        <form method="POST" action="{{ route('app.settings.save') }}" @submit.prevent="handleSubmit" x-data="settingsForm()">
+            @csrf
 
-                    {{-- Big gear --}}
-                    <svg class="gear-spin absolute" width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="top: 10px; left: 10px; opacity: 0.85;">
-                        <path d="M50 30a20 20 0 100 40 20 20 0 000-40z" stroke="#E76F51" stroke-width="3" fill="rgba(231,111,81,0.10)"/>
-                        <path d="M43 10h14l2 8a30 30 0 018.66 5l8-2 7 12.12-6 5.66a30 30 0 010 10l6 5.66L75.66 67l-8-2A30 30 0 0157 70l-2 8H43l-2-8a30 30 0 01-8.66-5l-8 2L17.34 54.88l6-5.66a30 30 0 010-10l-6-5.66L24.34 21.12l8 2A30 30 0 0141 18l2-8z" stroke="#E76F51" stroke-width="3" stroke-linejoin="round" fill="rgba(231,111,81,0.07)"/>
-                    </svg>
+            {{-- Display & Appearance --}}
+            <div class="card-savora p-5 mb-4">
+                <x-app-theme.section-header :title="$isEnglish ? 'Display & Appearance' : 'Tampilan'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>' />
+                <div class="space-y-4 mt-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Theme' : 'Tema' }}</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center cursor-pointer px-4 py-3 rounded-xl border-2 transition-all"
+                                   :class="theme === 'dark' ? 'bg-orange-50' : 'bg-white'"
+                                   :style="theme === 'dark' ? 'border-color: var(--color-primary-coral); color: var(--color-primary-coral);' : 'border-color: rgba(107,114,128,.22); color: var(--color-text-primary);'">
+                                <input type="radio" name="theme" value="dark" x-model="theme" class="hidden">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 015.646 5.646 9.001 9.001 0 0020.354 15.354z"/>
+                                </svg>
+                                <span class="text-sm font-medium">{{ $isEnglish ? 'Dark Mode' : 'Mode Gelap' }}</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer px-4 py-3 rounded-xl border-2 transition-all"
+                                   :class="theme === 'light' ? 'bg-orange-50' : 'bg-white'"
+                                   :style="theme === 'light' ? 'border-color: var(--color-primary-coral); color: var(--color-primary-coral);' : 'border-color: rgba(107,114,128,.22); color: var(--color-text-primary);'">
+                                <input type="radio" name="theme" value="light" x-model="theme" class="hidden">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                                <span class="text-sm font-medium">{{ $isEnglish ? 'Light Mode' : 'Mode Terang' }}</span>
+                            </label>
+                        </div>
+                    </div>
 
-                    {{-- Small gear --}}
-                    <svg class="gear-spin-reverse absolute" width="54" height="54" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg" style="top: 4px; right: 2px; opacity: 0.70;">
-                        <path d="M27 18a9 9 0 100 18 9 9 0 000-18z" stroke="#F4A261" stroke-width="2.5" fill="rgba(244,162,97,0.15)"/>
-                        <path d="M23 4h8l1 4a16 16 0 014.66 2.7l4-1 4 6.93-3 2.87a16 16 0 010 5.4l3 2.87-4 6.93-4-1A16 16 0 0131 46l-1 4h-8l-1-4a16 16 0 01-4.66-2.7l-4 1-4-6.93 3-2.87a16 16 0 010-5.4l-3-2.87 4-6.93 4 1A16 16 0 0122 8l1-4z" stroke="#F4A261" stroke-width="2.5" stroke-linejoin="round" fill="rgba(244,162,97,0.07)"/>
-                    </svg>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Language' : 'Bahasa' }}</label>
+                        <select name="language" x-model="language" class="input-savora">
+                            <option value="en">English</option>
+                            <option value="id">Bahasa Indonesia</option>
+                        </select>
+                    </div>
 
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Font Size' : 'Ukuran Font' }}</label>
+                        <div class="flex items-center gap-4">
+                            <input type="range" name="font_size" x-model="fontSize" min="12" max="18" step="1" class="flex-1">
+                            <span class="text-sm font-semibold w-12 text-center" x-text="fontSize + 'px'"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- Text Content --}}
-            <div class="px-6 pb-8 text-center">
-                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-4" style="background: rgba(231,111,81,0.12); color: #E76F51;">
-                    <span class="pulse-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#E76F51;"></span>
-                    <span class="pulse-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#E76F51;"></span>
-                    <span class="pulse-dot w-1.5 h-1.5 rounded-full inline-block" style="background:#E76F51;"></span>
-                    Segera Hadir
+            {{-- Notifications --}}
+            <div class="card-savora p-5 mb-4">
+                <x-app-theme.section-header :title="$isEnglish ? 'Notifications' : 'Notifikasi'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>' />
+                <div class="space-y-3 mt-4">
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="notify_likes" x-model="settings.notify_likes" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Notify when someone likes my recipe' : 'Beri tahu saat seseorang menyukai resep saya' }}</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="notify_comments" x-model="settings.notify_comments" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Notify when someone comments on my recipe' : 'Beri tahu saat seseorang mengomentari resep saya' }}</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="notify_follows" x-model="settings.notify_follows" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Notify when someone follows me' : 'Beri tahu saat seseorang mengikuti saya' }}</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="notify_email" x-model="settings.notify_email" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Send me email notifications' : 'Kirim notifikasi lewat email' }}</span>
+                    </label>
                 </div>
-
-                <h2 class="text-2xl font-bold mb-2" style="color: var(--color-text-primary);">Halaman Pengaturan</h2>
-                <p class="text-sm leading-relaxed mb-6" style="color: var(--color-text-secondary);">
-                    Kami sedang menyiapkan halaman pengaturan yang lebih lengkap dan personal.<br>
-                    Sementara itu, nikmati fitur-fitur Savora lainnya ya!
-                </p>
-
-                {{-- Shimmer preview rows --}}
-                <div class="float-card space-y-3 mb-6 text-left">
-                    <div class="flex items-center gap-3 p-3 rounded-xl" style="border: 1px solid rgba(231,111,81,0.1); background: rgba(231,111,81,0.03);">
-                        <div class="w-8 h-8 rounded-lg shimmer-row shrink-0"></div>
-                        <div class="flex-1 space-y-1.5">
-                            <div class="h-2.5 shimmer-row w-1/3"></div>
-                            <div class="h-2 shimmer-row w-2/3"></div>
-                        </div>
-                        <div class="w-10 h-5 rounded-full shimmer-row shrink-0"></div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl" style="border: 1px solid rgba(231,111,81,0.1); background: rgba(231,111,81,0.03);">
-                        <div class="w-8 h-8 rounded-lg shimmer-row shrink-0"></div>
-                        <div class="flex-1 space-y-1.5">
-                            <div class="h-2.5 shimmer-row w-2/5"></div>
-                            <div class="h-2 shimmer-row w-3/5"></div>
-                        </div>
-                        <div class="w-10 h-5 rounded-full shimmer-row shrink-0"></div>
-                    </div>
-                    <div class="flex items-center gap-3 p-3 rounded-xl" style="border: 1px solid rgba(231,111,81,0.1); background: rgba(231,111,81,0.03);">
-                        <div class="w-8 h-8 rounded-lg shimmer-row shrink-0"></div>
-                        <div class="flex-1 space-y-1.5">
-                            <div class="h-2.5 shimmer-row w-1/4"></div>
-                            <div class="h-2 shimmer-row w-1/2"></div>
-                        </div>
-                        <div class="w-10 h-5 rounded-full shimmer-row shrink-0"></div>
-                    </div>
-                </div>
-
-                <a href="{{ route('app.home') }}" class="btn-primary-savora inline-flex items-center gap-2 px-6 py-3 rounded-xl">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    Kembali ke Beranda
-                </a>
             </div>
-        </div>
 
+            {{-- Privacy & Data --}}
+            <div class="card-savora p-5 mb-4">
+                <x-app-theme.section-header :title="$isEnglish ? 'Privacy & Data' : 'Privasi & Data'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>' />
+                <div class="space-y-3 mt-4">
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="allow_analytics" x-model="settings.allow_analytics" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Allow usage analytics to improve Savora' : 'Izinkan analitik penggunaan untuk meningkatkan Savora' }}</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="profile_public" x-model="settings.profile_public" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Make my profile public' : 'Jadikan profil saya publik' }}</span>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Preferences --}}
+            <div class="card-savora p-5 mb-5">
+                <x-app-theme.section-header :title="$isEnglish ? 'Other Preferences' : 'Preferensi Lain'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>' />
+                <div class="space-y-3 mt-4">
+                    <label class="flex items-center cursor-pointer p-3 rounded-lg hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="auto_save_drafts" x-model="settings.auto_save_drafts" class="w-4 h-4 cursor-pointer">
+                        <span class="ml-3 text-sm font-medium">{{ $isEnglish ? 'Auto-save recipe drafts' : 'Simpan draft resep otomatis' }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" :disabled="isSubmitting" class="btn-primary-savora w-full py-4 rounded-2xl">
+                <span x-show="!isSubmitting">{{ $isEnglish ? 'Save Settings' : 'Simpan Pengaturan' }}</span>
+                <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                    Saving...
+                </span>
+            </button>
+        </form>
     </div>
 
+    <script>
+    function settingsForm() {
+        return {
+            theme: @js(old('theme', $userSettings['theme'] ?? 'light')),
+            language: @js(old('language', $userSettings['language'] ?? 'en')),
+            fontSize: {{ (int) old('font_size', $userSettings['font_size'] ?? 14) }},
+            isSubmitting: false,
+            settings: {
+                notify_likes: {{ old('notify_likes', $userSettings['notify_likes'] ?? true) ? 'true' : 'false' }},
+                notify_comments: {{ old('notify_comments', $userSettings['notify_comments'] ?? true) ? 'true' : 'false' }},
+                notify_follows: {{ old('notify_follows', $userSettings['notify_follows'] ?? true) ? 'true' : 'false' }},
+                notify_email: {{ old('notify_email', $userSettings['notify_email'] ?? false) ? 'true' : 'false' }},
+                allow_analytics: {{ old('allow_analytics', $userSettings['allow_analytics'] ?? true) ? 'true' : 'false' }},
+                profile_public: {{ old('profile_public', $userSettings['profile_public'] ?? true) ? 'true' : 'false' }},
+                auto_save_drafts: {{ old('auto_save_drafts', $userSettings['auto_save_drafts'] ?? true) ? 'true' : 'false' }},
+            },
+            handleSubmit(e) {
+                this.isSubmitting = true;
+                e.target.submit();
+            }
+        }
+    }
+    </script>
 </body>
 </html>
