@@ -11,8 +11,8 @@ use Exception;
 
 class AIChatController extends Controller
 {
-    private $supabase;
-    private $aiChat;
+    private SupabaseService $supabase;
+    private AIChatService $aiChat;
 
     public function __construct(SupabaseService $supabase, AIChatService $aiChat)
     {
@@ -108,7 +108,7 @@ class AIChatController extends Controller
      * Get detail conversation + messages
      * GET /api/ai/conversations/{id}
      */
-    public function showConversation(Request $request, $id)
+    public function showConversation(Request $request, string $id)
     {
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);
@@ -143,7 +143,7 @@ class AIChatController extends Controller
      * Update judul conversation
      * PUT /api/ai/conversations/{id}
      */
-    public function updateConversation(Request $request, $id)
+    public function updateConversation(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:200',
@@ -180,7 +180,7 @@ class AIChatController extends Controller
      * Hapus conversation + semua messages-nya (cascade)
      * DELETE /api/ai/conversations/{id}
      */
-    public function deleteConversation(Request $request, $id)
+    public function deleteConversation(Request $request, string $id)
     {
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);
@@ -226,7 +226,7 @@ class AIChatController extends Controller
      * Kirim pesan dan dapatkan balasan AI
      * POST /api/ai/conversations/{id}/messages
      */
-    public function sendMessage(Request $request, $id)
+    public function sendMessage(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'content'   => 'required|string|max:2000',
@@ -326,7 +326,7 @@ class AIChatController extends Controller
      * Get messages dari conversation
      * GET /api/ai/conversations/{id}/messages
      */
-    public function getMessages(Request $request, $id)
+    public function getMessages(Request $request, string $id)
     {
         try {
             $userId = $this->getSupabaseUserIdFromRequest($request);

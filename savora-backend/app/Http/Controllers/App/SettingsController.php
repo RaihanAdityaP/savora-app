@@ -4,64 +4,90 @@ namespace App\Http\Controllers\App;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Services\SupabaseService;
+use Exception;
 
 class SettingsController extends Controller
 {
-    /**
-     * Show the user settings page.
-     */
-    public function show(Request $request)
+    public function __construct(private SupabaseService $supabase) {}
+
+    public function show()
     {
-        $user = auth()->user();
-        
-        // Get user settings from session or database
-        $userSettings = [
-            'theme' => session('user_theme', 'light'),
-            'language' => session('user_language', 'en'),
-            'font_size' => session('user_font_size', 14),
-            'notify_likes' => session('notify_likes', true),
-            'notify_comments' => session('notify_comments', true),
-            'notify_follows' => session('notify_follows', true),
-            'notify_email' => session('notify_email', false),
-            'allow_analytics' => session('allow_analytics', true),
-            'profile_public' => session('profile_public', true),
-            'auto_save_drafts' => session('auto_save_drafts', true),
+        $userId = session('user_id');
+        $defaults = [
+            'theme'             => 'light',
+            'language'          => 'en',
+            'font_size'         => 14,
+            'notify_likes'      => true,
+            'notify_comments'   => true,
+            'notify_follows'    => true,
+            'notify_email'      => false,
+            'allow_analytics'   => true,
+            'profile_public'    => true,
+            'auto_save_drafts'  => true,
         ];
+
+        try {
+            $rows = $this->supabase->select('user_settings', ['*'], ['user_id' => $userId]);
+            $userSettings = !empty($rows) ? array_merge($defaults, $rows[0]) : $defaults;
+        } catch (Exception) {
+            $userSettings = $defaults;
+        }
 
         return view('app.settings', compact('userSettings'));
     }
 
-    /**
-     * Save user settings.
-     */
     public function save(Request $request)
     {
         $validated = $request->validate([
-            'theme' => 'required|in:dark,light',
-            'language' => 'required|in:en,id',
-            'font_size' => 'required|integer|between:12,18',
-            'notify_likes' => 'boolean',
-            'notify_comments' => 'boolean',
-            'notify_follows' => 'boolean',
-            'notify_email' => 'boolean',
-            'allow_analytics' => 'boolean',
-            'profile_public' => 'boolean',
-            'auto_save_drafts' => 'boolean',
+            'theme'            => 'required|in:dark,light',
+            'language'         => 'required|in:en,id',
+            'font_size'        => 'required|integer|between:12,18',
+            'notify_likes'     => 'nullable|boolean',
+            'notify_comments'  => 'nullable|boolean',
+            'notify_follows'   => 'nullable|boolean',
+            'notify_email'     => 'nullable|boolean',
+            'allow_analytics'  => 'nullable|boolean',
+            'profile_public'   => 'nullable|boolean',
+            'auto_save_drafts' => 'nullable|boolean',
         ]);
 
-        // Store settings in session
-        session([
-            'user_theme' => $validated['theme'],
-            'user_language' => $validated['language'],
-            'user_font_size' => $validated['font_size'],
-            'notify_likes' => $validated['notify_likes'] ?? false,
-            'notify_comments' => $validated['notify_comments'] ?? false,
-            'notify_follows' => $validated['notify_follows'] ?? false,
-            'notify_email' => $validated['notify_email'] ?? false,
-            'allow_analytics' => $validated['allow_analytics'] ?? false,
-            'profile_public' => $validated['profile_public'] ?? false,
-            'auto_save_drafts' => $validated['auto_save_drafts'] ?? false,
-        ]);
+        $userId = session('user_id');
+
+        $data = [
+            'user_id'          => $userId,
+            'theme'            => $validated['theme'],
+            'language'         => $validated['language'],
+            'font_size'        => $validated['font_size'],
+            'notify_likes'     => $request->boolean('notify_likes'),
+            'notify_comments'  => $request->boolean('notify_comments'),
+            'notify_follows'   => $request->boolean('notify_follows'),
+            'notify_email'     => $request->boolean('notify_email'),
+            'allow_analytics'  => $request->boolean('allow_analytics'),
+            'profile_public'   => $request->boolean('profile_public'),
+            'auto_save_drafts' => $request->boolean('auto_save_drafts'),
+            'updated_at'       => now()->toISOString(),
+        ];
+
+        try {
+            $existing = $this->supabase->select('user_settings', ['user_id'], ['user_id' => $userId]);
+            if (empty($existing)) {
+                $this->supabase->insert('user_settings', $data);
+            } else {
+                unset($data['user_id']);
+                $this->supabase->update('user_settings', $data, ['user_id' => $userId]);
+            }
+
+            // Sync ke session supaya app-theme langsung reflect
+            session([
+                'user_theme'     => $validated['theme'],
+                'user_language'  => $validated['language'],
+                'user_font_size' => $validated['font_size'],
+            ]);
+
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
+        }
 
         $message = $validated['language'] === 'id'
             ? 'Pengaturan berhasil disimpan!'
