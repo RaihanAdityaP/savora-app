@@ -68,7 +68,7 @@
 
 
 
-        {{-- Build existing tags array: [{id, name}] — capped at 3 --}}
+        /* Build existing tags array: [{id, name}] — capped at 3 */
 
         $existingTags = collect($tags ?? [])->take(3)->map(fn($t) => ['id' => $t['id'], 'name' => $t['name']])->values()->toArray();
 
