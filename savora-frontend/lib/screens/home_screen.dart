@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_settings_service.dart';
 import '../services/user_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -42,6 +43,8 @@ class _HomeScreenState extends State<HomeScreen>
   late AnimationController _animController;
   late Animation<double>   _fadeAnim;
   late Animation<Offset>   _slideAnim;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   // ── Quotes ──
   final List<Map<String, String>> _quotes = [
@@ -217,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
 
     if (response['success'] != true) {
-      throw Exception(response['message'] ?? 'Gagal memuat feed');
+      throw Exception(response['message'] ?? _t('Failed to load feed', 'Gagal memuat feed'));
     }
 
     final list = (response['data'] as List? ?? [])
@@ -307,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 20),
           Text(
-            'Menyiapkan feed untukmu...',
+            _t('Preparing your feed...', 'Menyiapkan feed untukmu...'),
             style: AppTheme.bodyLarge.copyWith(color: AppTheme.textSecondary),
           ),
         ],
@@ -386,8 +389,8 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(width: 12),
 
           // Title — Expanded agar tidak overflow
-          const Expanded(
-            child: Text('Untuk Kamu', style: AppTheme.headingMedium),
+          Expanded(
+            child: Text(_t('For You', 'Untuk Kamu'), style: AppTheme.headingMedium),
           ),
 
           // FYP badge — teks saja, tanpa icon
@@ -485,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Memuat resep lainnya...',
+                    _t('Loading more recipes...', 'Memuat resep lainnya...'),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
@@ -513,15 +516,15 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ],
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.expand_more_rounded,
+                    const Icon(Icons.expand_more_rounded,
                         color: Colors.white, size: 22),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      'Muat Lebih Banyak',
-                      style: TextStyle(
+                      _t('Load More', 'Muat Lebih Banyak'),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -556,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen>
           // Flexible mencegah overflow
           Flexible(
             child: Text(
-              'Kamu sudah melihat semua resep untukmu',
+              _t('You have seen all recipes for you', 'Kamu sudah melihat semua resep untukmu'),
               style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -635,7 +638,7 @@ class _HomeScreenState extends State<HomeScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Halo, ${_username ?? 'Foodie'}!',
+                                '${_t('Hi', 'Halo')}, ${_username ?? 'Foodie'}!',
                                 style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -647,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Selamat datang kembali di Savora',
+                                _t('Welcome back to Savora', 'Selamat datang kembali di Savora'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color:
@@ -666,7 +669,7 @@ class _HomeScreenState extends State<HomeScreen>
                           child: _statChip(
                             Icons.restaurant_rounded,
                             _myRecipesCount.toString(),
-                            'Resep Saya',
+                            _t('My Recipes', 'Resep Saya'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -674,7 +677,7 @@ class _HomeScreenState extends State<HomeScreen>
                           child: _statChip(
                             Icons.bookmark_rounded,
                             _bookmarksCount.toString(),
-                            'Tersimpan',
+                            _t('Saved', 'Tersimpan'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -682,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen>
                           child: _statChip(
                             Icons.people_rounded,
                             _followersCount.toString(),
-                            'Pengikut',
+                            _t('Followers', 'Pengikut'),
                           ),
                         ),
                       ],
@@ -723,7 +726,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          'Inspirasi Hari Ini',
+                          _t('Today Inspiration', 'Inspirasi Hari Ini'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
@@ -867,7 +870,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 32),
             Text(
-              'Belum Ada Resep',
+              _t('No Recipes Yet', 'Belum Ada Resep'),
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
@@ -877,7 +880,10 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'Jadilah yang pertama membagikan\nresep lezat dan inspirasi kuliner!',
+              _t(
+                'Be the first to share a delicious recipe\nand culinary inspiration!',
+                'Jadilah yang pertama membagikan\nresep lezat dan inspirasi kuliner!',
+              ),
               style: AppTheme.bodyLarge.copyWith(
                 color: AppTheme.textSecondary,
                 height: 1.6,
@@ -902,14 +908,14 @@ class _HomeScreenState extends State<HomeScreen>
                       horizontal: 32,
                       vertical: 16,
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_circle_rounded,
+                        const Icon(Icons.add_circle_rounded,
                             color: Colors.white, size: 24),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         Text(
-                          'Buat Resep Pertama',
+                          _t('Create First Recipe', 'Buat Resep Pertama'),
                           style: AppTheme.buttonText,
                         ),
                       ],

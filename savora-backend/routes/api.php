@@ -10,10 +10,28 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RecipeController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\AIChatController;
 use App\Http\Controllers\Api\AISettingsController;
+
+Route::get('app-version', function () {
+    $downloadUrl = env('APP_DOWNLOAD_URL') ?: url('/download-apk');
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'force_update' => filter_var(env('APP_FORCE_UPDATE', false), FILTER_VALIDATE_BOOL),
+            'min_supported_build' => (int) env('APP_MIN_SUPPORTED_BUILD', 20260205),
+            'latest_build' => (int) env('APP_LATEST_BUILD', 20260205),
+            'latest_version' => env('APP_LATEST_VERSION', '3.0.0'),
+            'download_url' => $downloadUrl,
+            'landing_url' => url('/'),
+            'message' => env('APP_UPDATE_MESSAGE', 'A new Savora update is available. Please update to continue.'),
+        ],
+    ]);
+})->middleware('throttle:60,1');
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -74,6 +92,7 @@ Route::prefix('recipes')->group(function () {
         Route::get('/', [RecipeController::class, 'index']);
         Route::get('search', [RecipeController::class, 'search']);
         Route::get('{id}', [RecipeController::class, 'show']);
+        Route::get('{id}/likes', [RecipeController::class, 'likes']);
         Route::get('{id}/tags', [RecipeController::class, 'getRecipeTags']);
     });
 
@@ -83,6 +102,7 @@ Route::prefix('recipes')->group(function () {
         Route::put('{id}', [RecipeController::class, 'update']);
         Route::delete('{id}', [RecipeController::class, 'destroy']);
         Route::post('{id}/view', [RecipeController::class, 'incrementView']);
+        Route::post('{id}/like', [RecipeController::class, 'toggleLike']);
     });
 
     // Admin moderation
@@ -93,6 +113,11 @@ Route::prefix('recipes')->group(function () {
 });
 
 // ─── FEED (FYP) ───────────────────────────────────────────────────────────────
+Route::prefix('settings')->middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
+    Route::get('/', [SettingsController::class, 'show']);
+    Route::post('/', [SettingsController::class, 'save']);
+});
+
 Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::get('feed', [FeedController::class, 'index']);
 });
@@ -107,6 +132,7 @@ Route::prefix('users')->group(function () {
         Route::get('{id}/followers', [UserController::class, 'followers']);
         Route::get('{id}/following', [UserController::class, 'following']);
         Route::get('{id}/recipes', [UserController::class, 'recipes']);
+        Route::get('{id}/liked-recipes', [UserController::class, 'likedRecipes']);
     });
 
     // Protected read/write
@@ -257,6 +283,8 @@ Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────
 Route::prefix('admin')->middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
+    Route::post('notifications/broadcast', [NotificationController::class, 'broadcast']);
+
     Route::get('statistics', function () {
         $supabase = app(\App\Services\SupabaseService::class);
         try {

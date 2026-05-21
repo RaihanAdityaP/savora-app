@@ -1,5 +1,6 @@
+@php($isEnglish = (session('user_language', 'en') === 'en'))
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +21,12 @@
         $activeProvider   = ($settings['is_active_provider'] ?? 'groq') === 'groq' ? 'default' : ($settings['is_active_provider'] ?? 'default');
         $hasOpenRouterKey = !empty($settings['openrouter_api_key']) && $settings['openrouter_api_key'] !== '***SAVED***' ? false : (!empty($settings['openrouter_api_key']));
         $savedModel       = $settings['openrouter_model'] ?? '';
+        $defaultGroqModel = config('ai.groq_model');
+        $openRouterExamples = array_filter([
+            'deepseek/deepseek-chat:free',
+            'google/gemma-3-27b-it:free',
+            'mistralai/mistral-7b-instruct:free',
+        ]);
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-10"
@@ -38,7 +45,7 @@
             </a>
             <div>
                 <h1 class="text-2xl font-bold" style="color: var(--color-text-primary)">AI Settings</h1>
-                <p class="text-sm" style="color: var(--color-text-secondary)">Konfigurasi provider AI</p>
+                <p class="text-sm" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'Configure AI provider' : 'Konfigurasi provider AI' }}</p>
             </div>
         </div>
 
@@ -73,7 +80,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="font-bold" style="color: var(--color-text-primary)">Default (Groq)</p>
-                            <p class="text-xs" style="color: var(--color-text-secondary)">Gratis — API key dikelola server</p>
+                            <p class="text-xs" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'Free - API key managed by server' : 'Gratis - API key dikelola server' }}</p>
                         </div>
                         <div x-show="provider === 'default'" class="w-5 h-5 rounded-full bg-[#2A9D8F] flex items-center justify-center">
                             <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -97,7 +104,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="font-bold" style="color: var(--color-text-primary)">OpenRouter</p>
-                            <p class="text-xs" style="color: var(--color-text-secondary)">API key & model konfigurasi sendiri</p>
+                            <p class="text-xs" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'Use your own API key and model configuration' : 'API key & model konfigurasi sendiri' }}</p>
                         </div>
                         <div x-show="provider === 'openrouter'" class="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
                             <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -112,7 +119,7 @@
             <div x-show="provider === 'default'" class="card-savora p-5">
                 <h2 class="font-bold mb-3 flex items-center gap-2" style="color: var(--color-text-primary)">
                     <div class="w-1 h-5 rounded-full" style="background: var(--color-primary-teal)"></div>
-                    Konfigurasi Default
+                    {{ $isEnglish ? 'Default Configuration' : 'Konfigurasi Default' }}
                 </h2>
                 <div class="space-y-2">
                     <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -122,12 +129,12 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="text-xs font-semibold" style="color: var(--color-text-secondary)">Chat Teks</p>
-                            <p class="text-sm font-medium" style="color: var(--color-text-primary)">Groq — llama-3.3-70b-versatile</p>
+                            <p class="text-xs font-semibold" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'Text Chat' : 'Chat Teks' }}</p>
+                            <p class="text-sm font-medium" style="color: var(--color-text-primary)">Groq — {{ $defaultGroqModel }}</p>
                         </div>
                     </div>
                     <div class="p-3 bg-teal-50 rounded-xl border border-teal-200 text-sm text-teal-800">
-                        ✅ Semua API key dikelola server — tidak perlu konfigurasi apapun.
+                        {{ $isEnglish ? 'All API keys are managed by the server - no configuration needed.' : 'Semua API key dikelola server - tidak perlu konfigurasi apapun.' }}
                     </div>
                 </div>
             </div>
@@ -135,7 +142,7 @@
             {{-- OpenRouter settings --}}
             <div x-show="provider === 'openrouter'" class="space-y-4">
                 <x-app-theme.info-banner
-                    message="⚠️ Model berbayar memerlukan saldo di akun openrouter.ai. Model berlabel :free bisa digunakan gratis."
+                    :message="$isEnglish ? 'Paid models require balance in your openrouter.ai account. Models labeled :free can be used for free.' : 'Model berbayar memerlukan saldo di akun openrouter.ai. Model berlabel :free bisa digunakan gratis.'"
                     icon="" />
 
                 <div class="card-savora p-5">
@@ -148,8 +155,8 @@
                             <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span class="text-sm font-semibold text-green-800 flex-1">API key tersimpan di server</span>
-                            <button type="button" @click="hasKey = false" class="text-xs text-green-700 font-bold hover:underline">Ganti</button>
+                            <span class="text-sm font-semibold text-green-800 flex-1">{{ $isEnglish ? 'API key saved on server' : 'API key tersimpan di server' }}</span>
+                            <button type="button" @click="hasKey = false" class="text-xs text-green-700 font-bold hover:underline">{{ $isEnglish ? 'Change' : 'Ganti' }}</button>
                         </div>
                     @endif
                     <div x-show="!hasKey">
@@ -174,11 +181,11 @@
                         Model Name
                     </h2>
                     <input type="text" name="openrouter_model" value="{{ $savedModel }}"
-                           placeholder="meta-llama/llama-3.3-70b-instruct:free"
+                           placeholder="deepseek/deepseek-chat:free"
                            class="input-savora mb-3">
-                    <p class="text-xs font-semibold mb-2" style="color: var(--color-text-secondary)">Contoh model gratis:</p>
+                    <p class="text-xs font-semibold mb-2" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'Free model examples:' : 'Contoh model gratis:' }}</p>
                     <div class="flex flex-wrap gap-2">
-                        @foreach(['meta-llama/llama-3.3-70b-instruct:free', 'deepseek/deepseek-chat:free', 'google/gemma-3-27b-it:free', 'mistralai/mistral-7b-instruct:free'] as $model)
+                        @foreach($openRouterExamples as $model)
                             <button type="button"
                                     onclick="document.querySelector('[name=openrouter_model]').value = '{{ $model }}'"
                                     class="tag-chip">
@@ -191,7 +198,7 @@
 
             {{-- Save --}}
             <button type="submit" class="btn-primary-savora w-full py-4 rounded-2xl text-base">
-                Simpan Settings
+                {{ $isEnglish ? 'Save Settings' : 'Simpan Settings' }}
             </button>
         </form>
 

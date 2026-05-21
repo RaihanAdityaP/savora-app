@@ -11,10 +11,12 @@ use Exception;
 class AISettingsController extends Controller
 {
     private $supabase;
+    private \App\Services\AIChatService $aiChat;
 
-    public function __construct(SupabaseService $supabase)
+    public function __construct(SupabaseService $supabase, \App\Services\AIChatService $aiChat)
     {
         $this->supabase = $supabase;
+        $this->aiChat = $aiChat;
     }
 
     /**
@@ -70,8 +72,8 @@ class AISettingsController extends Controller
                 'user_id'            => $userId,
                 'is_active_provider' => $request->input('is_active_provider'),
                 'provider'           => $request->input('is_active_provider'),
-                'groq_model'         => $request->input('groq_model', 'llama-3.3-70b-versatile'),
-                'openrouter_model'   => $request->input('openrouter_model', 'meta-llama/llama-3.3-70b-instruct:free'),
+                'groq_model'         => $request->input('groq_model', $this->aiChat->defaultModel('groq')),
+                'openrouter_model'   => $request->input('openrouter_model'),
             ];
 
             // Hanya update API key jika dikirim dan bukan placeholder
@@ -125,8 +127,7 @@ class AISettingsController extends Controller
             }
 
             // Test dengan mengirim pesan sederhana
-            $aiChat = app(\App\Services\AIChatService::class);
-            $response = $aiChat->chat(
+            $response = $this->aiChat->chat(
                 messages: [['role' => 'user', 'content' => 'Hi, respond with just: OK']],
                 provider: $provider,
                 model   : $model,
@@ -177,8 +178,8 @@ class AISettingsController extends Controller
             'user_id'             => $userId,
             'is_active_provider'  => 'groq',
             'provider'            => 'groq',
-            'groq_model'          => 'llama-3.3-70b-versatile',
-            'openrouter_model'    => 'meta-llama/llama-3.3-70b-instruct:free',
+            'groq_model'          => $this->aiChat->defaultModel('groq'),
+            'openrouter_model'    => null,
             'openrouter_api_key'  => null,
         ];
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseAuthService;
 use App\Services\SupabaseService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Exception;
@@ -14,6 +15,7 @@ class LoginController extends Controller
     public function __construct(
         private SupabaseAuthService $supabaseAuth,
         private SupabaseService $supabase,
+        private UserSettingsService $settingsService,
     ) {}
 
     public function showLogin()
@@ -94,6 +96,14 @@ class LoginController extends Controller
                 'user_username' => $profile['username'] ?? $profile['full_name'] ?? 'User',
                 'user_role'     => $profile['role'] ?? 'user',
                 'user_avatar'   => $profile['avatar_url'] ?? null,
+            ]);
+            $settings = $this->settingsService->get($profile['id']);
+            session([
+                'user_theme'           => $settings['theme'],
+                'user_language'        => $settings['language'],
+                'user_font_size'       => (int) $settings['font_size'],
+                'user_settings'        => $settings,
+                'user_settings_loaded' => true,
             ]);
 
             // redirect()->intended() akan redirect ke URL yang dicoba sebelum

@@ -126,7 +126,7 @@ class AIChatController extends Controller
             $aiResponse = $this->aiChat->chat(
                 messages: $history,
                 provider: $conversation['provider'] ?? 'groq',
-                model:    $conversation['model'] ?? 'llama-3.3-70b-versatile',
+                model:    $conversation['model'] ?? $this->aiChat->defaultModel('groq'),
                 settings: $settings,
             );
 
@@ -233,7 +233,7 @@ class AIChatController extends Controller
                 'user_id'            => $userId,
                 'is_active_provider' => $request->input('is_active_provider'),
                 'provider'           => $request->input('is_active_provider'),
-                'openrouter_model'   => $request->input('openrouter_model', 'meta-llama/llama-3.3-70b-instruct:free'),
+                'openrouter_model'   => $request->input('openrouter_model'),
             ];
 
             $apiKey = $request->input('openrouter_api_key');
@@ -269,8 +269,8 @@ class AIChatController extends Controller
     private function getDefaultModel(array $settings, string $provider): string
     {
         if ($provider === 'openrouter') {
-            return $settings['openrouter_model'] ?? 'meta-llama/llama-3.3-70b-instruct:free';
+            return $settings['openrouter_model'] ?? null;
         }
-        return 'llama-3.3-70b-versatile';
+        return $settings['groq_model'] ?? $this->aiChat->defaultModel('groq');
     }
 }

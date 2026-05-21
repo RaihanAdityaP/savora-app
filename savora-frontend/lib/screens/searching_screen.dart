@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_settings_service.dart';
 import '../services/category_client.dart';
 import '../services/recipe_client.dart';
 import '../widgets/custom_app_bar.dart';
@@ -57,6 +58,8 @@ class _SearchingScreenState extends State<SearchingScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
@@ -419,9 +422,9 @@ class _SearchingScreenState extends State<SearchingScreen>
                               color: Colors.white, size: 26),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
-                          child: Text('Filter & Urutkan',
-                              style: TextStyle(
+                        Expanded(
+                          child: Text(_t('Filter & Sort', 'Filter & Urutkan'),
+                              style: const TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.textPrimary)),
@@ -454,8 +457,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                             },
                             icon: const Icon(Icons.refresh_rounded,
                                 size: 18, color: AppTheme.primaryCoral),
-                            label: const Text('Reset',
-                                style: TextStyle(
+                            label: Text(_t('Reset', 'Reset'),
+                                style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppTheme.primaryCoral)),
                             style: TextButton.styleFrom(
@@ -502,8 +505,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text('Urutkan Berdasarkan',
-                                        style: TextStyle(
+                                    Text(_t('Sort By', 'Urutkan Berdasarkan'),
+                                        style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -514,11 +517,11 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     spacing: 10,
                                     runSpacing: 10,
                                     children: [
-                                      buildLocalSortChip('Terpopuler',
+                                      buildLocalSortChip(_t('Most Popular', 'Terpopuler'),
                                           'popular', Icons.trending_up),
                                       buildLocalSortChip(
-                                          'Terbaru', 'newest', Icons.fiber_new),
-                                      buildLocalSortChip('Rating Tertinggi',
+                                          _t('Newest', 'Terbaru'), 'newest', Icons.fiber_new),
+                                      buildLocalSortChip(_t('Highest Rating', 'Rating Tertinggi'),
                                           'rating', Icons.star),
                                     ]),
                               ],
@@ -558,8 +561,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text('Kalori (kkal)',
-                                        style: TextStyle(
+                                    Text(_t('Calories (kcal)', 'Kalori (kkal)'),
+                                        style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -571,8 +574,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Expanded(
                                       child: _buildCaloriesInput(
                                         controller: tempMinCaloriesCtrl,
-                                        hint: 'Min (cth: 100)',
-                                        label: 'Minimum',
+                                        hint: _t('Min (ex: 100)', 'Min (cth: 100)'),
+                                        label: _t('Minimum', 'Minimum'),
                                       ),
                                     ),
                                     Padding(
@@ -587,8 +590,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Expanded(
                                       child: _buildCaloriesInput(
                                         controller: tempMaxCaloriesCtrl,
-                                        hint: 'Max (cth: 500)',
-                                        label: 'Maksimum',
+                                        hint: _t('Max (ex: 500)', 'Max (cth: 500)'),
+                                        label: _t('Maximum', 'Maksimum'),
                                       ),
                                     ),
                                   ],
@@ -629,8 +632,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text('Bahan-Bahan',
-                                        style: TextStyle(
+                                    Text(_t('Ingredients', 'Bahan-Bahan'),
+                                        style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -638,7 +641,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                    'Pisahkan dengan koma, cth: ayam, bawang',
+                                    _t('Separate with commas, ex: chicken, onion',
+                                        'Pisahkan dengan koma, cth: ayam, bawang'),
                                     style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.grey.shade500)),
@@ -655,7 +659,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                   child: TextField(
                                     controller: tempIngredientsCtrl,
                                     decoration: InputDecoration(
-                                      hintText: 'cth: ayam, bawang, tomat',
+                                      hintText: _t('ex: chicken, onion, tomato',
+                                          'cth: ayam, bawang, tomat'),
                                       hintStyle: TextStyle(
                                           color: Colors.grey.shade400,
                                           fontSize: 14),
@@ -710,20 +715,21 @@ class _SearchingScreenState extends State<SearchingScreen>
                                       size: 24),
                                 ),
                                 const SizedBox(width: 14),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text('Dari yang Diikuti',
-                                          style: TextStyle(
+                                      Text(_t('From Following', 'Dari yang Diikuti'),
+                                          style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                               color: AppTheme.textPrimary)),
-                                      SizedBox(height: 2),
+                                      const SizedBox(height: 2),
                                       Text(
-                                          'Hanya tampilkan resep dari pengguna yang Anda ikuti',
-                                          style: TextStyle(
+                                          _t('Only show recipes from users you follow',
+                                              'Hanya tampilkan resep dari pengguna yang Anda ikuti'),
+                                          style: const TextStyle(
                                               fontSize: 12,
                                               color: AppTheme.textSecondary)),
                                     ],
@@ -778,8 +784,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text('Kategori',
-                                        style: TextStyle(
+                                    Text(_t('Category', 'Kategori'),
+                                        style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -850,8 +856,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
-                                    const Text('Tags Populer',
-                                        style: TextStyle(
+                                    Text(_t('Popular Tags', 'Tags Populer'),
+                                        style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -943,8 +949,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                         ),
                         icon: const Icon(Icons.search_rounded,
                             color: Colors.white, size: 24),
-                        label: const Text('Terapkan Filter',
-                            style: TextStyle(
+                        label: Text(_t('Apply Filter', 'Terapkan Filter'),
+                            style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white)),
@@ -1048,7 +1054,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Cari resep lezat...',
+                        hintText: _t('Search delicious recipes...',
+                            'Cari resep lezat...'),
                         hintStyle: TextStyle(
                             color: Colors.grey.shade400, fontSize: 15),
                         border: InputBorder.none,
@@ -1190,7 +1197,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                     _buildActiveFilterChip(
                         _ingredientKeywords.length == 1
                             ? _ingredientKeywords.first
-                            : '${_ingredientKeywords.length} bahan',
+                            : _t('${_ingredientKeywords.length} ingredients',
+                                '${_ingredientKeywords.length} bahan'),
                         Icons.egg_alt_rounded,
                         AppTheme.primaryCoral, () {
                       setState(() {
@@ -1200,14 +1208,16 @@ class _SearchingScreenState extends State<SearchingScreen>
                       _searchRecipes(_lastSearchQuery);
                     }),
                   if (_followedUsersOnly)
-                    _buildActiveFilterChip('Dari yang diikuti',
+                    _buildActiveFilterChip(_t('From following', 'Dari yang diikuti'),
                         Icons.people_rounded, AppTheme.primaryOrange, () {
                       setState(() => _followedUsersOnly = false);
                       _searchRecipes(_lastSearchQuery);
                     }),
                   if (_sortBy != 'popular')
                     _buildActiveFilterChip(
-                        _sortBy == 'newest' ? 'Terbaru' : 'Rating Tertinggi',
+                        _sortBy == 'newest'
+                            ? _t('Newest', 'Terbaru')
+                            : _t('Highest Rating', 'Rating Tertinggi'),
                         Icons.sort_rounded,
                         AppTheme.primaryTeal, () {
                       setState(() => _sortBy = 'popular');
@@ -1234,8 +1244,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                               color: Colors.white, strokeWidth: 3.5),
                         ),
                         const SizedBox(height: 26),
-                        const Text('Mencari resep...',
-                            style: TextStyle(
+                        Text(_t('Searching recipes...', 'Mencari resep...'),
+                            style: const TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textSecondary)),
@@ -1372,8 +1382,8 @@ class _SearchingScreenState extends State<SearchingScreen>
             const SizedBox(height: 28),
             Text(
               _lastSearchQuery.isNotEmpty || activeFilters > 0
-                  ? 'Tidak Ditemukan Resep'
-                  : 'Mulai Pencarian',
+                  ? _t('No Recipes Found', 'Tidak Ditemukan Resep')
+                  : _t('Start Searching', 'Mulai Pencarian'),
               style: const TextStyle(
                   fontSize: 24,
                   color: AppTheme.textPrimary,
@@ -1383,8 +1393,10 @@ class _SearchingScreenState extends State<SearchingScreen>
             const SizedBox(height: 12),
             Text(
               _lastSearchQuery.isNotEmpty || activeFilters > 0
-                  ? 'Coba kata kunci lain atau ubah filter pencarian'
-                  : 'Temukan ribuan resep lezat\ndengan mudah dan cepat',
+                  ? _t('Try another keyword or change your filters',
+                      'Coba kata kunci lain atau ubah filter pencarian')
+                  : _t('Find thousands of delicious recipes\neasily and quickly',
+                      'Temukan ribuan resep lezat\ndengan mudah dan cepat'),
               style: AppTheme.bodyLarge
                   .copyWith(color: AppTheme.textSecondary, height: 1.6),
               textAlign: TextAlign.center,
@@ -1421,8 +1433,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                   ),
                   icon: const Icon(Icons.refresh_rounded,
                       color: Colors.white, size: 22),
-                  label: const Text('Reset Semua Filter',
-                      style: TextStyle(
+                  label: Text(_t('Reset All Filters', 'Reset Semua Filter'),
+                      style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),

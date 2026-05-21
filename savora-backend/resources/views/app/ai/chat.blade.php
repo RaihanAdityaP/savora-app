@@ -1,5 +1,6 @@
+@php($isEnglish = (session('user_language', 'en') === 'en'))
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +29,7 @@
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold" style="color: var(--color-text-primary)">Chef AI</h1>
-                    <p class="text-sm" style="color: var(--color-text-secondary)">Asisten memasak berbasis AI</p>
+                    <p class="text-sm" style="color: var(--color-text-secondary)">{{ $isEnglish ? 'AI-powered cooking assistant' : 'Asisten memasak berbasis AI' }}</p>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -56,19 +57,19 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
-                Chat Baru dengan Chef AI
+                {{ $isEnglish ? 'New Chat with Chef AI' : 'Chat Baru dengan Chef AI' }}
             </button>
         </form>
 
         {{-- Conversations list --}}
         @if(count($conversations) > 0)
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-bold" style="color: var(--color-text-primary)">Riwayat Chat</h2>
+                <h2 class="font-bold" style="color: var(--color-text-primary)">{{ $isEnglish ? 'Chat History' : 'Riwayat Chat' }}</h2>
                 <form action="{{ route('app.ai.delete-all') }}" method="POST"
-                      onsubmit="return confirm('Hapus semua riwayat chat?')">
+                      onsubmit="return confirm('{{ $isEnglish ? 'Delete all chat history?' : 'Hapus semua riwayat chat?' }}')">
                     @csrf
                     <button type="submit" class="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors">
-                        Hapus Semua
+                        {{ $isEnglish ? 'Delete All' : 'Hapus Semua' }}
                     </button>
                 </form>
             </div>
@@ -101,10 +102,10 @@
                     </a>
                     <div class="border-t border-gray-100 flex">
                         <form action="{{ route('app.ai.delete', $conv['id']) }}" method="POST" class="flex-1"
-                              onsubmit="return confirm('Hapus chat ini?')">
+                              onsubmit="return confirm('{{ $isEnglish ? 'Delete this chat?' : 'Hapus chat ini?' }}')">
                             @csrf
                             <button type="submit" class="w-full py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                                Hapus
+                                {{ $isEnglish ? 'Delete' : 'Hapus' }}
                             </button>
                         </form>
                     </div>
@@ -114,8 +115,8 @@
         @else
             <x-app-theme.empty-state
             icon="bi bi-chat-dots"
-            title="Belum Ada Riwayat Chat"
-            subtitle="Mulai chat dengan Chef AI Savora!" />
+            title="{{ $isEnglish ? 'No Chat History Yet' : 'Belum Ada Riwayat Chat' }}"
+            subtitle="{{ $isEnglish ? 'Start chatting with Savora Chef AI!' : 'Mulai chat dengan Chef AI Savora!' }}" />
         @endif
 
     </div>

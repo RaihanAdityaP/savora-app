@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/ai_chat_client.dart';
+import '../../services/app_settings_service.dart';
 import '../../widgets/theme.dart';
 
 class AISettingsScreen extends StatefulWidget {
@@ -22,6 +23,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   String _activeProvider      = 'default';
   bool   _hasOpenRouterApiKey = false;
+  String _groqModel           = '';
+  String _openRouterModel     = '';
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
@@ -50,7 +55,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           final provider = settings['is_active_provider'] ?? 'groq';
           _activeProvider      = (provider == 'groq') ? 'default' : provider;
           _hasOpenRouterApiKey = settings['openrouter_api_key'] == '***SAVED***';
-          final savedModel     = settings['openrouter_model'] ?? '';
+          _groqModel           = settings['groq_model']?.toString() ?? '';
+          _openRouterModel     = settings['openrouter_model']?.toString() ?? '';
+          final savedModel     = _openRouterModel;
           if (savedModel.isNotEmpty) {
             _openRouterModelController.text = savedModel;
           }
@@ -69,11 +76,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       final model  = _openRouterModelController.text.trim();
       final apiKey = _openRouterKeyController.text.trim();
       if (model.isEmpty) {
-        _showSnackBar('Model name wajib diisi untuk OpenRouter', isError: true);
+        _showSnackBar(_t('Model name is required for OpenRouter', 'Model name wajib diisi untuk OpenRouter'), isError: true);
         return;
       }
       if (!_hasOpenRouterApiKey && apiKey.isEmpty) {
-        _showSnackBar('API key wajib diisi untuk OpenRouter', isError: true);
+        _showSnackBar(_t('API key is required for OpenRouter', 'API key wajib diisi untuk OpenRouter'), isError: true);
         return;
       }
     }
@@ -86,16 +93,14 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     final success = await AIChatClient.saveSettings(
       // UI pakai 'default' tapi backend tetap expect 'groq'
       activeProvider   : _activeProvider == 'default' ? 'groq' : _activeProvider,
-      openRouterModel  : orModel.isNotEmpty
-          ? orModel
-          : 'meta-llama/llama-3.3-70b-instruct:free',
+      openRouterModel  : orModel.isNotEmpty ? orModel : null,
       openRouterApiKey : apiKey.isNotEmpty ? apiKey : null,
     );
 
     if (mounted) {
       setState(() => _isSaving = false);
       _showSnackBar(
-        success ? 'Settings berhasil disimpan!' : 'Gagal menyimpan settings',
+        success ? _t('Settings saved!', 'Settings berhasil disimpan!') : _t('Failed to save settings', 'Gagal menyimpan settings'),
         isError: !success,
       );
       if (success && apiKey.isNotEmpty) {
@@ -116,11 +121,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       final model  = _openRouterModelController.text.trim();
       final apiKey = _openRouterKeyController.text.trim();
       if (model.isEmpty) {
-        _showSnackBar('Isi model name dulu sebelum test', isError: true);
+        _showSnackBar(_t('Enter the model name before testing', 'Isi model name dulu sebelum test'), isError: true);
         return;
       }
       if (!_hasOpenRouterApiKey && apiKey.isEmpty) {
-        _showSnackBar('Isi API key dulu sebelum test', isError: true);
+        _showSnackBar(_t('Enter the API key before testing', 'Isi API key dulu sebelum test'), isError: true);
         return;
       }
     }
@@ -130,7 +135,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     final backendProvider = _activeProvider == 'default' ? 'groq' : _activeProvider;
     final model  = _activeProvider == 'openrouter'
         ? _openRouterModelController.text.trim()
-        : 'llama-3.3-70b-versatile';
+        : _groqModel;
+    if (model.isEmpty) {
+      _showSnackBar(_t('Default AI model is not loaded yet', 'Model AI default belum terbaca'), isError: true);
+      setState(() => _isTesting = false);
+      return;
+    }
     final apiKey = _openRouterKeyController.text.trim();
 
     final result = await AIChatClient.testConnection(
@@ -144,7 +154,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         _isTesting   = false;
         _testSuccess = result['success'] == true;
         _testResult  = _testSuccess
-            ? '✅ Koneksi berhasil! Provider siap digunakan.'
+            ? _t('Connection successful! Provider is ready to use.', 'Koneksi berhasil! Provider siap digunakan.')
             : '❌ ${result['message']}';
       });
     }
@@ -159,10 +169,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title  : const Text('Reset Settings'),
-        content: const Text('Reset ke default? Akan kembali menggunakan Groq dari server.'),
+        title  : Text(_t('Reset Settings', 'Reset Settings')),
+        content: Text(_t(
+          'Reset to default? This will switch back to server-managed Groq.',
+          'Reset ke default? Akan kembali menggunakan Groq dari server.',
+        )),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(_t('Cancel', 'Batal'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style    : ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
@@ -205,9 +218,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'AI Settings',
-          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        title: Text(
+          _t('AI Settings', 'Pengaturan AI'),
+          style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton(
@@ -256,7 +269,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               _providerChip(
                 value   : 'default',
                 label   : 'Default',
-                subtitle: 'Gratis — Groq (teks) + HuggingFace (gambar) dari server',
+                subtitle: _t(
+                  'Free - Groq text and vision from the server',
+                  'Gratis - Groq teks dan vision dari server',
+                ),
                 icon    : Icons.verified_rounded,
                 color   : AppTheme.primaryTeal,
               ),
@@ -264,7 +280,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               _providerChip(
                 value   : 'openrouter',
                 label   : 'OpenRouter',
-                subtitle: 'API key & model konfigurasi sendiri',
+                subtitle: _t('Use your own API key and model', 'API key & model konfigurasi sendiri'),
                 icon    : Icons.route_rounded,
                 color   : Colors.purple,
               ),
@@ -350,7 +366,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // DEFAULT INFO — Groq (chat) + HuggingFace (gambar), semua dari server
+  // DEFAULT INFO — Groq chat + vision, semua dari server
   // ─────────────────────────────────────────────
 
   Widget _buildDefaultInfo() {
@@ -360,20 +376,20 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       child     : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children          : [
-          AppTheme.buildSectionHeader('Konfigurasi Default', Icons.info_outline_rounded),
+          AppTheme.buildSectionHeader(_t('Default Configuration', 'Konfigurasi Default'), Icons.info_outline_rounded),
           const SizedBox(height: 16),
           _infoRow(
             icon : Icons.flash_on_rounded,
             color: AppTheme.primaryTeal,
-            title: 'Chat Teks',
-            value: 'Groq — llama-3.3-70b-versatile',
+            title: _t('Text Chat', 'Chat Teks'),
+            value: _groqModel.isNotEmpty ? 'Groq — $_groqModel' : 'Groq',
           ),
           const SizedBox(height: 10),
           _infoRow(
             icon : Icons.image_search_rounded,
             color: Colors.orange,
-            title: 'Analisis Gambar',
-            value: 'Hugging Face — vit-gpt2',
+            title: _t('Image Analysis', 'Analisis Gambar'),
+            value: 'Groq Vision',
           ),
           const SizedBox(height: 16),
           Container(
@@ -390,8 +406,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Semua API key dikelola server — tidak perlu konfigurasi apapun. '
-                    'Tinggal pilih Default dan langsung chat!',
+                    _t(
+                      'All API keys are managed by the server - no setup needed. Choose Default and start chatting.',
+                      'Semua API key dikelola server - tidak perlu konfigurasi apapun. Tinggal pilih Default dan langsung chat!',
+                    ),
                     style: TextStyle(
                       fontSize: 13,
                       color   : AppTheme.primaryTeal.withValues(alpha: 0.9),
@@ -477,13 +495,15 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children          : [
                     Text(
-                      'Perhatian Biaya',
+                      _t('Cost Warning', 'Perhatian Biaya'),
                       style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade800, fontSize: 14),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Model berbayar memerlukan saldo di akun openrouter.ai kamu. '
-                      'Model berlabel FREE bisa digunakan tanpa biaya.',
+                      _t(
+                        'Paid models require balance in your openrouter.ai account. Models labeled FREE can be used at no cost.',
+                        'Model berbayar memerlukan saldo di akun openrouter.ai kamu. Model berlabel FREE bisa digunakan tanpa biaya.',
+                      ),
                       style: TextStyle(fontSize: 12, color: Colors.amber.shade800, height: 1.5),
                     ),
                   ],
@@ -531,13 +551,13 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'API key tersimpan di server',
+                          _t('API key saved on the server', 'API key tersimpan di server'),
                           style: TextStyle(fontWeight: FontWeight.w600, color: Colors.green.shade800),
                         ),
                       ),
                       TextButton(
                         onPressed: () => setState(() => _hasOpenRouterApiKey = false),
-                        child    : const Text('Ganti'),
+                        child    : Text(_t('Change', 'Ganti')),
                       ),
                     ],
                   ),
@@ -577,7 +597,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               AppTheme.buildSectionHeader('Model Name', Icons.auto_awesome_rounded),
               const SizedBox(height: 6),
               Text(
-                'Masukkan model ID dari openrouter.ai/models',
+                _t('Enter the model ID from openrouter.ai/models', 'Masukkan model ID dari openrouter.ai/models'),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
               const SizedBox(height: 14),
@@ -587,7 +607,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   controller : _openRouterModelController,
                   style      : const TextStyle(fontSize: 13),
                   decoration : InputDecoration(
-                    hintText      : 'contoh: meta-llama/llama-3.3-70b-instruct:free',
+                    hintText      : _openRouterModel.isNotEmpty
+                        ? _openRouterModel
+                        : _t('OpenRouter model name', 'Nama model OpenRouter'),
                     hintStyle     : TextStyle(color: Colors.grey.shade400, fontSize: 12),
                     prefixIcon    : const Icon(Icons.psychology_rounded, color: Colors.purple, size: 20),
                     border        : InputBorder.none,
@@ -597,7 +619,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Contoh model (tap untuk isi):',
+                _t('Model examples (tap to fill):', 'Contoh model (tap untuk isi):'),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
@@ -605,7 +627,8 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                 spacing   : 8,
                 runSpacing: 8,
                 children  : [
-                  _modelSuggestion('meta-llama/llama-3.3-70b-instruct:free', isFree: true),
+                  if (_openRouterModel.isNotEmpty)
+                    _modelSuggestion(_openRouterModel, isFree: _openRouterModel.contains(':free')),
                   _modelSuggestion('deepseek/deepseek-chat:free',             isFree: true),
                   _modelSuggestion('google/gemma-3-27b-it:free',              isFree: true),
                   _modelSuggestion('mistralai/mistral-7b-instruct:free',      isFree: true),
@@ -676,10 +699,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       child     : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children          : [
-          AppTheme.buildSectionHeader('Test Koneksi', Icons.wifi_tethering_rounded),
+          AppTheme.buildSectionHeader(_t('Test Connection', 'Test Koneksi'), Icons.wifi_tethering_rounded),
           const SizedBox(height: 6),
           Text(
-            'Pastikan konfigurasi benar sebelum menyimpan.',
+            _t('Make sure the configuration is correct before saving.', 'Pastikan konfigurasi benar sebelum menyimpan.'),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 16),
@@ -690,7 +713,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               icon     : _isTesting
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.bolt_rounded),
-              label    : Text(_isTesting ? 'Testing...' : 'Test Sekarang'),
+              label    : Text(_isTesting ? 'Testing...' : _t('Test Now', 'Test Sekarang')),
               style    : OutlinedButton.styleFrom(
                 padding        : const EdgeInsets.symmetric(vertical: 14),
                 side           : const BorderSide(color: AppTheme.primaryCoral),
@@ -747,7 +770,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         ),
         child: _isSaving
             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-            : const Text('Simpan Settings', style: AppTheme.buttonText),
+            : Text(_t('Save Settings', 'Simpan Settings'), style: AppTheme.buttonText),
       ),
     );
   }

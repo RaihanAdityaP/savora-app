@@ -91,6 +91,7 @@ class FeedController extends Controller
         // ── Sinyal 5: Popularitas global (bobot 1) ──────────
         // Padding + fallback
         $this->applyPopularitySignal($scored, 1);
+        $this->applyPublicLikeSignal($scored, 4);
 
         // ── Random injection ~15% ────────────────────────────
         // Selipkan beberapa resep acak agar feed tidak terlalu predictable
@@ -324,6 +325,32 @@ class FeedController extends Controller
     }
 
     // ── Random injection ─────────────────────────────────────
+    private function applyPublicLikeSignal(array &$scored, float $weight): void
+    {
+        try {
+            $likes = $this->supabase->select('recipe_likes', ['recipe_id'], [], ['limit' => 1000]);
+            $counts = [];
+
+            foreach ($likes as $like) {
+                $recipeId = $like['recipe_id'] ?? null;
+                if (! $recipeId) {
+                    continue;
+                }
+
+                $counts[$recipeId] = ($counts[$recipeId] ?? 0) + 1;
+            }
+
+            if (empty($counts)) {
+                return;
+            }
+
+            $maxLikes = max($counts);
+            foreach ($counts as $recipeId => $count) {
+                $scored[$recipeId] = ($scored[$recipeId] ?? 0) + ($weight * ($count / max(1, $maxLikes)));
+            }
+        } catch (Exception $e) { /* skip */ }
+    }
+
     private function injectRandom(array &$scored, float $ratio): void
     {
         try {
@@ -395,10 +422,50 @@ class FeedController extends Controller
                     $ordered[] = $recipe;
                 }
             }
-            return $ordered;
+            return $this->attachLikes($ordered);
         } catch (Exception $e) {
             return [];
         }
+    }
+
+    private function attachLikes(array $recipes): array
+    {
+        $ids = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($ids)) {
+            return $recipes;
+        }
+
+        $counts = [];
+        $liked = [];
+
+        try {
+            $userId = request()->user() ? $this->getSupabaseUserIdFromRequest(request()) : null;
+            $rows = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'user_id'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $ids]]
+            );
+
+            foreach ($rows as $row) {
+                $recipeId = $row['recipe_id'] ?? null;
+                if (! $recipeId) {
+                    continue;
+                }
+
+                $counts[$recipeId] = ($counts[$recipeId] ?? 0) + 1;
+                if ($userId && ($row['user_id'] ?? null) === $userId) {
+                    $liked[$recipeId] = true;
+                }
+            }
+        } catch (Exception $e) { /* skip */ }
+
+        foreach ($recipes as $index => $recipe) {
+            $recipeId = $recipe['id'] ?? null;
+            $recipes[$index]['likes_count'] = $recipeId ? (int) ($counts[$recipeId] ?? 0) : 0;
+            $recipes[$index]['is_liked'] = $recipeId ? ! empty($liked[$recipeId]) : false;
+        }
+
+        return $recipes;
     }
 
     // ── Fallback ─────────────────────────────────────────────
@@ -411,6 +478,7 @@ class FeedController extends Controller
                 ['status' => 'approved'],
                 ['order' => 'views_count.desc', 'limit' => $limit, 'offset' => $offset]
             );
+            $recipes = $this->attachLikes($recipes);
             return response()->json([
                 'success'    => true,
                 'data'       => $recipes,

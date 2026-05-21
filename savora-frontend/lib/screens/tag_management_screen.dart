@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/app_settings_service.dart';
 import '../services/tag_client.dart';
 import '../widgets/theme.dart';
 
@@ -16,6 +17,8 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
 
   List<Map<String, dynamic>> _tags = [];
   bool _isLoading = false;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
@@ -65,10 +68,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
     if (created == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(children: [
-            Icon(Icons.error_outline_rounded, color: Colors.white),
-            SizedBox(width: 12),
-            Text('Gagal membuat tag.'),
+          content: Row(children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(_t('Failed to create tag.', 'Gagal membuat tag.')),
           ]),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
@@ -84,7 +87,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         content: Row(children: [
           const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
           const SizedBox(width: 12),
-          Text('Tag "$tagName" berhasil dibuat.'),
+          Text(_t('Tag "$tagName" created.', 'Tag "$tagName" berhasil dibuat.')),
         ]),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
@@ -168,14 +171,14 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                         child: const Icon(Icons.label_rounded, color: Colors.white, size: 28),
                       ),
                       const SizedBox(width: 16),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Kelola Tag', style: AppTheme.headingLarge),
-                          SizedBox(height: 4),
+                          Text(_t('Manage Tags', 'Kelola Tag'), style: AppTheme.headingLarge),
+                          const SizedBox(height: 4),
                           Text(
-                            'Buat & cari tag komunitas',
-                            style: TextStyle(fontSize: 14, color: Colors.white70),
+                            _t('Create & find community tags', 'Buat & cari tag komunitas'),
+                            style: const TextStyle(fontSize: 14, color: Colors.white70),
                           ),
                         ],
                       ),
@@ -197,7 +200,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTheme.buildSectionHeader('Tambah Tag Baru', Icons.add_circle_outline_rounded),
+          AppTheme.buildSectionHeader(_t('Add New Tag', 'Tambah Tag Baru'), Icons.add_circle_outline_rounded),
           const SizedBox(height: 16),
           Container(
             decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
@@ -207,7 +210,8 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                   child: TextField(
                     controller: _createCtrl,
                     decoration: AppTheme.buildInputDecoration(
-                      hint: 'Nama tag baru (cth: sarapan, vegan)',
+                      hint: _t('New tag name (ex: breakfast, vegan)',
+                          'Nama tag baru (cth: sarapan, vegan)'),
                       icon: Icons.tag_rounded,
                       iconColor: AppTheme.primaryCoral,
                     ),
@@ -231,7 +235,9 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          AppTheme.buildInfoBanner('Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.'),
+          AppTheme.buildInfoBanner(_t(
+              'New tags will wait for admin approval before they can be used.',
+              'Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.')),
         ],
       ),
     );
@@ -244,7 +250,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         controller: _searchCtrl,
         onChanged: _search,
         decoration: InputDecoration(
-          hintText: 'Cari tag yang sudah ada...',
+          hintText: _t('Search existing tags...', 'Cari tag yang sudah ada...'),
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryTeal, size: 22),
           suffixIcon: _searchCtrl.text.isNotEmpty
@@ -277,14 +283,19 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
     if (_tags.isEmpty) {
       return AppTheme.buildEmptyState(
         icon: Icons.label_off_rounded,
-        title: _searchCtrl.text.isNotEmpty ? 'Tag tidak ditemukan' : 'Belum ada tag',
+        title: _searchCtrl.text.isNotEmpty
+            ? _t('Tag not found', 'Tag tidak ditemukan')
+            : _t('No tags yet', 'Belum ada tag'),
         subtitle: _searchCtrl.text.isNotEmpty
-            ? 'Coba kata kunci lain atau buat tag baru'
-            : 'Buat tag pertama di atas',
+            ? _t('Try another keyword or create a new tag',
+                'Coba kata kunci lain atau buat tag baru')
+            : _t('Create the first tag above', 'Buat tag pertama di atas'),
       );
     }
 
-    final label = _searchCtrl.text.isNotEmpty ? 'Hasil Pencarian' : 'Tag Populer';
+    final label = _searchCtrl.text.isNotEmpty
+        ? _t('Search Results', 'Hasil Pencarian')
+        : _t('Popular Tags', 'Tag Populer');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,7 +386,8 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Dipakai $usageCount resep',
+                                _t('Used in $usageCount recipes',
+                                    'Dipakai $usageCount resep'),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade500,

@@ -79,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _signUp() async {
     if (!_canRegister) {
       _showSnackBar(
-        'Anda harus menyetujui Syarat & Ketentuan dan Kebijakan Privasi terlebih dahulu.',
+        'You must agree to the Terms & Conditions and Privacy Policy first.',
         isError: true,
       );
       return;
@@ -88,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         _fullNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      _showSnackBar('Semua field harus diisi!', isError: true);
+      _showSnackBar('All fields are required!', isError: true);
       return;
     }
     setState(() => _isLoading = true);
@@ -111,14 +111,14 @@ class _RegisterScreenState extends State<RegisterScreen>
         _showResendVerificationDialog();
         return;
       } else if (errorMsg.contains('Password')) {
-        errorMsg = 'Password minimal 6 karakter';
+        errorMsg = 'Password must be at least 6 characters';
       }
       _showSnackBar(errorMsg, isError: true);
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
       if (errorMsg.contains('timeout')) {
-        errorMsg = 'Koneksi timeout. Cek internet Anda.';
+        errorMsg = 'Connection timed out. Check your internet connection.';
       } else if (errorMsg.contains('already registered')) {
         _showResendVerificationDialog();
         return;
@@ -137,18 +137,18 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (mounted) {
         if (success) {
           _showSnackBar(
-            'Email verifikasi telah dikirim ulang ke ${_emailController.text}',
+            'Verification email has been resent to ${_emailController.text}',
             isError: false,
           );
         } else {
-          _showSnackBar('Gagal mengirim email. Coba lagi nanti.', isError: true);
+          _showSnackBar('Failed to send email. Please try again later.', isError: true);
         }
       }
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
       if (errorMsg.contains('rate') || errorMsg.contains('limit')) {
-        errorMsg = 'Terlalu banyak permintaan. Tunggu beberapa menit.';
+        errorMsg = 'Too many requests. Please wait a few minutes.';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
@@ -175,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             ),
             const SizedBox(width: 14),
             const Expanded(
-                child: Text('Email Sudah Terdaftar',
+                child: Text('Email Already Registered',
                     style: TextStyle(
                         fontSize: 19, fontWeight: FontWeight.bold))),
           ],
@@ -185,19 +185,19 @@ class _RegisterScreenState extends State<RegisterScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                'Email ${_emailController.text} sudah terdaftar.',
+                'Email ${_emailController.text} is already registered.',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 16),
             const Text(
-                'Kemungkinan Anda belum verifikasi email. Kirim ulang email verifikasi?',
+                'You may not have verified your email yet. Resend the verification email?',
                 style: TextStyle(fontSize: 14, height: 1.5)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Batal',
+            child: Text('Cancel',
                 style: TextStyle(color: Colors.grey.shade600)),
           ),
           Container(
@@ -215,7 +215,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 children: [
                   Icon(Icons.send_rounded, color: Colors.white, size: 18),
                   SizedBox(width: 8),
-                  Text('Kirim Ulang',
+                  Text('Resend',
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold)),
@@ -248,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   color: Colors.white, size: 28),
             ),
             const SizedBox(width: 14),
-            const Text('Berhasil!',
+            const Text('Success!',
                 style: TextStyle(
                     fontSize: 22, fontWeight: FontWeight.bold)),
           ],
@@ -257,7 +257,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Akun Anda telah dibuat.',
+            const Text('Your account has been created.',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 18),
             Container(
@@ -277,7 +277,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 const SizedBox(width: 10),
                 Expanded(
                     child: Text(
-                        'Email verifikasi telah dikirim ke ${_emailController.text}',
+                        'A verification email has been sent to ${_emailController.text}',
                         style: const TextStyle(
                             fontSize: 13,
                             color: AppTheme.textPrimary,
@@ -286,7 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             ),
             const SizedBox(height: 16),
             Text(
-                'Silakan cek inbox atau folder spam Anda dan klik link verifikasi untuk mengaktifkan akun.',
+                'Please check your inbox or spam folder and click the verification link to activate your account.',
                 style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade600,
@@ -307,7 +307,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               },
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text('OK, Mengerti',
+                child: Text('OK, Got It',
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -433,7 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   color: Colors.white.withValues(alpha: 0.4),
                                   width: 2),
                             ),
-                            child: const Text('BERGABUNG',
+                            child: const Text('JOIN',
                                 style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
@@ -441,14 +441,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                                     color: Colors.white)),
                           ),
                           const SizedBox(height: 16),
-                          const Text('Buat Akun',
+                          const Text('Create Account',
                               style: TextStyle(
                                   fontSize: 46,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
                                   letterSpacing: -1)),
                           const SizedBox(height: 10),
-                          Text('Mulai Petualangan Kuliner Anda',
+                          Text('Start Your Culinary Journey',
                               style: TextStyle(
                                   fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.95),
@@ -484,7 +484,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                             const SizedBox(height: 18),
                             _buildTextField(
                                 controller: _fullNameController,
-                                hint: 'Nama Lengkap',
+                                hint: 'Full Name',
                                 icon: Icons.badge_outlined,
                                 color: AppTheme.primaryTeal),
                             const SizedBox(height: 18),
@@ -497,7 +497,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                             const SizedBox(height: 18),
                             _buildTextField(
                                 controller: _passwordController,
-                                hint: 'Password (min. 6 karakter)',
+                                hint: 'Password (min. 6 characters)',
                                 icon: Icons.lock_outline_rounded,
                                 color: AppTheme.primaryOrange,
                                 isPassword: true),
@@ -550,7 +550,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                                       strokeWidth: 3,
                                                       color: Colors.white))
                                           : const Text(
-                                              'DAFTAR SEKARANG',
+                                              'REGISTER NOW',
                                               style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -582,7 +582,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Sudah Punya Akun?',
+                          Text('Already have an account?',
                               style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.95),
                                   fontSize: 15,
@@ -607,7 +607,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('Masuk',
+                                  Text('Log In',
                                       style: TextStyle(
                                           color: AppTheme.primaryCoral,
                                           fontSize: 15,
@@ -687,13 +687,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                 height: 1.5,
               ),
               children: [
-                const TextSpan(text: 'Dengan mendaftar, Anda menyetujui '),
+                const TextSpan(text: 'By registering, you agree to our '),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
                     onTap: _openTermsModal,
                     child: const Text(
-                      'Syarat & Ketentuan',
+                      'Terms & Conditions',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFFE76F51),
@@ -704,13 +704,13 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ),
                 ),
-                const TextSpan(text: ' dan '),
+                const TextSpan(text: ' and '),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
                     onTap: _openPrivacyModal,
                     child: const Text(
-                      'Kebijakan Privasi',
+                      'Privacy Policy',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF2A9D8F),
@@ -721,7 +721,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     ),
                   ),
                 ),
-                const TextSpan(text: ' kami.'),
+                const TextSpan(text: '.'),
               ],
             ),
           ),

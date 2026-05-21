@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../services/app_settings_service.dart';
 import '../services/user_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/recipe_card.dart';
 import '../widgets/theme.dart';
-import 'admin/admin_dashboard_screen.dart';
+import 'profile/edit_profile_screen.dart';
+import 'profile/follow_list_screen.dart';
+import 'profile/liked_recipes_screen.dart';
 import 'recipes/detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -24,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   final _bioController = TextEditingController();
 
   bool _isLoading = true;
-  bool _isSaving = false;
   bool _isUploadingImage = false;
   String? _avatarUrl;
   String _userRole = 'user';
@@ -36,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isFollowLoading = false;
   int _followerCount = 0;
   int _followingCount = 0;
+  int _likedRecipesCount = 0;
 
   List<Map<String, dynamic>> _userRecipes = [];
   final Map<String, double> _recipeRatings = {};
@@ -45,8 +48,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Apakah header harus pakai gradient (hanya admin own profile)
-  bool get _useGradientHeader => _isOwnProfile && _userRole == 'admin';
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
+
+  bool get _useGradientHeader => false;
 
   List<Color> get _primaryGradient {
     if (_useGradientHeader) return AppTheme.getRoleGradient('admin');
@@ -63,6 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return AppTheme.primaryOrange;
   }
 
+  // ignore: unused_element
   LinearGradient get _headerGradient => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -118,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           _fullNameController.text = profile['full_name'] ?? '';
           _bioController.text = profile['bio'] ?? '';
           _avatarUrl = profile['avatar_url'];
-          _userRole = profile['role'] ?? 'user';
+          _userRole = 'user';
           _isPremium = profile['is_premium'] ?? false;
           _followerCount =
               ((profile['followers_count'] ?? profile['total_followers'])
@@ -130,6 +135,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           as num?)
                       ?.toInt() ??
                   0;
+          _likedRecipesCount =
+              (profile['liked_recipes_count'] as num?)?.toInt() ?? 0;
           _isLoading = false;
         });
         _animationController.forward();
@@ -138,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Gagal memuat profil: $e', isError: true);
+        _showSnackBar('${_t('Failed to load profile', 'Gagal memuat profil')}: $e', isError: true);
         setState(() => _isLoading = false);
       }
     }
@@ -190,7 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
         if (mounted && success) {
           setState(() => _isFollowing = false);
-          _showSnackBar('Berhenti mengikuti', isError: false);
+          _showSnackBar(_t('Unfollowed', 'Berhenti mengikuti'), isError: false);
         }
       } else {
         success = await UserClient.follow(
@@ -199,7 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
         if (mounted && success) {
           setState(() => _isFollowing = true);
-          _showSnackBar('Berhasil mengikuti', isError: false);
+          _showSnackBar(_t('Followed successfully', 'Berhasil mengikuti'), isError: false);
         }
       }
       await _loadProfile();
@@ -208,6 +215,62 @@ class _ProfileScreenState extends State<ProfileScreen>
     } finally {
       if (mounted) setState(() => _isFollowLoading = false);
     }
+  }
+
+  void _openLikedRecipes() {
+    final targetUserId = widget.userId ?? _currentUserId;
+    if (targetUserId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LikedRecipesScreen(
+          userId: targetUserId,
+          username: _usernameController.text.isEmpty
+              ? null
+              : _usernameController.text,
+        ),
+      ),
+    ).then((_) => _loadProfile());
+  }
+
+  void _openEditProfile() {
+    final userId = _currentUserId;
+    if (userId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          userId: userId,
+          initialProfile: {
+            'username': _usernameController.text,
+            'full_name': _fullNameController.text,
+            'bio': _bioController.text,
+            'avatar_url': _avatarUrl,
+          },
+        ),
+      ),
+    ).then((changed) {
+      if (changed == true && mounted) {
+        _loadProfile();
+      }
+    });
+  }
+
+  void _openFollowList({required bool followers}) {
+    final targetUserId = widget.userId ?? _currentUserId;
+    if (targetUserId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FollowListScreen(
+          userId: targetUserId,
+          followers: followers,
+          username: _usernameController.text.isEmpty ? null : _usernameController.text,
+        ),
+      ),
+    );
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -236,254 +299,17 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isUploadingImage = false;
         });
         if (updated != null) {
-          _showSnackBar('Foto profil berhasil diperbarui!', isError: false);
+          _showSnackBar(_t('Profile photo updated!', 'Foto profil berhasil diperbarui!'), isError: false);
         } else {
-          _showSnackBar('Gagal mengunggah foto', isError: true);
+          _showSnackBar(_t('Failed to upload photo', 'Gagal mengunggah foto'), isError: true);
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isUploadingImage = false);
-        _showSnackBar('Gagal mengunggah foto: $e', isError: true);
+        _showSnackBar('${_t('Failed to upload photo', 'Gagal mengunggah foto')}: $e', isError: true);
       }
     }
-  }
-
-  Future<void> _saveProfile() async {
-    if (!_isOwnProfile) return;
-    if (_usernameController.text.isEmpty) {
-      _showSnackBar('Username tidak boleh kosong', isError: true);
-      return;
-    }
-
-    setState(() => _isSaving = true);
-    try {
-      final userId = _currentUserId;
-      if (userId == null) return;
-
-      final updated = await UserClient.updateProfile(
-        userId: userId,
-        username: _usernameController.text.trim(),
-        fullName: _fullNameController.text.trim(),
-        bio: _bioController.text.trim(),
-      );
-
-      if (mounted) {
-        if (updated != null) {
-          _showSnackBar('Profil berhasil diperbarui!', isError: false);
-        } else {
-          _showSnackBar('Gagal menyimpan profil', isError: true);
-        }
-      }
-    } catch (e) {
-      if (mounted) _showSnackBar('Gagal menyimpan: $e', isError: true);
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _showFollowersList() async {
-    try {
-      final targetUserId = widget.userId ?? _currentUserId;
-      if (targetUserId == null) return;
-
-      final followers = await UserClient.getFollowers(targetUserId);
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        builder: (context) =>
-            _buildFollowListSheet('Pengikut', followers, true),
-      );
-    } catch (e) {
-      if (mounted) _showSnackBar('Error: $e', isError: true);
-    }
-  }
-
-  Future<void> _showFollowingList() async {
-    try {
-      final targetUserId = widget.userId ?? _currentUserId;
-      if (targetUserId == null) return;
-
-      final following = await UserClient.getFollowing(targetUserId);
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-        builder: (context) =>
-            _buildFollowListSheet('Mengikuti', following, false),
-      );
-    } catch (e) {
-      if (mounted) _showSnackBar('Error: $e', isError: true);
-    }
-  }
-
-  Widget _buildFollowListSheet(
-      String title, List<Map<String, dynamic>> users, bool isFollowers) {
-    if (users.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 40),
-              Icon(Icons.people_outline, size: 64, color: Colors.grey.shade300),
-              const SizedBox(height: 16),
-              Text(
-                isFollowers
-                    ? 'Belum ada pengikut'
-                    : 'Belum mengikuti siapa pun',
-                style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 20),
-          Text(title, style: AppTheme.headingMedium),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                final profile = users[index];
-                final userId = profile['id'] as String?;
-                final isBanned = profile['is_banned'] == true;
-                final bannedReason =
-                    profile['banned_reason'] ?? 'Tidak disebutkan';
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: isBanned ? Colors.red.shade50 : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isBanned
-                          ? Colors.red.shade200
-                          : _primaryColor.withValues(alpha: 0.2),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: isBanned
-                            ? LinearGradient(colors: [
-                                Colors.red.shade300,
-                                Colors.red.shade400
-                              ])
-                            : LinearGradient(colors: _primaryGradient),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2),
-                        child: CircleAvatar(
-                          backgroundColor: Colors.white,
-                          backgroundImage:
-                              profile['avatar_url'] != null && !isBanned
-                                  ? NetworkImage(profile['avatar_url'])
-                                  : null,
-                          child: profile['avatar_url'] == null || isBanned
-                              ? Icon(
-                                  isBanned ? Icons.block : Icons.person,
-                                  color: isBanned
-                                      ? Colors.red.shade700
-                                      : Colors.grey.shade400,
-                                )
-                              : null,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      profile['username'] ?? 'Unknown',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isBanned
-                              ? Colors.red.shade700
-                              : AppTheme.textPrimary),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (profile['full_name'] != null)
-                          Text(profile['full_name'], style: AppTheme.bodySmall),
-                        if (isBanned)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Dibanned: $bannedReason',
-                              style: TextStyle(
-                                  color: Colors.red.shade700,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                      ],
-                    ),
-                    trailing: isBanned
-                        ? null
-                        : Icon(Icons.arrow_forward_ios_rounded,
-                            size: 16, color: _primaryColor),
-                    onTap: isBanned
-                        ? null
-                        : () {
-                            Navigator.pop(context);
-                            if (userId != _currentUserId) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProfileScreen(userId: userId),
-                                ),
-                              );
-                            }
-                          },
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSnackBar(String message, {required bool isError}) {
@@ -557,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 strokeWidth: 3),
           ),
           const SizedBox(height: 24),
-          Text('Memuat profil...',
+          Text(_t('Loading profile...', 'Memuat profil...'),
               style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: 16,
@@ -573,13 +399,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   // Semua lainnya      → layout polos tanpa gradient (style dok. 1)
   // ─────────────────────────────────────────────────────────────
   Widget _buildProfileHeader() {
-    if (_useGradientHeader) {
-      return _buildAdminGradientHeader();
-    }
     return _buildPlainHeader();
   }
 
   // ── Header gradient khusus admin own profile ──
+  // ignore: unused_element
   Widget _buildAdminGradientHeader() {
     return SliverToBoxAdapter(
       child: Container(
@@ -678,16 +502,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem('Resep', _userRecipes.length.toString(),
+                    _buildStatItem(_t('Recipes', 'Resep'), _userRecipes.length.toString(),
                         onGradient: true),
                     Container(
                         width: 1,
                         height: 40,
                         color: Colors.white.withValues(alpha: 0.3)),
                     GestureDetector(
-                      onTap: _showFollowersList,
+                      onTap: () => _openFollowList(followers: true),
                       child: _buildStatItem(
-                          'Pengikut', _followerCount.toString(),
+                          _t('Followers', 'Pengikut'), _followerCount.toString(),
                           onGradient: true),
                     ),
                     Container(
@@ -695,9 +519,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                         height: 40,
                         color: Colors.white.withValues(alpha: 0.3)),
                     GestureDetector(
-                      onTap: _showFollowingList,
+                      onTap: () => _openFollowList(followers: false),
                       child: _buildStatItem(
-                          'Mengikuti', _followingCount.toString(),
+                          _t('Following', 'Mengikuti'), _followingCount.toString(),
+                          onGradient: true),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.white.withValues(alpha: 0.3)),
+                    GestureDetector(
+                      onTap: _openLikedRecipes,
+                      child: _buildStatItem(
+                          _t('Likes', 'Like'), _likedRecipesCount.toString(),
                           onGradient: true),
                     ),
                   ],
@@ -813,24 +647,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem('Resep', _userRecipes.length.toString()),
+                    _buildStatItem(_t('Recipes', 'Resep'), _userRecipes.length.toString()),
                     Container(
                         width: 1,
                         height: 40,
                         color: Colors.grey.shade200),
                     GestureDetector(
-                      onTap: _showFollowersList,
+                      onTap: () => _openFollowList(followers: true),
                       child: _buildStatItem(
-                          'Pengikut', _followerCount.toString()),
+                          _t('Followers', 'Pengikut'), _followerCount.toString()),
                     ),
                     Container(
                         width: 1,
                         height: 40,
                         color: Colors.grey.shade200),
                     GestureDetector(
-                      onTap: _showFollowingList,
+                      onTap: () => _openFollowList(followers: false),
                       child: _buildStatItem(
-                          'Mengikuti', _followingCount.toString()),
+                          _t('Following', 'Mengikuti'), _followingCount.toString()),
+                    ),
+                    Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.grey.shade200),
+                    GestureDetector(
+                      onTap: _openLikedRecipes,
+                      child: _buildStatItem(
+                          _t('Likes', 'Like'), _likedRecipesCount.toString()),
                     ),
                   ],
                 ),
@@ -892,8 +735,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   const SizedBox(width: 8),
                                   Text(
                                     _isFollowing
-                                        ? 'Berhenti Mengikuti'
-                                        : 'Ikuti',
+                                        ? _t('Unfollow', 'Berhenti Mengikuti')
+                                        : _t('Follow', 'Ikuti'),
                                     style: _isFollowing
                                         ? TextStyle(
                                             color: AppTheme.textSecondary,
@@ -905,6 +748,22 @@ class _ProfileScreenState extends State<ProfileScreen>
                               ),
                       ),
                     ),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _openEditProfile,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _primaryColor,
+                      side: BorderSide(color: _primaryColor.withValues(alpha: 0.35), width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    icon: const Icon(Icons.edit_rounded),
+                    label: Text(_t('Edit Profile', 'Edit Profil'), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -921,178 +780,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       sliver: SliverList(
         delegate: SliverChildListDelegate([
           // ── Admin Dashboard Button ──
-          if (_isOwnProfile && _userRole == 'admin') ...[
-            Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.adminGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                      color: const Color(0xFFFFD700).withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8)),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AdminDashboardScreen()),
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(14)),
-                          child: const Icon(Icons.dashboard_customize_rounded,
-                              color: Colors.white, size: 28),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Dashboard Admin',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
-                              SizedBox(height: 4),
-                              Text('Kelola sistem dan pengguna',
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle),
-                          child: const Icon(Icons.arrow_forward_ios_rounded,
-                              color: Colors.white, size: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-
-          // ── Edit Profile Form ──
-          if (_isOwnProfile) ...[
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: _primaryGradient,
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('Informasi Akun', style: AppTheme.headingMedium),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.cardBackground,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: _primaryColor.withValues(alpha: 0.2), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                      color: _primaryColor.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2))
-                ],
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildModernTextField(
-                    controller: _usernameController,
-                    label: 'Username',
-                    icon: Icons.alternate_email_rounded,
-                    iconColor: _primaryColor,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildModernTextField(
-                    controller: _fullNameController,
-                    label: 'Nama Lengkap',
-                    icon: Icons.person_outline_rounded,
-                    iconColor: _userRole == 'admin'
-                        ? const Color(0xFFFFA500)
-                        : AppTheme.primaryTeal,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildModernTextField(
-                    controller: _bioController,
-                    label: 'Bio',
-                    icon: Icons.edit_note_rounded,
-                    iconColor: _secondaryColor,
-                    maxLines: 4,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: _primaryGradient),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                      color: _primaryColor.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8))
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isSaving ? null : _saveProfile,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Center(
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2.5))
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.save_rounded,
-                                  color: Colors.white),
-                              const SizedBox(width: 12),
-                              Text('Simpan Perubahan',
-                                  style: AppTheme.buttonText),
-                            ],
-                          ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
           // ── Recipes Section Header ──
           Row(
             children: [
@@ -1110,7 +797,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _isOwnProfile ? 'Resep Saya' : 'Resep',
+                  _isOwnProfile ? _t('My Recipes', 'Resep Saya') : _t('Recipes', 'Resep'),
                   style: AppTheme.headingMedium,
                 ),
               ),
@@ -1142,17 +829,18 @@ class _ProfileScreenState extends State<ProfileScreen>
             AppTheme.buildEmptyState(
               icon: Icons.restaurant_menu_rounded,
               title: _isOwnProfile
-                  ? 'Belum ada resep'
-                  : 'Pengguna ini belum memiliki resep',
+                  ? _t('No recipes yet', 'Belum ada resep')
+                  : _t('This user has no recipes yet', 'Pengguna ini belum memiliki resep'),
               subtitle: _isOwnProfile
-                  ? 'Mulai berbagi resep favorit Anda!'
-                  : 'Tunggu hingga mereka membagikan kreasi kuliner',
+                  ? _t('Start sharing your favorite recipes!', 'Mulai berbagi resep favorit Anda!')
+                  : _t('Check back when they share a recipe.', 'Tunggu hingga mereka membagikan kreasi kuliner'),
             )
           else
             ..._userRecipes.map((recipe) {
               return RecipeCard(
                 recipe: recipe,
                 rating: _recipeRatings[recipe['id']],
+                currentUserId: _currentUserId,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1295,63 +983,30 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// [onGradient] → true = teks putih (di atas gradient admin header)
   Widget _buildStatItem(String label, String value,
       {bool onGradient = false}) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: onGradient ? Colors.white : AppTheme.textPrimary)),
-        const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-                fontSize: 13,
-                color: onGradient
-                    ? Colors.white.withValues(alpha: 0.9)
-                    : AppTheme.textSecondary,
-                fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
-
-  Widget _buildModernTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required Color iconColor,
-    int maxLines = 1,
-  }) {
-    return Container(
-      decoration: AppTheme.inputDecoration(iconColor),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        style: TextStyle(
-            fontSize: 15,
-            color: Colors.grey.shade800,
-            fontWeight: FontWeight.w500),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(
-              color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-          prefixIcon: Padding(
-            padding: EdgeInsets.only(top: maxLines > 1 ? 12 : 0),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none),
-          focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: iconColor, width: 2)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          alignLabelWithHint: maxLines > 1,
-        ),
+    return SizedBox(
+      width: 64,
+      child: Column(
+        children: [
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: onGradient ? Colors.white : AppTheme.textPrimary)),
+          const SizedBox(height: 4),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: onGradient
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500)),
+        ],
       ),
     );
   }
+
 }

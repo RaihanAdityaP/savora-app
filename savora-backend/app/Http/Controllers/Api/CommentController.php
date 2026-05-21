@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
 use App\Services\NotificationService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Exception;
@@ -13,11 +14,13 @@ class CommentController extends Controller
 {
     private $supabase;
     private $notification;
+    private $settingsService;
 
-    public function __construct(SupabaseService $supabase, NotificationService $notification)
+    public function __construct(SupabaseService $supabase, NotificationService $notification, UserSettingsService $settingsService)
     {
         $this->supabase = $supabase;
         $this->notification = $notification;
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -158,7 +161,7 @@ class CommentController extends Controller
                 $recipeTitle = $recipeData[0]['title'];
                 
                 // Don't notify if user comments on their own recipe
-                if ($recipeOwnerId !== $request->input('user_id')) {
+                if ($recipeOwnerId !== $request->input('user_id') && $this->settingsService->enabled($recipeOwnerId, 'notify_comments')) {
                     // Get commenter name
                     $commenterData = $this->supabase->select('profiles',
                         ['username', 'full_name'],

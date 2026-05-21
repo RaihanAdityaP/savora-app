@@ -1,5 +1,6 @@
+@php($isEnglish = session('user_language', 'en') === 'en')
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,7 +35,7 @@
             <div class="relative">
                 <div class="flex items-start justify-between gap-3 mb-3">
                     <div class="flex-1 min-w-0">
-                        <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Koleksi</p>
+                        <p class="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">{{ $isEnglish ? 'Collection' : 'Koleksi' }}</p>
                         <h1 class="text-2xl font-bold truncate">{{ $board['name'] }}</h1>
                         @if(!empty($board['description']))
                             <p class="text-white/80 text-sm mt-1">{{ $board['description'] }}</p>
@@ -51,7 +52,7 @@
                         </a>
                         {{-- Delete collection --}}
                         <form action="{{ route('app.favorites.board.delete', $board['id']) }}" method="POST"
-                              onsubmit="return confirm('Hapus koleksi ini?')">
+                              onsubmit="return confirm('{{ $isEnglish ? 'Delete this collection?' : 'Hapus koleksi ini?' }}')">
                             @csrf
                             <button type="submit"
                                     class="p-2.5 rounded-xl border transition-all"
@@ -72,7 +73,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                     </svg>
-                    {{ count($recipes ?? []) }} Resep
+                    {{ count($recipes ?? []) }} {{ $isEnglish ? 'Recipes' : 'Resep' }}
                 </span>
             </div>
         </div>
@@ -154,8 +155,8 @@
                         <input type="hidden" name="recipe_id" value="{{ $recipe['id'] }}">
                         <button type="submit"
                                 class="w-full py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
-                                onclick="return confirm('Hapus resep dari koleksi ini?')">
-                            Hapus dari Koleksi
+                                onclick="return confirm('{{ $isEnglish ? 'Remove this recipe from the collection?' : 'Hapus resep dari koleksi ini?' }}')">
+                            {{ $isEnglish ? 'Remove from Collection' : 'Hapus dari Koleksi' }}
                         </button>
                     </form>
                 </div>
@@ -163,10 +164,10 @@
         @empty
             <x-app-theme.empty-state
                 icon="bi bi-book"
-                title="Koleksi masih kosong"
-                subtitle="Tambahkan resep ke koleksi ini dari halaman detail resep">
+                :title="$isEnglish ? 'Collection is still empty' : 'Koleksi masih kosong'"
+                :subtitle="$isEnglish ? 'Add recipes to this collection from a recipe detail page' : 'Tambahkan resep ke koleksi ini dari halaman detail resep'">
                 <a href="{{ route('app.home') }}" class="btn-primary-savora mt-2">
-                    Jelajahi Resep
+                    {{ $isEnglish ? 'Explore Recipes' : 'Jelajahi Resep' }}
                 </a>
             </x-app-theme.empty-state>
         @endforelse

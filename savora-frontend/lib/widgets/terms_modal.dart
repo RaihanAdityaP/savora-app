@@ -136,15 +136,15 @@ class _TermsModalState extends State<TermsModal>
                 child: const Icon(Icons.description_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Syarat & Ketentuan',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                    SizedBox(height: 4),
-                    Text('Harap dibaca dengan seksama',
-                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+                    Text('Terms & Conditions',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Text('Please read carefully',
+                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -208,7 +208,7 @@ class _TermsModalState extends State<TermsModal>
             decoration: const BoxDecoration(color: Color(0xFFE76F51), shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
-          Text('Terakhir diperbarui: 19 Maret 2026',
+          Text('Last updated: March 19, 2026',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
         ],
       ),
@@ -248,7 +248,7 @@ class _TermsModalState extends State<TermsModal>
                         Icon(Icons.route_rounded, color: Colors.purple.shade600, size: 18),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text('Syarat Penggunaan Proxy AI Pihak Ketiga',
+                          child: Text('Third-Party AI Proxy Terms',
                               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.purple.shade700)),
                         ),
                       ],
@@ -262,7 +262,7 @@ class _TermsModalState extends State<TermsModal>
                           color: Colors.purple.shade600,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text('WAJIB DIBACA',
+                        child: const Text('MUST READ',
                             style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -274,7 +274,7 @@ class _TermsModalState extends State<TermsModal>
           const SizedBox(height: 14),
 
           Text(
-            'Savora menyediakan fitur opsional untuk menghubungkan layanan AI dari provider pihak ketiga. Dengan menggunakan fitur ini, Anda setuju dengan seluruh ketentuan berikut:',
+            'Savora provides an optional feature to connect AI services from third-party providers. By using this feature, you agree to all of the following terms:',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
           ),
           const SizedBox(height: 12),
@@ -282,7 +282,7 @@ class _TermsModalState extends State<TermsModal>
           _proxyTermItem(
             num  : 'A',
             color: Colors.red.shade600,
-            title: 'Tanggung Jawab Biaya Sepenuhnya pada Pengguna',
+            title: 'Costs Are Fully the User\'s Responsibility',
             desc : 'Savora tidak bertanggung jawab atas biaya, tagihan, kelebihan kuota, atau pembayaran apapun yang timbul dari penggunaan layanan AI pihak ketiga. Seluruh biaya penggunaan API (termasuk model berbayar) adalah tanggung jawab pengguna sepenuhnya. Savora tidak akan mengganti kerugian finansial apapun yang diakibatkan penggunaan fitur ini.',
           ),
           const SizedBox(height: 10),
@@ -290,7 +290,7 @@ class _TermsModalState extends State<TermsModal>
           _proxyTermItem(
             num  : 'B',
             color: Colors.purple.shade700,
-            title: 'Tidak Ada Hubungan Resmi dengan Pihak Ketiga',
+            title: 'No Official Relationship with Third Parties',
             desc : 'Savora tidak memiliki kemitraan, afiliasi, perjanjian kerja sama, atau hubungan resmi dalam bentuk apapun dengan provider AI pihak ketiga yang didukung oleh fitur ini, termasuk namun tidak terbatas pada OpenRouter dan penyedia serupa. Tampilan nama dan layanan pihak ketiga dalam aplikasi semata-mata untuk kemudahan konfigurasi pengguna dan bukan merupakan bentuk endorsement atau kerja sama resmi.',
           ),
           const SizedBox(height: 10),
@@ -299,15 +299,15 @@ class _TermsModalState extends State<TermsModal>
             num  : 'C',
             color: Colors.orange.shade700,
             title: 'Persetujuan Risiko secara Eksplisit',
-            desc : 'Dengan mengaktifkan dan menggunakan fitur proxy AI pihak ketiga, Anda secara sadar dan eksplisit menyetujui semua risiko yang mungkin timbul, mencakup: risiko kebocoran atau penyalahgunaan API key, ketidaktersediaan atau gangguan layanan pihak ketiga, perubahan harga atau kebijakan penyedia tanpa pemberitahuan, kehilangan data percakapan, serta konsekuensi finansial dari penggunaan yang tidak terkontrol. Savora tidak dapat dimintai pertanggungjawaban atas risiko-risiko tersebut.',
+            desc : 'By enabling and using the third-party AI proxy feature, you knowingly and explicitly accept all risks that may arise, including API key leakage or misuse, third-party service unavailability or disruption, provider price or policy changes without notice, conversation data loss, and financial consequences from uncontrolled usage. Savora cannot be held responsible for these risks.',
           ),
           const SizedBox(height: 10),
 
           _proxyTermItem(
             num  : 'D',
             color: Colors.blue.shade700,
-            title: 'Kepatuhan terhadap Syarat Pihak Ketiga',
-            desc : 'Pengguna wajib membaca, memahami, dan mematuhi syarat & ketentuan serta kebijakan penggunaan yang berlaku dari masing-masing provider AI pihak ketiga yang digunakan. Savora tidak bertanggung jawab atas pelanggaran terhadap ketentuan pihak ketiga yang dilakukan oleh pengguna.',
+            title: 'Compliance with Third-Party Terms',
+            desc : 'Users must read, understand, and comply with the terms, conditions, and usage policies of each third-party AI provider they use. Savora is not responsible for user violations of third-party terms.',
           ),
           const SizedBox(height: 14),
 
@@ -326,7 +326,7 @@ class _TermsModalState extends State<TermsModal>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Savora menyediakan layanan AI default (Groq) yang gratis dan dikelola oleh server. Fitur proxy pihak ketiga bersifat opsional dan diperuntukkan bagi pengguna yang ingin menggunakan model atau provider AI tertentu.',
+                    'Savora provides a free default AI service (Groq) managed by the server. The third-party proxy feature is optional and intended for users who want to use specific AI models or providers.',
                     style: TextStyle(fontSize: 12, color: Colors.purple.shade700, height: 1.5),
                   ),
                 ),
@@ -387,17 +387,17 @@ class _TermsModalState extends State<TermsModal>
     return _buildSimpleSection(
       num  : '1',
       color: const Color(0xFFE76F51),
-      title: 'Penerimaan Ketentuan',
-      text : 'Dengan mengakses dan menggunakan platform Savora, Anda menyetujui untuk terikat oleh syarat dan ketentuan ini. Jika Anda tidak setuju dengan ketentuan ini, mohon untuk tidak menggunakan layanan kami.',
+      title: 'Acceptance of Terms',
+      text : 'By accessing and using the Savora platform, you agree to be bound by these terms and conditions. If you do not agree, please do not use our services.',
     );
   }
 
   Widget _buildSection2() {
     final items = [
-      'Resep masakan dan tutorial memasak',
-      'Foto dan video yang diunggah',
-      'Komentar dan ulasan',
-      'Informasi profil',
+      'Cooking recipes and tutorials',
+      'Uploaded photos and videos',
+      'Comments and reviews',
+      'Profile information',
     ];
 
     return Column(
@@ -408,13 +408,13 @@ class _TermsModalState extends State<TermsModal>
             _buildNumBadge('2', const Color(0xFF2A9D8F)),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Konten yang Diunggah',
+              child: Text('Uploaded Content',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Pengguna bertanggung jawab penuh atas konten yang mereka unggah, termasuk:',
+        Text('Users are fully responsible for the content they upload, including:',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
         const SizedBox(height: 8),
         Wrap(
@@ -441,10 +441,10 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildIPSection() {
     final items = [
-      'Anda memiliki hak penuh atas konten yang diunggah, ATAU',
-      'Anda telah mendapatkan izin yang sah untuk membagikan konten tersebut',
-      'Konten tidak melanggar hak cipta pihak ketiga',
-      'Anda bertanggung jawab penuh atas segala klaim hukum terkait konten yang Anda unggah',
+      'You have full rights to the uploaded content, OR',
+      'You have obtained valid permission to share the content',
+      'The content does not infringe third-party copyrights',
+      'You are fully responsible for any legal claims related to content you upload',
     ];
 
     return Container(
@@ -475,7 +475,7 @@ class _TermsModalState extends State<TermsModal>
                         const Icon(Icons.shield_outlined, color: Colors.red, size: 18),
                         const SizedBox(width: 6),
                         const Expanded(
-                          child: Text('Hak Kekayaan Intelektual',
+                          child: Text('Intellectual Property Rights',
                               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red)),
                         ),
                       ],
@@ -486,7 +486,7 @@ class _TermsModalState extends State<TermsModal>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(20)),
-                        child: const Text('SANGAT PENTING',
+                        child: const Text('VERY IMPORTANT',
                             style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -512,18 +512,18 @@ class _TermsModalState extends State<TermsModal>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(color: Colors.red.shade200, borderRadius: BorderRadius.circular(4)),
-                      child: const Text('TIDAK bertanggung jawab',
+                      child: const Text('not responsible',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF7B0000))),
                     ),
                   ),
                   const TextSpan(
-                      text: ' atas pelanggaran hak cipta, merek dagang, atau hak kekayaan intelektual lainnya yang dilakukan oleh pengguna.'),
+                      text: ' for copyright, trademark, or other intellectual property violations committed by users.'),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Text('Dengan mengunggah konten, Anda menyatakan bahwa:',
+          Text('By uploading content, you represent that:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 8),
           ...items.map((item) => Container(
@@ -554,13 +554,13 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildLiabilitySection() {
     final items = [
-      'Keakuratan informasi resep yang dibagikan pengguna',
-      'Kerugian atau cedera yang timbul dari mengikuti resep',
-      'Pelanggaran hak cipta atau kekayaan intelektual oleh pengguna',
-      'Interaksi atau transaksi antar pengguna',
-      'Kehilangan data atau konten',
-      'Kerusakan perangkat akibat penggunaan platform',
-      'Biaya atau kerugian finansial akibat penggunaan layanan AI pihak ketiga',
+      'The accuracy of recipe information shared by users',
+      'Losses or injuries arising from following recipes',
+      'Copyright or intellectual property violations by users',
+      'Interactions or transactions between users',
+      'Loss of data or content',
+      'Device damage caused by platform use',
+      'Costs or financial losses caused by third-party AI services',
     ];
 
     return Column(
@@ -571,13 +571,13 @@ class _TermsModalState extends State<TermsModal>
             _buildNumBadge('4', const Color(0xFFF4A261)),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Pembatasan Tanggung Jawab',
+              child: Text('Limitation of Liability',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Savora bertindak sebagai platform berbagi resep dan TIDAK bertanggung jawab atas:',
+        Text('Savora acts as a recipe-sharing platform and is NOT responsible for:',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
         const SizedBox(height: 8),
         ...items.map((item) => Container(
@@ -607,11 +607,11 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildProhibitedSection() {
     final items = [
-      'Melanggar hak cipta, merek dagang, atau hak kekayaan intelektual pihak lain',
-      'Mengandung unsur SARA, pornografi, atau kekerasan',
-      'Menyesatkan, palsu, atau penipuan',
-      'Melanggar hukum yang berlaku di Indonesia',
-      'Mengandung virus, malware, atau kode berbahaya',
+      'Infringes another party copyright, trademark, or intellectual property rights',
+      'Contains hate, pornography, or violence',
+      'Is misleading, false, or fraudulent',
+      'Violates applicable Indonesian law',
+      'Contains viruses, malware, or harmful code',
     ];
 
     return Column(
@@ -626,13 +626,13 @@ class _TermsModalState extends State<TermsModal>
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Larangan Konten',
+              child: Text('Prohibited Content',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Pengguna dilarang mengunggah konten yang:',
+        Text('Users are prohibited from uploading content that:',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
         const SizedBox(height: 8),
         ...items.map((item) => Container(
@@ -665,28 +665,28 @@ class _TermsModalState extends State<TermsModal>
     final sections = [
       {
         'num': '6', 'color': Colors.blue,
-        'title': 'Moderasi Konten',
-        'text': 'Savora berhak untuk meninjau, menyetujui, menolak, atau menghapus konten yang dianggap melanggar syarat dan ketentuan ini tanpa pemberitahuan sebelumnya.'
+        'title': 'Content Moderation',
+        'text': 'Savora has the right to review, approve, reject, or remove content considered to violate these terms and conditions without prior notice.'
       },
       {
         'num': '7', 'color': Colors.purple,
-        'title': 'Akun Pengguna',
-        'text': 'Anda bertanggung jawab untuk menjaga kerahasiaan akun, password, dan API key Anda. Savora tidak bertanggung jawab atas kerugian yang timbul dari akses tidak sah ke akun atau API key Anda.'
+        'title': 'User Account',
+        'text': 'You are responsible for keeping your account, password, and API keys confidential. Savora is not responsible for losses caused by unauthorized access to your account or API keys.'
       },
       {
         'num': '8', 'color': Colors.pink,
-        'title': 'Penghentian Layanan',
-        'text': 'Savora berhak untuk menangguhkan atau menghentikan akses Anda ke platform jika terbukti melanggar syarat dan ketentuan ini, tanpa kompensasi apapun.'
+        'title': 'Service Termination',
+        'text': 'Savora reserves the right to suspend or terminate your access to the platform if you are proven to violate these terms and conditions, without any compensation.'
       },
       {
         'num': '9', 'color': Colors.indigo,
-        'title': 'Perubahan Ketentuan',
-        'text': 'Savora berhak untuk mengubah syarat dan ketentuan ini sewaktu-waktu. Perubahan akan berlaku segera setelah dipublikasikan di platform.'
+        'title': 'Changes to Terms',
+        'text': 'Savora reserves the right to change these terms and conditions at any time. Changes take effect immediately after being published on the platform.'
       },
       {
         'num': '10', 'color': Colors.blueGrey,
-        'title': 'Hukum yang Berlaku',
-        'text': 'Syarat dan ketentuan ini diatur oleh dan ditafsirkan sesuai dengan hukum Republik Indonesia. Setiap sengketa akan diselesaikan di pengadilan yang berwenang di Indonesia.'
+        'title': 'Governing Law',
+        'text': 'These terms and conditions are governed by and interpreted under the laws of the Republic of Indonesia. Any dispute will be resolved in the competent courts of Indonesia.'
       },
     ];
 
@@ -729,20 +729,20 @@ class _TermsModalState extends State<TermsModal>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('DISCLAIMER PENTING',
+                    Text('IMPORTANT DISCLAIMER',
                         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 13)),
                     const SizedBox(height: 6),
                     RichText(
                       text: TextSpan(
                         style: TextStyle(fontSize: 13, color: Colors.amber.shade800, height: 1.5),
                         children: [
-                          const TextSpan(text: 'Dengan menggunakan Savora, Anda '),
+                          const TextSpan(text: 'By using Savora, you '),
                           const TextSpan(
-                            text: 'membebaskan platform dan pengelolanya',
+                            text: 'release the platform and its operators',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const TextSpan(
-                              text: ' dari segala tuntutan hukum terkait konten yang diunggah oleh pengguna, termasuk namun tidak terbatas pada pelanggaran hak cipta, cedera, atau kerugian material.'),
+                              text: ' from any legal claims related to user-uploaded content, including but not limited to copyright infringement, injury, or material loss.'),
                         ],
                       ),
                     ),
@@ -767,7 +767,7 @@ class _TermsModalState extends State<TermsModal>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Khusus fitur proxy AI: Savora tidak bertanggung jawab atas biaya penggunaan, gangguan layanan, atau kerugian apapun yang timbul dari penggunaan provider AI pihak ketiga. Penggunaan fitur ini sepenuhnya atas risiko dan tanggung jawab Anda.',
+                    'For the AI proxy feature specifically: Savora is not responsible for usage costs, service interruptions, or any losses arising from third-party AI providers. Use of this feature is entirely at your own risk and responsibility.',
                     style: TextStyle(fontSize: 12, color: Colors.amber.shade900, height: 1.5, fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -775,7 +775,7 @@ class _TermsModalState extends State<TermsModal>
             ),
           ),
           const SizedBox(height: 12),
-          // Kontak
+          // Contact
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -791,7 +791,7 @@ class _TermsModalState extends State<TermsModal>
                     text: TextSpan(
                       style: TextStyle(fontSize: 12, color: Colors.amber.shade800),
                       children: [
-                        const TextSpan(text: 'Pertanyaan? Hubungi kami: '),
+                        const TextSpan(text: 'Questions? Contact us: '),
                         TextSpan(
                           text: 'adminsavora@gmail.com',
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -874,13 +874,13 @@ class _TermsModalState extends State<TermsModal>
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shield_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 10),
-              Text('Saya Mengerti & Menyetujui',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const Icon(Icons.shield_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text('I Understand & Agree',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
         ),

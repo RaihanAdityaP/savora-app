@@ -1,9 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/recipes/detail_screen.dart';
@@ -14,6 +17,7 @@ import 'services/api_service.dart';
 import 'services/app_settings_service.dart';
 import 'services/auth_storage.dart';
 import 'services/notification_service.dart';
+import 'services/recipe_client.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -42,6 +46,9 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(
+      savoraFirebaseMessagingBackgroundHandler,
     );
     debugPrint('Firebase initialized');
   } catch (e) {
@@ -120,7 +127,7 @@ class _DeepLinkParser {
     }
 
     // ── 2. HTTPS App Links ───────────────────────────────
-    const railwayHost = 'savora-app-productions.up.railway.app';
+    const railwayHost = 'savora-app.up.railway.app';
     if ((uri.scheme == 'https' || uri.scheme == 'http') &&
         uri.host == railwayHost) {
       final segments = uri.pathSegments;
@@ -174,14 +181,85 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  static const int _fallbackBuildNumber = 20260205;
+
   /// Link yang diterima saat app belum berjalan (cold start).
   _DeepLinkTarget? _initialTarget;
+  bool _isCheckingVersion = true;
+  bool _forceUpdate = false;
+  String _updateMessage = 'A new Savora update is available. Please update to continue.';
+  String _updateUrl = 'https://savora-app.up.railway.app/';
 
   @override
   void initState() {
     super.initState();
+    NotificationService.onNotificationTapped = _handleNotificationPayload;
+    _checkAppVersion();
     _loadInitialDeepLink();
     _listenIncomingDeepLinks();
+  }
+
+  int get _currentBuildNumber {
+    const dartDefineBuild = String.fromEnvironment('APP_BUILD_NUMBER');
+    final raw = dartDefineBuild.isNotEmpty
+        ? dartDefineBuild
+        : (dotenv.env['APP_BUILD_NUMBER'] ?? '$_fallbackBuildNumber');
+    return int.tryParse(raw) ?? _fallbackBuildNumber;
+  }
+
+  Future<void> _checkAppVersion() async {
+    try {
+      final response = await ApiService.get('/app-version');
+      final data = Map<String, dynamic>.from(response['data'] ?? {});
+      final minSupportedBuild = (data['min_supported_build'] as num?)?.toInt() ?? 0;
+      final forceUpdate = data['force_update'] == true;
+      final shouldBlock = forceUpdate && _currentBuildNumber < minSupportedBuild;
+
+      if (!mounted) return;
+      setState(() {
+        _forceUpdate = shouldBlock;
+        _updateMessage = data['message']?.toString() ?? _updateMessage;
+        _updateUrl = data['download_url']?.toString() ??
+            data['landing_url']?.toString() ??
+            _updateUrl;
+        _isCheckingVersion = false;
+      });
+    } catch (e) {
+      debugPrint('App version check skipped: $e');
+      if (mounted) setState(() => _isCheckingVersion = false);
+    }
+  }
+
+  void _handleNotificationPayload(String? payload, {String? actionId}) {
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final data = jsonDecode(payload);
+      if (data is! Map) return;
+
+      final route = data['route']?.toString();
+      final id = data['id']?.toString();
+
+      if (actionId == NotificationService.actionLikeRecipe &&
+          route == 'recipe' &&
+          id != null &&
+          id.isNotEmpty) {
+        RecipeClient.toggleLike(id);
+        return;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (route == 'recipe' && id != null && id.isNotEmpty) {
+          _navigateTo(_DeepLinkTarget.recipe(id));
+        } else if (route == 'profile' && id != null && id.isNotEmpty) {
+          _navigateTo(_DeepLinkTarget.profile(id));
+        } else if (route == 'home') {
+          _navigateTo(_DeepLinkTarget.home());
+        }
+      });
+    } catch (e) {
+      debugPrint('Invalid notification payload: $e');
+    }
   }
 
   // ── Cold start ───────────────────────────────────────────
@@ -247,6 +325,14 @@ class _MyAppState extends State<MyApp> {
 
   // ── Initial screen ───────────────────────────────────────
   Widget _buildInitialScreen() {
+    if (_isCheckingVersion) {
+      return const _StartupLoadingScreen();
+    }
+
+    if (_forceUpdate) {
+      return _ForceUpdateScreen(message: _updateMessage, updateUrl: _updateUrl);
+    }
+
     if (_initialTarget != null) {
       switch (_initialTarget!.type) {
         case _DeepLinkType.recipe:
@@ -277,6 +363,12 @@ class _MyAppState extends State<MyApp> {
       valueListenable: AppSettingsService.notifier,
       builder: (context, appSettings, _) {
         final textScale = (appSettings.fontSize / 14).clamp(0.85, 1.3);
+        final textColor = appSettings.isDarkMode
+            ? Colors.white
+            : const Color(0xFF264653);
+        final secondaryTextColor = appSettings.isDarkMode
+            ? Colors.white70
+            : const Color(0xFF6B7280);
 
         return MaterialApp(
           navigatorKey: navigatorKey,
@@ -298,6 +390,16 @@ class _MyAppState extends State<MyApp> {
                   ? Colors.white
                   : const Color(0xFF264653),
               surfaceTintColor: Colors.transparent,
+            ),
+            textTheme: ThemeData(
+              brightness:
+                  appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+            ).textTheme.apply(
+                  bodyColor: textColor,
+                  displayColor: textColor,
+                ),
+            inputDecorationTheme: InputDecorationTheme(
+              hintStyle: TextStyle(color: secondaryTextColor),
             ),
             primarySwatch: Colors.orange,
             useMaterial3: true,
@@ -338,6 +440,115 @@ class _MyAppState extends State<MyApp> {
           },
         );
       },
+    );
+  }
+}
+
+class _StartupLoadingScreen extends StatelessWidget {
+  const _StartupLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFF5F7FA),
+      body: Center(
+        child: CircularProgressIndicator(color: Color(0xFFE76F51)),
+      ),
+    );
+  }
+}
+
+class _ForceUpdateScreen extends StatelessWidget {
+  final String message;
+  final String updateUrl;
+
+  const _ForceUpdateScreen({
+    required this.message,
+    required this.updateUrl,
+  });
+
+  Future<void> _openUpdateUrl() async {
+    final uri = Uri.tryParse(updateUrl);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 86,
+                    height: 86,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFE76F51), Color(0xFFF4A261)],
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.system_update_alt_rounded,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Update Required',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFF264653),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 15,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: _openUpdateUrl,
+                      icon: const Icon(Icons.open_in_new_rounded),
+                      label: const Text('Update Savora'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE76F51),
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -16,6 +16,7 @@ class HomeController extends Controller
         $userId = session('user_id');
         $limit  = 10;
         $offset = (int) $request->query('offset', 0);
+        $poolLimit = $limit * 4;
 
         // Load profile stats
         $profile = null;
@@ -60,16 +61,18 @@ class HomeController extends Controller
             // Keep default 0 when favorites lookup fails.
         }
 
-        // Feed + agregasi rating per resep (untuk kartu home)
+        // Feed + agregasi rating/like per resep (untuk kartu home + FYP)
         $feed = [];
+        $rawFeedCount = 0;
         try {
             $feed = $this->supabase->select(
                 'recipes',
-                ['id', 'title', 'description', 'image_url', 'created_at', 'user_id', 'category_id',
+                ['id', 'title', 'description', 'image_url', 'created_at', 'user_id', 'category_id', 'views_count',
                  'profiles!recipes_user_id_fkey(username, avatar_url, role)', 'categories(name)', 'recipe_tags(tags(id, name))'],
                 ['status' => 'approved'],
-                ['order' => 'created_at.desc', 'limit' => $limit, 'offset' => $offset]
+                ['order' => 'created_at.desc', 'limit' => $poolLimit, 'offset' => $offset]
             );
+            $rawFeedCount = count($feed);
         } catch (Exception $e) {
             $feed = [];
         }
@@ -80,6 +83,8 @@ class HomeController extends Controller
         if (! empty($recipeIds)) {
             $sums   = [];
             $counts = [];
+            $likeCounts = [];
+            $likedRecipeIds = [];
             try {
                 $ratingRows = $this->supabase->select(
                     'recipe_ratings',
@@ -101,6 +106,22 @@ class HomeController extends Controller
                 }
             } catch (Exception) {
             }
+            try {
+                $likeRows = $this->supabase->select(
+                    'recipe_likes',
+                    ['recipe_id', 'user_id'],
+                    ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+                );
+                foreach ($likeRows as $row) {
+                    $rid = $row['recipe_id'] ?? null;
+                    if (! $rid) continue;
+                    $likeCounts[$rid] = ($likeCounts[$rid] ?? 0) + 1;
+                    if (($row['user_id'] ?? null) === $userId) {
+                        $likedRecipeIds[$rid] = true;
+                    }
+                }
+            } catch (Exception) {
+            }
 
             foreach ($feed as $i => $row) {
                 $rid = $row['id'] ?? null;
@@ -111,7 +132,20 @@ class HomeController extends Controller
                     $feed[$i]['rating_avg']   = null;
                     $feed[$i]['rating_count'] = 0;
                 }
+                $likes = $rid ? (int) ($likeCounts[$rid] ?? 0) : 0;
+                $feed[$i]['likes_count'] = $likes;
+                $feed[$i]['is_liked'] = $rid ? ! empty($likedRecipeIds[$rid]) : false;
+
+                $ratingScore = $feed[$i]['rating_avg'] ? ((float) $feed[$i]['rating_avg'] * 2) : 0;
+                $viewsScore = log(((int) ($row['views_count'] ?? 0)) + 1);
+                $ageHours = max(1, now()->diffInHours(\Carbon\Carbon::parse($row['created_at'] ?? now())));
+                $freshnessScore = 12 / sqrt($ageHours);
+                $feed[$i]['fyp_score'] = ($likes * 4) + $ratingScore + $viewsScore + $freshnessScore;
             }
+
+            usort($feed, fn ($a, $b) => ($b['fyp_score'] ?? 0) <=> ($a['fyp_score'] ?? 0));
+            $feed = array_slice($feed, 0, $limit);
+            $recipeIds = array_values(array_filter(array_column($feed, 'id')));
         }
 
         $favoriteBoards      = [];
@@ -150,7 +184,7 @@ class HomeController extends Controller
             }
         }
 
-        $hasMore = count($feed) === $limit;
+        $hasMore = $rawFeedCount >= $poolLimit || count($feed) === $limit;
 
         // Get unread notifications count
         $unreadCount = 0;

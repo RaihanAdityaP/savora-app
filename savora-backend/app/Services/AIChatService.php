@@ -46,9 +46,11 @@ Format jawaban:
     public function chat(
         array  $messages,
         string $provider = 'groq',
-        string $model    = 'llama-3.3-70b-versatile',
+        ?string $model   = null,
         array  $settings = []
     ): string {
+        $model ??= $this->defaultModel($provider);
+
         // Tambahkan system prompt di awal jika belum ada
         $hasSystem = collect($messages)->contains('role', 'system');
         if (!$hasSystem) {
@@ -62,6 +64,50 @@ Format jawaban:
             'openrouter' => $this->chatOpenRouter($messages, $model, $settings),
             default      => $this->chatGroq($messages, $model),
         };
+    }
+
+    public function analyzeImage(string $imagePath, string $mimeType): string
+    {
+        if (empty($this->groqApiKey)) {
+            throw new Exception('GROQ_API_KEY tidak ditemukan di .env');
+        }
+
+        $model = $this->requiredConfig('ai.groq_vision_model', 'GROQ_VISION_MODEL');
+        $imageData = base64_encode(file_get_contents($imagePath));
+
+        $prompt = "Berdasarkan gambar makanan yang dikirim, berikan analisis:\n"
+                . "1. Prediksi nama makanan\n"
+                . "2. Bahan-bahan utama yang mungkin digunakan\n"
+                . "3. Perkiraan cara memasak (3-5 langkah)\n"
+                . "4. Tips memasak makanan ini\n\n"
+                . "Jawab dalam Bahasa Indonesia dengan format yang rapi.";
+
+        $response = Http::timeout($this->timeout)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $this->groqApiKey,
+                'Content-Type'  => 'application/json',
+            ])
+            ->post($this->groqBaseUrl, [
+                'model'    => $model,
+                'messages' => [[
+                    'role'    => 'user',
+                    'content' => [
+                        ['type' => 'text', 'text' => $prompt],
+                        [
+                            'type'      => 'image_url',
+                            'image_url' => [
+                                'url' => "data:{$mimeType};base64,{$imageData}",
+                            ],
+                        ],
+                    ],
+                ]],
+                'temperature' => 0.7,
+                'max_tokens'  => 1500,
+                'top_p'       => 0.9,
+                'stream'      => false,
+            ]);
+
+        return $this->parseOpenAICompatibleResponse($response, 'Groq Vision');
     }
 
     // ─────────────────────────────────────────────
@@ -169,8 +215,8 @@ Format jawaban:
     {
         $provider = $settings['is_active_provider'] ?? 'groq';
         $model    = $provider === 'openrouter'
-            ? ($settings['openrouter_model'] ?? 'meta-llama/llama-3.3-70b-instruct:free')
-            : ($settings['groq_model']       ?? 'llama-3.3-70b-versatile');
+            ? ($settings['openrouter_model'] ?? null)
+            : ($settings['groq_model']       ?? $this->defaultModel('groq'));
 
         $messages = [];
         if (!empty($recipeContext)) {
@@ -182,5 +228,25 @@ Format jawaban:
         $messages[] = ['role' => 'user', 'content' => $question];
 
         return $this->chat($messages, $provider, $model, $settings);
+    }
+
+    public function defaultModel(string $provider): string
+    {
+        if ($provider === 'openrouter') {
+            throw new Exception('OpenRouter model wajib dipilih oleh user.');
+        }
+
+        return $this->requiredConfig('ai.groq_model', 'GROQ_MODEL');
+    }
+
+    private function requiredConfig(string $key, string $envName): string
+    {
+        $value = config($key);
+
+        if (!is_string($value) || trim($value) === '') {
+            throw new Exception("{$envName} belum dikonfigurasi di .env");
+        }
+
+        return $value;
     }
 }

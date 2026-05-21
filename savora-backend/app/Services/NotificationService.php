@@ -87,22 +87,17 @@ class NotificationService
     {
         try {
             $accessToken = $this->getAccessToken();
-            $stringData  = array_map('strval', $data);
+            $stringData  = array_map('strval', array_merge($data, [
+                'title' => $title,
+                'body'  => $body,
+            ]));
 
             $payload = [
                 'message' => [
-                    'token'        => $deviceToken,
-                    'notification' => [
-                        'title' => $title,
-                        'body'  => $body,
-                    ],
+                    'token'   => $deviceToken,
                     'data'    => $stringData,
                     'android' => [
-                        'priority'     => 'high',
-                        'notification' => [
-                            'sound'        => 'default',
-                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
-                        ],
+                        'priority' => 'high',
                     ],
                 ],
             ];

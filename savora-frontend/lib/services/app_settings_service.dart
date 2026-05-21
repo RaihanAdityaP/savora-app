@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_service.dart';
 
 class AppSettings {
   final String theme;
@@ -8,7 +9,6 @@ class AppSettings {
   final bool notifyLikes;
   final bool notifyComments;
   final bool notifyFollows;
-  final bool notifyEmail;
   final bool allowAnalytics;
   final bool profilePublic;
   final bool autoSaveDrafts;
@@ -20,7 +20,6 @@ class AppSettings {
     this.notifyLikes = true,
     this.notifyComments = true,
     this.notifyFollows = true,
-    this.notifyEmail = false,
     this.allowAnalytics = true,
     this.profilePublic = true,
     this.autoSaveDrafts = true,
@@ -35,7 +34,6 @@ class AppSettings {
     bool? notifyLikes,
     bool? notifyComments,
     bool? notifyFollows,
-    bool? notifyEmail,
     bool? allowAnalytics,
     bool? profilePublic,
     bool? autoSaveDrafts,
@@ -47,7 +45,6 @@ class AppSettings {
       notifyLikes: notifyLikes ?? this.notifyLikes,
       notifyComments: notifyComments ?? this.notifyComments,
       notifyFollows: notifyFollows ?? this.notifyFollows,
-      notifyEmail: notifyEmail ?? this.notifyEmail,
       allowAnalytics: allowAnalytics ?? this.allowAnalytics,
       profilePublic: profilePublic ?? this.profilePublic,
       autoSaveDrafts: autoSaveDrafts ?? this.autoSaveDrafts,
@@ -58,14 +55,55 @@ class AppSettings {
         'theme': theme,
         'language': language,
         'fontSize': fontSize,
+        'font_size': fontSize,
         'notify_likes': notifyLikes,
         'notify_comments': notifyComments,
         'notify_follows': notifyFollows,
-        'notify_email': notifyEmail,
         'allow_analytics': allowAnalytics,
         'profile_public': profilePublic,
         'auto_save_drafts': autoSaveDrafts,
       };
+
+  Map<String, dynamic> toApiMap() => {
+        'theme': theme,
+        'language': language,
+        'font_size': fontSize,
+        'notify_likes': notifyLikes,
+        'notify_comments': notifyComments,
+        'notify_follows': notifyFollows,
+        'allow_analytics': allowAnalytics,
+        'profile_public': profilePublic,
+        'auto_save_drafts': autoSaveDrafts,
+      };
+
+  factory AppSettings.fromMap(Map<String, dynamic> map) {
+    return AppSettings(
+      theme: map['theme']?.toString() ?? 'light',
+      language: map['language']?.toString() ?? 'en',
+      fontSize: _toInt(map['fontSize'] ?? map['font_size'], fallback: 14),
+      notifyLikes: _toBool(map['notify_likes'], fallback: true),
+      notifyComments: _toBool(map['notify_comments'], fallback: true),
+      notifyFollows: _toBool(map['notify_follows'], fallback: true),
+      allowAnalytics: _toBool(map['allow_analytics'], fallback: true),
+      profilePublic: _toBool(map['profile_public'], fallback: true),
+      autoSaveDrafts: _toBool(map['auto_save_drafts'], fallback: true),
+    );
+  }
+
+  static int _toInt(dynamic value, {required int fallback}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  static bool _toBool(dynamic value, {bool fallback = false}) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase();
+    if (text == 'true' || text == '1') return true;
+    if (text == 'false' || text == '0') return false;
+    return fallback;
+  }
 }
 
 class AppSettingsService {
@@ -82,23 +120,50 @@ class AppSettingsService {
 
   static Future<AppSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final settings = AppSettings(
+    var settings = AppSettings(
       theme: prefs.getString('user_theme') ?? 'light',
       language: prefs.getString('user_language') ?? 'en',
       fontSize: prefs.getInt('user_font_size') ?? 14,
       notifyLikes: prefs.getBool('notify_likes') ?? true,
       notifyComments: prefs.getBool('notify_comments') ?? true,
       notifyFollows: prefs.getBool('notify_follows') ?? true,
-      notifyEmail: prefs.getBool('notify_email') ?? false,
       allowAnalytics: prefs.getBool('allow_analytics') ?? true,
       profilePublic: prefs.getBool('profile_public') ?? true,
       autoSaveDrafts: prefs.getBool('auto_save_drafts') ?? true,
     );
+
+    if (ApiService.hasToken) {
+      try {
+        final response = await ApiService.get('/settings');
+        if (response['success'] == true && response['data'] is Map) {
+          settings = AppSettings.fromMap(
+            Map<String, dynamic>.from(response['data'] as Map),
+          );
+          await _persistLocal(settings);
+        }
+      } catch (e) {
+        debugPrint('AppSettingsService remote load skipped: $e');
+      }
+    }
+
     notifier.value = settings;
     return settings;
   }
 
   static Future<void> save(AppSettings settings) async {
+    await _persistLocal(settings);
+    notifier.value = settings;
+
+    if (ApiService.hasToken) {
+      try {
+        await ApiService.post('/settings', settings.toApiMap());
+      } catch (e) {
+        debugPrint('AppSettingsService remote save skipped: $e');
+      }
+    }
+  }
+
+  static Future<void> _persistLocal(AppSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_theme', settings.theme);
     await prefs.setString('user_language', settings.language);
@@ -106,10 +171,8 @@ class AppSettingsService {
     await prefs.setBool('notify_likes', settings.notifyLikes);
     await prefs.setBool('notify_comments', settings.notifyComments);
     await prefs.setBool('notify_follows', settings.notifyFollows);
-    await prefs.setBool('notify_email', settings.notifyEmail);
     await prefs.setBool('allow_analytics', settings.allowAnalytics);
     await prefs.setBool('profile_public', settings.profilePublic);
     await prefs.setBool('auto_save_drafts', settings.autoSaveDrafts);
-    notifier.value = settings;
   }
 }

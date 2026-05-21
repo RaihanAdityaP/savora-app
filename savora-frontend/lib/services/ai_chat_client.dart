@@ -167,16 +167,20 @@ class AIChatClient {
   /// Simpan AI settings
   static Future<bool> saveSettings({
     required String activeProvider,
-    String groqModel = 'llama-3.3-70b-versatile',
-    String openRouterModel = 'meta-llama/llama-3.3-70b-instruct:free',
+    String? groqModel,
+    String? openRouterModel,
     String? openRouterApiKey,
   }) async {
     try {
       final body = <String, dynamic>{
         'is_active_provider': activeProvider,
-        'groq_model': groqModel,
-        'openrouter_model': openRouterModel,
       };
+      if (groqModel != null && groqModel.isNotEmpty) {
+        body['groq_model'] = groqModel;
+      }
+      if (openRouterModel != null && openRouterModel.isNotEmpty) {
+        body['openrouter_model'] = openRouterModel;
+      }
       if (openRouterApiKey != null && openRouterApiKey.isNotEmpty) {
         body['openrouter_api_key'] = openRouterApiKey;
       }

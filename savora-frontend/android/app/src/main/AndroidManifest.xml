@@ -78,7 +78,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="savora-app-productions.up.railway.app"
+                    android:host="savora-app.up.railway.app"
                     android:pathPrefix="/r/" />
             </intent-filter>
 
@@ -89,7 +89,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="savora-app-productions.up.railway.app"
+                    android:host="savora-app.up.railway.app"
                     android:pathPrefix="/profile/" />
             </intent-filter>
 
@@ -100,7 +100,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="savora-app-productions.up.railway.app"
+                    android:host="savora-app.up.railway.app"
                     android:pathPrefix="/search" />
             </intent-filter>
 

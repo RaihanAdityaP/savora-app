@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../screens/recipes/detail_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/searching_screen.dart';
+import '../services/app_settings_service.dart';
 import '../services/favorite_client.dart';
+import '../services/recipe_client.dart';
 import '../widgets/theme.dart';
 
 class RecipeCard extends StatefulWidget {
@@ -28,12 +30,39 @@ class RecipeCard extends StatefulWidget {
 class _RecipeCardState extends State<RecipeCard> {
   bool _isPressed = false;
   bool _isFavorite = false;
+  bool _isLiked = false;
+  bool _isTogglingLike = false;
+  int _likesCount = 0;
   bool _isCheckingFavorite = true;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
     super.initState();
+    _syncLikeStateFromRecipe();
     _checkIfFavorite();
+  }
+
+  @override
+  void didUpdateWidget(covariant RecipeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recipe['id'] != widget.recipe['id'] ||
+        oldWidget.recipe['likes_count'] != widget.recipe['likes_count'] ||
+        oldWidget.recipe['is_liked'] != widget.recipe['is_liked']) {
+      _syncLikeStateFromRecipe();
+    }
+  }
+
+  void _syncLikeStateFromRecipe() {
+    _likesCount = _toInt(widget.recipe['likes_count']);
+    _isLiked = widget.recipe['is_liked'] == true;
+  }
+
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   // ─────────────────────────────────────────────
@@ -76,7 +105,8 @@ class _RecipeCardState extends State<RecipeCard> {
     try {
       final userId = widget.currentUserId;
       if (userId == null) {
-        _showSnackBar('Silakan login terlebih dahulu', isError: true);
+        _showSnackBar(_t('Please log in first', 'Silakan login terlebih dahulu'),
+            isError: true);
         return;
       }
 
@@ -131,10 +161,10 @@ class _RecipeCardState extends State<RecipeCard> {
                     color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Simpan ke Koleksi',
-                  style: TextStyle(
+                  _t('Save to Collection', 'Simpan ke Koleksi'),
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textPrimary,
@@ -174,10 +204,10 @@ class _RecipeCardState extends State<RecipeCard> {
                             color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Buat Koleksi Baru',
-                          style: TextStyle(
+                          _t('Create New Collection', 'Buat Koleksi Baru'),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -209,7 +239,7 @@ class _RecipeCardState extends State<RecipeCard> {
                         size: 48, color: Colors.grey.shade400),
                     const SizedBox(height: 12),
                     Text(
-                      'Belum ada koleksi',
+                      _t('No collections yet', 'Belum ada koleksi'),
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey.shade600,
@@ -218,7 +248,8 @@ class _RecipeCardState extends State<RecipeCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Buat koleksi pertama Anda',
+                      _t('Create your first collection',
+                          'Buat koleksi pertama Anda'),
                       style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                     ),
                   ],
@@ -350,8 +381,8 @@ class _RecipeCardState extends State<RecipeCard> {
               child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text('Koleksi Baru',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(_t('New Collection', 'Koleksi Baru'),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -362,7 +393,7 @@ class _RecipeCardState extends State<RecipeCard> {
               child: TextField(
                 controller: nameController,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Nama Koleksi',
+                  hint: _t('Collection Name', 'Nama Koleksi'),
                   icon: Icons.collections_bookmark_rounded,
                   iconColor: AppTheme.primaryCoral,
                 ),
@@ -375,7 +406,7 @@ class _RecipeCardState extends State<RecipeCard> {
                 controller: descController,
                 maxLines: 3,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Deskripsi (opsional)',
+                  hint: _t('Description (optional)', 'Deskripsi (opsional)'),
                   icon: Icons.description_rounded,
                   iconColor: AppTheme.primaryOrange,
                   maxLines: 3,
@@ -388,7 +419,7 @@ class _RecipeCardState extends State<RecipeCard> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(_t('Cancel', 'Batal'), style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
           Container(
             decoration: BoxDecoration(
@@ -400,7 +431,8 @@ class _RecipeCardState extends State<RecipeCard> {
                 if (nameController.text.trim().isEmpty) {
                   if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(content: Text('Nama koleksi harus diisi')),
+                    SnackBar(content: Text(_t('Collection name is required',
+                        'Nama koleksi harus diisi'))),
                   );
                   return;
                 }
@@ -418,15 +450,16 @@ class _RecipeCardState extends State<RecipeCard> {
 
                 if (board != null) {
                   if (!mounted) return;
-                  _showSnackBar('Koleksi berhasil dibuat!', isError: false);
+                  _showSnackBar(_t('Collection created!', 'Koleksi berhasil dibuat!'), isError: false);
                   _showBoardSelector();
                 } else {
                   if (!mounted) return;
-                  _showSnackBar('Gagal membuat koleksi', isError: true);
+                  _showSnackBar(_t('Failed to create collection',
+                      'Gagal membuat koleksi'), isError: true);
                 }
               },
               style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-              child: const Text('Buat', style: AppTheme.buttonText),
+              child: Text(_t('Create', 'Buat'), style: AppTheme.buttonText),
             ),
           ),
         ],
@@ -450,14 +483,45 @@ class _RecipeCardState extends State<RecipeCard> {
 
       if (success) {
         setState(() => _isFavorite = true);
-        _showSnackBar('Ditambahkan ke "$boardName"', isError: false);
+        _showSnackBar(_t('Added to "$boardName"', 'Ditambahkan ke "$boardName"'), isError: false);
       } else {
-        _showSnackBar('Resep sudah ada di koleksi ini', isError: true);
+        _showSnackBar(_t('Recipe is already in this collection',
+            'Resep sudah ada di koleksi ini'), isError: true);
       }
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('Error: $e', isError: true);
     }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isTogglingLike) return;
+    final recipeId = widget.recipe['id']?.toString();
+    if (recipeId == null || recipeId.isEmpty) return;
+
+    if (widget.currentUserId == null) {
+      _showSnackBar(_t('Please log in first', 'Silakan login terlebih dahulu'),
+          isError: true);
+      return;
+    }
+
+    setState(() => _isTogglingLike = true);
+    final result = await RecipeClient.toggleLike(recipeId);
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() {
+        _likesCount = _toInt(result['likes_count']);
+        _isLiked = result['is_liked'] == true;
+        widget.recipe['likes_count'] = _likesCount;
+        widget.recipe['is_liked'] = _isLiked;
+      });
+    } else {
+      _showSnackBar(_t('Failed to update like', 'Gagal memperbarui like'),
+          isError: true);
+    }
+
+    if (mounted) setState(() => _isTogglingLike = false);
   }
 
   // ─────────────────────────────────────────────
@@ -496,13 +560,13 @@ class _RecipeCardState extends State<RecipeCard> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.recipe['profiles'];
-    final username = profile?['username'] ?? 'Anonymous';
+    final username = profile?['username'] ?? _t('Anonymous', 'Anonim');
     final avatarUrl = profile?['avatar_url'];
     final authorUserId = widget.recipe['user_id'];
-    final userRole = profile?['role'] ?? 'user';
+    final userRole = profile?['role'] == 'admin' ? 'user' : (profile?['role'] ?? 'user');
 
     final category = widget.recipe['categories'];
-    final categoryName = category?['name'] ?? 'Uncategorized';
+    final categoryName = category?['name'] ?? _t('Uncategorized', 'Tanpa Kategori');
     final categoryId = category?['id'];
 
     final recipeTags = widget.recipe['recipe_tags'] as List<dynamic>?;
@@ -575,10 +639,94 @@ class _RecipeCardState extends State<RecipeCard> {
                           : _buildPlaceholder(),
                     ),
                   ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isCheckingFavorite ? null : _showBoardSelector,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                            color: _isFavorite ? AppTheme.primaryCoral : Colors.grey.shade700,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isTogglingLike ? null : _toggleLike,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          constraints: const BoxConstraints(minWidth: 34),
+                          height: 34,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            gradient: _isLiked ? AppTheme.accentGradient : null,
+                            color: _isLiked ? null : Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.18),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                                size: 17,
+                              ),
+                              if (_likesCount > 0) ...[
+                                const SizedBox(width: 3),
+                                Text(
+                                  _likesCount.toString(),
+                                  style: TextStyle(
+                                    color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (categoryName.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: _buildCategoryChip(context, categoryId, categoryName),
+                    ),
                   // Rating badge
                   if (widget.rating != null)
                     Positioned(
-                      top: 8,
+                      bottom: 8,
                       left: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -623,7 +771,7 @@ class _RecipeCardState extends State<RecipeCard> {
                     children: [
                       // Title
                       Text(
-                        widget.recipe['title'] ?? 'Untitled Recipe',
+                        widget.recipe['title'] ?? _t('Untitled Recipe', 'Resep Tanpa Judul'),
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -691,7 +839,7 @@ class _RecipeCardState extends State<RecipeCard> {
 
                       const Spacer(),
 
-                      // Bottom row: Category/Tags + Favorite button
+                      // Bottom row: Tags
                       Row(
                         children: [
                           Expanded(
@@ -699,33 +847,8 @@ class _RecipeCardState extends State<RecipeCard> {
                               spacing: 4,
                               runSpacing: 4,
                               children: [
-                                _buildCategoryChip(context, categoryId, categoryName),
                                 ...tags.take(2).map((tag) => _buildTagChip(context, tag)),
                               ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Favorite button
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _isCheckingFavorite ? null : _showBoardSelector,
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  gradient: _isFavorite ? AppTheme.accentGradient : null,
-                                  color: _isFavorite ? null : Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  _isFavorite
-                                      ? Icons.bookmark_rounded
-                                      : Icons.bookmark_border_rounded,
-                                  color: _isFavorite ? Colors.white : Colors.grey.shade600,
-                                  size: 18,
-                                ),
-                              ),
                             ),
                           ),
                         ],

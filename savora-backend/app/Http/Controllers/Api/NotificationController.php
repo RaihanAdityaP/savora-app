@@ -5,19 +5,22 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
 use App\Services\NotificationService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 
 class NotificationController extends Controller
 {
-    private $supabase;
-    private $notification;
+    private SupabaseService $supabase;
+    private NotificationService $notification;
+    private UserSettingsService $settingsService;
 
-    public function __construct(SupabaseService $supabase, NotificationService $notification)
+    public function __construct(SupabaseService $supabase, NotificationService $notification, UserSettingsService $settingsService)
     {
         $this->supabase = $supabase;
         $this->notification = $notification;
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -119,6 +122,17 @@ class NotificationController extends Controller
         }
 
         try {
+            if (! $this->settingsService->notificationEnabledForType(
+                $request->input('user_id'),
+                $request->input('type')
+            )) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notification skipped by user settings',
+                    'data' => null,
+                ]);
+            }
+
             // Insert notification to database
             $notification = $this->supabase->insert('notifications', [
                 'user_id' => $request->input('user_id'),
@@ -166,6 +180,61 @@ class NotificationController extends Controller
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function broadcast(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'audience' => 'required|in:all,user',
+            'user_id' => 'nullable|uuid',
+            'title' => 'required|string|max:120',
+            'message' => 'required|string|max:500',
+            'route' => 'nullable|in:home,recipe,profile',
+            'related_entity_id' => 'nullable|string|max:120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $adminId = $this->getSupabaseUserIdFromRequest($request);
+            if (! $this->isAdminUser($adminId)) {
+                return response()->json(['success' => false, 'message' => 'Forbidden'], 403);
+            }
+
+            $data = $validator->validated();
+            $targetIds = [];
+
+            if ($data['audience'] === 'user') {
+                if (empty($data['user_id'])) {
+                    return response()->json(['success' => false, 'message' => 'user_id is required'], 422);
+                }
+                $targetIds = [$data['user_id']];
+            } else {
+                $targetIds = collect($this->supabase->select('profiles', ['id'], ['is_banned' => false], ['limit' => 1000]))
+                    ->pluck('id')
+                    ->filter()
+                    ->values()
+                    ->all();
+            }
+
+            $route = $data['route'] ?? 'home';
+            $entityId = $data['related_entity_id'] ?? '';
+            $sent = $this->sendManualNotification($targetIds, $data['title'], $data['message'], $route, $entityId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Broadcast sent successfully',
+                'data' => ['sent_count' => $sent],
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -372,5 +441,47 @@ class NotificationController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): int
+    {
+        $sent = 0;
+        $payload = ['route' => $route, 'id' => $entityId];
+
+        foreach (array_unique($userIds) as $userId) {
+            if (! $userId) continue;
+
+            $this->supabase->insert('notifications', [
+                'user_id' => $userId,
+                'title' => $title,
+                'message' => $message,
+                'type' => 'admin',
+                'related_entity_type' => $route === 'home' ? null : $route,
+                'related_entity_id' => $entityId ?: null,
+                'is_read' => false,
+            ]);
+
+            try {
+                $tokens = $this->supabase->select('device_tokens', ['token'], [
+                    'user_id' => $userId,
+                    'is_active' => true,
+                ]);
+
+                if (! empty($tokens)) {
+                    $this->notification->sendToMultipleDevices(array_column($tokens, 'token'), $title, $message, $payload);
+                }
+            } catch (Exception) {
+            }
+
+            $sent++;
+        }
+
+        return $sent;
+    }
+
+    private function isAdminUser(string $userId): bool
+    {
+        $profiles = $this->supabase->select('profiles', ['role'], ['id' => $userId], ['limit' => 1]);
+        return ($profiles[0]['role'] ?? null) === 'admin';
     }
 }

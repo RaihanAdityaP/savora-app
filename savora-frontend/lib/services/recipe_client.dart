@@ -57,6 +57,30 @@ class RecipeClient {
     }
   }
 
+  static Future<Map<String, dynamic>?> getLikes(String id) async {
+    try {
+      final response = await ApiService.get('/recipes/$id/likes');
+      if (response['success'] == true) {
+        return Map<String, dynamic>.from(response['data']);
+      }
+    } catch (e) {
+      debugPrint('RecipeClient Error (getLikes): $e');
+    }
+    return null;
+  }
+
+  static Future<Map<String, dynamic>?> toggleLike(String id) async {
+    try {
+      final response = await ApiService.post('/recipes/$id/like', {});
+      if (response['success'] == true) {
+        return Map<String, dynamic>.from(response['data']);
+      }
+    } catch (e) {
+      debugPrint('RecipeClient Error (toggleLike): $e');
+    }
+    return null;
+  }
+
   /// Search recipes
   static Future<List<Map<String, dynamic>>> searchRecipes(String query) async {
     return searchRecipesAdvanced(query: query);

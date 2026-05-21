@@ -398,9 +398,9 @@ class AIChatController extends Controller
     private function getDefaultModel(array $settings, string $provider): string
     {
         if ($provider === 'openrouter') {
-            return $settings['openrouter_model'] ?? 'meta-llama/llama-3.3-70b-instruct:free';
+            return $settings['openrouter_model'] ?? null;
         }
-        return $settings['groq_model'] ?? 'llama-3.3-70b-versatile';
+        return $settings['groq_model'] ?? $this->aiChat->defaultModel('groq');
     }
 
     private function generateTitle(string $firstMessage): string

@@ -1,14 +1,15 @@
+@php($isEnglish = session('user_language', 'en') === 'en')
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifikasi — Savora</title>
+    <title>{{ $isEnglish ? 'Notifications' : 'Notifikasi' }} — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
 </head>
-<body class="bg-[#F5F7FA] text-gray-900">
+<body style="background: var(--color-bg-light); color: var(--color-text-primary);">
 
     <x-unified-navigation
         :avatar-url="session('user_avatar') ?? null"
@@ -22,11 +23,11 @@
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
                 <x-app-theme.section-header
-                    title="Notifikasi"
+                    :title="$isEnglish ? 'Notifications' : 'Notifikasi'"
                     icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>'
                 />
                 @if(($unreadCount ?? 0) > 0)
-                    <span class="badge-savora">{{ $unreadCount }} baru</span>
+                    <span class="badge-savora">{{ $unreadCount }} {{ $isEnglish ? 'new' : 'baru' }}</span>
                 @endif
             </div>
 
@@ -38,7 +39,7 @@
                         <button type="submit"
                                 class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all"
                                 style="color: var(--color-primary-teal)"
-                                title="Tandai semua dibaca">
+                                title="{{ $isEnglish ? 'Mark all as read' : 'Tandai semua dibaca' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                             </svg>
@@ -54,13 +55,13 @@
                     <div x-show="open" @click.outside="open = false" x-transition
                          class="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 z-10">
                         <form action="{{ route('app.notifications.delete-all') }}" method="POST"
-                              onsubmit="return confirm('Hapus semua notifikasi?')">
+                              onsubmit="return confirm('{{ $isEnglish ? 'Delete all notifications?' : 'Hapus semua notifikasi?' }}')">
                             @csrf
                             <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
-                                Hapus Semua
+                                {{ $isEnglish ? 'Delete All' : 'Hapus Semua' }}
                             </button>
                         </form>
                     </div>
@@ -127,7 +128,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-start justify-between gap-2">
                             <p class="text-sm leading-snug" style="font-weight: {{ $isRead ? 600 : 700 }}; color: var(--color-text-primary)">
-                                {{ $notif['title'] ?? 'Notifikasi' }}
+                                {{ $notif['title'] ?? ($isEnglish ? 'Notification' : 'Notifikasi') }}
                             </p>
                             @if(!$isRead)
                                 <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
@@ -151,7 +152,7 @@
                             @csrf
                             <button type="submit" class="w-full py-2.5 text-xs font-semibold hover:bg-teal-50 transition-colors"
                                     style="color: var(--color-primary-teal)">
-                                Tandai Dibaca
+                                {{ $isEnglish ? 'Mark as Read' : 'Tandai Dibaca' }}
                             </button>
                         </form>
                         <div class="w-px bg-gray-100"></div>
@@ -159,7 +160,7 @@
                     <form action="{{ route('app.notifications.delete', $notif['id']) }}" method="POST" class="flex-1">
                         @csrf
                         <button type="submit" class="w-full py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                            Hapus
+                            {{ $isEnglish ? 'Delete' : 'Hapus' }}
                         </button>
                     </form>
                 </div>
@@ -168,8 +169,8 @@
         @empty
             <x-app-theme.empty-state
                 icon="bi bi-bell-slash"
-                title="Tidak ada notifikasi"
-                subtitle="Notifikasi akan muncul di sini"
+                :title="$isEnglish ? 'No notifications' : 'Tidak ada notifikasi'"
+                :subtitle="$isEnglish ? 'Notifications will appear here' : 'Notifikasi akan muncul di sini'"
             />
         @endforelse
 

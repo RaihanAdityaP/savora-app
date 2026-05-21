@@ -7,7 +7,7 @@ class UserClient {
   /// Get profile user (bisa user lain juga)
   static Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
-      final response = await ApiService.get('/users/$userId');
+      final response = await ApiService.get('/users/$userId${_viewerQuery()}');
       if (response['success'] == true) {
         return _unwrapMapResponse(response['data']);
       }
@@ -116,7 +116,7 @@ class UserClient {
   /// Get daftar followers user
   static Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
     try {
-      final response = await ApiService.get('/users/$userId/followers');
+      final response = await ApiService.get('/users/$userId/followers${_viewerQuery()}');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
@@ -131,7 +131,7 @@ class UserClient {
   /// Get daftar user yang diikuti
   static Future<List<Map<String, dynamic>>> getFollowing(String userId) async {
     try {
-      final response = await ApiService.get('/users/$userId/following');
+      final response = await ApiService.get('/users/$userId/following${_viewerQuery()}');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
@@ -152,7 +152,7 @@ class UserClient {
   }) async {
     try {
       final response = await ApiService.get(
-        '/users/$userId/recipes?status=$status&limit=$limit&offset=$offset',
+        '/users/$userId/recipes?status=$status&limit=$limit&offset=$offset${_viewerQuery(prefix: '&')}',
       );
       if (response['success'] == true) {
         final list = response['data'] as List;
@@ -161,6 +161,25 @@ class UserClient {
       return [];
     } catch (e) {
       debugPrint('UserClient.getUserRecipes error: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getLikedRecipes(
+    String userId, {
+    int limit = 20,
+  }) async {
+    try {
+      final response = await ApiService.get(
+        '/users/$userId/liked-recipes?limit=$limit${_viewerQuery(prefix: '&')}',
+      );
+      if (response['success'] == true) {
+        final list = response['data'] as List;
+        return list.map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('UserClient.getLikedRecipes error: $e');
       return [];
     }
   }
@@ -174,6 +193,12 @@ class UserClient {
       return Map<String, dynamic>.from(data.first as Map);
     }
     return null;
+  }
+
+  static String _viewerQuery({String prefix = '?'}) {
+    final viewerId = ApiService.currentUserId;
+    if (viewerId == null || viewerId.isEmpty) return '';
+    return '${prefix}viewer_id=$viewerId';
   }
 
   static Map<String, dynamic> _normalizeFollowUser(dynamic row) {

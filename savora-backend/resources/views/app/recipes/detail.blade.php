@@ -1,9 +1,13 @@
+@php
+    $pageLanguage = session('user_language', 'en');
+    $isEnglish = $pageLanguage === 'en';
+@endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $pageLanguage }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $recipe['title'] ?? 'Detail Resep' }} — Savora</title>
+    <title>{{ $recipe['title'] ?? ($isEnglish ? 'Recipe Detail' : 'Detail Resep') }} — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
@@ -28,7 +32,12 @@
         $isOwner    = $userId && $recipe['user_id'] === $userId;
         $isAdmin    = $currentUserRole === 'admin';
         $canEdit    = $isOwner || $isAdmin;
-        $diffLabels = ['mudah'=>'Mudah','sedang'=>'Sedang','sulit'=>'Sulit','easy'=>'Mudah','medium'=>'Sedang','hard'=>'Sulit'];
+        $showTranslate = $pageLanguage === 'en';
+        $translateLabel = 'Translate';
+        $undoTranslateLabel = 'Undo';
+        $diffLabels = $isEnglish
+            ? ['mudah'=>'Easy','sedang'=>'Medium','sulit'=>'Hard','easy'=>'Easy','medium'=>'Medium','hard'=>'Hard']
+            : ['mudah'=>'Mudah','sedang'=>'Sedang','sulit'=>'Sulit','easy'=>'Mudah','medium'=>'Sedang','hard'=>'Sulit'];
         $diffColors = ['mudah'=>'bg-green-100 text-green-700','sedang'=>'bg-yellow-100 text-yellow-700','sulit'=>'bg-red-100 text-red-700','easy'=>'bg-green-100 text-green-700','medium'=>'bg-yellow-100 text-yellow-700','hard'=>'bg-red-100 text-red-700'];
         $diff = strtolower($recipe['difficulty'] ?? '');
 
@@ -66,13 +75,13 @@
                 </div>
             @endif
             <a href="javascript:history.back()"
-               class="absolute top-4 left-4 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all">
-                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="btn-icon-savora absolute top-4 left-4 w-10 h-10 backdrop-blur rounded-full">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </a>
             @if($category)
-                <span class="absolute top-4 right-4 px-3 py-1 text-white text-xs font-bold rounded-full shadow"
+                <span class="absolute bottom-4 right-4 px-3 py-1 text-white text-xs font-bold rounded-full shadow"
                       style="background: var(--gradient-accent);">{{ $category }}</span>
             @endif
             @if($avgRating > 0)
@@ -88,7 +97,18 @@
         {{-- Title & Actions --}}
         <div class="card-savora p-5 mb-4">
             <div class="flex items-start justify-between gap-3 mb-3">
-                <h1 class="text-2xl font-bold leading-tight flex-1" style="color: var(--color-text-primary);">{{ $recipe['title'] }}</h1>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-2xl font-bold leading-tight" style="color: var(--color-text-primary);">
+                        <span class="savora-recipe-copy">{{ $recipe['title'] }}</span>
+                    </h1>
+                    @if($showTranslate)
+                        <button type="button"
+                                class="btn-translate-savora mt-2"
+                                data-savora-translate=".savora-recipe-copy"
+                                data-savora-label="{{ $translateLabel }}"
+                                data-savora-undo-label="{{ $undoTranslateLabel }}">{{ $translateLabel }}</button>
+                    @endif
+                </div>
                 @if($canEdit)
                     <div class="flex gap-2 shrink-0">
                         <a href="{{ route('app.recipe.edit', $recipe['id']) }}"
@@ -99,7 +119,7 @@
                             </svg>
                         </a>
                         <form action="{{ route('app.recipe.destroy', $recipe['id']) }}" method="POST"
-                              onsubmit="return confirm('Hapus resep ini?')">
+                              onsubmit="return confirm('{{ $isEnglish ? 'Delete this recipe?' : 'Hapus resep ini?' }}')">
                             @csrf
                             <button type="submit" class="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-all">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,6 +131,43 @@
                 @endif
             </div>
 
+            <div class="mb-4 rounded-3xl p-4"
+                 style="background: linear-gradient(135deg, rgba(231,111,81,0.10), rgba(244,162,97,0.08)); border: 1.5px solid var(--color-card-border);">
+                @if($userId)
+                    <form action="{{ route('app.recipe.like', $recipe['id']) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="group w-full flex items-center gap-4 text-left transition-all">
+                            <span class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
+                                  style="background: {{ $isLiked ? 'var(--gradient-accent)' : 'var(--color-card-bg)' }}; color: {{ $isLiked ? '#ffffff' : 'var(--color-primary-coral)' }}; border: 1px solid var(--color-separator);">
+                                <svg class="w-7 h-7 transition-transform group-hover:scale-110" fill="{{ $isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"/>
+                                </svg>
+                            </span>
+                            <span class="flex-1 min-w-0">
+                                <span class="block text-base font-extrabold" style="color: var(--color-text-primary);">{{ $isLiked ? ($isEnglish ? 'Liked' : 'Disukai') : ($isEnglish ? 'Like this recipe' : 'Suka resep ini') }}</span>
+                                <span class="block text-sm" style="color: var(--color-text-secondary);">{{ $likesCount }} {{ $isEnglish ? 'people like this recipe' : 'orang menyukai resep ini' }}</span>
+                            </span>
+                            <span class="px-4 py-2 rounded-full text-sm font-bold"
+                                  style="background: {{ $isLiked ? 'var(--gradient-accent)' : 'var(--color-chip-bg)' }}; color: {{ $isLiked ? '#ffffff' : 'var(--color-primary-coral)' }};">
+                                {{ $likesCount }}
+                            </span>
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('app.login') }}" class="group w-full flex items-center gap-4 text-left">
+                        <span class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                              style="background: var(--color-card-bg); color: var(--color-primary-coral); border: 1px solid var(--color-separator);">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"/></svg>
+                        </span>
+                        <span class="flex-1">
+                            <span class="block text-base font-extrabold" style="color: var(--color-text-primary);">{{ $isEnglish ? 'Like this recipe' : 'Suka resep ini' }}</span>
+                            <span class="block text-sm" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Log in to like' : 'Login untuk memberi like' }}</span>
+                        </span>
+                        <span class="px-4 py-2 rounded-full text-sm font-bold" style="background: var(--color-chip-bg); color: var(--color-primary-coral);">{{ $likesCount }}</span>
+                    </a>
+                @endif
+            </div>
+
             {{-- Meta chips --}}
             <div class="flex flex-wrap gap-2 mb-4">
                 @if(!empty($recipe['cooking_time']))
@@ -118,7 +175,7 @@
                         <svg class="w-4 h-4" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        {{ $recipe['cooking_time'] }} menit
+                        {{ $recipe['cooking_time'] }} {{ $isEnglish ? 'minutes' : 'menit' }}
                     </span>
                 @endif
                 @if(!empty($recipe['servings']))
@@ -126,7 +183,7 @@
                         <svg class="w-4 h-4" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
-                        {{ $recipe['servings'] }} porsi
+                        {{ $recipe['servings'] }} {{ $isEnglish ? 'servings' : 'porsi' }}
                     </span>
                 @endif
                 @if(!empty($recipe['calories']))
@@ -134,7 +191,7 @@
                         <svg class="w-4 h-4" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
                         </svg>
-                        {{ $recipe['calories'] }} kal
+                        {{ $recipe['calories'] }} {{ $isEnglish ? 'cal' : 'kal' }}
                     </span>
                 @endif
                 @if($diff)
@@ -175,9 +232,9 @@
         @if(!empty($recipe['description']))
             <div class="card-savora p-5 mb-4">
                 <div class="mb-3">
-                    <x-app-theme.section-header title="Deskripsi" :icon="$svgDesc" />
+                    <x-app-theme.section-header :title="$isEnglish ? 'Description' : 'Deskripsi'" :icon="$svgDesc" />
                 </div>
-                <p class="text-sm leading-relaxed" style="color: var(--color-text-secondary);">{{ $recipe['description'] }}</p>
+                <p class="text-sm leading-relaxed savora-recipe-copy" style="color: var(--color-text-secondary);">{{ $recipe['description'] }}</p>
             </div>
         @endif
 
@@ -202,7 +259,7 @@
         @if(count($ingredients) > 0)
             <div class="card-savora p-5 mb-4">
                 <div class="mb-4 flex items-center justify-between">
-                    <x-app-theme.section-header title="Bahan-bahan" :icon="$svgIngr" />
+                    <x-app-theme.section-header :title="$isEnglish ? 'Ingredients' : 'Bahan-bahan'" :icon="$svgIngr" />
                     <span class="badge-savora">{{ count($ingredients) }}</span>
                 </div>
                 <ul class="space-y-2">
@@ -210,7 +267,7 @@
                         <li class="flex items-start gap-3">
                             <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5"
                                  style="background: var(--gradient-accent);">{{ $i + 1 }}</div>
-                            <span class="text-sm leading-relaxed" style="color: var(--color-text-primary);">{{ is_array($ingredient) ? ($ingredient['name'] ?? json_encode($ingredient)) : $ingredient }}</span>
+                            <span class="text-sm leading-relaxed savora-recipe-copy" style="color: var(--color-text-primary);">{{ is_array($ingredient) ? ($ingredient['name'] ?? json_encode($ingredient)) : $ingredient }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -222,7 +279,7 @@
         @if(count($steps) > 0)
             <div class="card-savora p-5 mb-4">
                 <div class="mb-4 flex items-center justify-between">
-                    <x-app-theme.section-header title="Langkah-langkah" :icon="$svgSteps" />
+                    <x-app-theme.section-header :title="$isEnglish ? 'Steps' : 'Langkah-langkah'" :icon="$svgSteps" />
                     <span class="badge-savora">{{ count($steps) }}</span>
                 </div>
                 <ol class="space-y-4">
@@ -231,7 +288,7 @@
                             <div class="w-8 h-8 rounded-2xl flex items-center justify-center text-white text-sm font-bold shrink-0"
                                  style="background: var(--gradient-accent);">{{ $i + 1 }}</div>
                             <div class="flex-1 pt-1">
-                                <p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">{{ is_array($step) ? ($step['description'] ?? $step['step'] ?? json_encode($step)) : $step }}</p>
+                                <p class="text-sm leading-relaxed savora-recipe-copy" style="color: var(--color-text-primary);">{{ is_array($step) ? ($step['description'] ?? $step['step'] ?? json_encode($step)) : $step }}</p>
                             </div>
                         </li>
                     @endforeach
@@ -242,7 +299,7 @@
         {{-- Save to collection --}}
         <div id="simpan-resep" class="card-savora p-5 mb-4" x-data="{ openBoardSelector: false }">
             <div class="mb-3">
-                <x-app-theme.section-header title="Simpan Resep" :icon="$svgBookmark" />
+                <x-app-theme.section-header :title="$isEnglish ? 'Save Recipe' : 'Simpan Resep'" :icon="$svgBookmark" />
             </div>
             <button type="button"
                     class="btn-primary-savora w-full py-3 rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
@@ -251,16 +308,16 @@
                 <svg class="w-5 h-5" fill="{{ $isFavorite ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                 </svg>
-                {{ $isFavorite ? 'Tersimpan di Koleksi' : 'Simpan ke Koleksi' }}
+                {{ $isFavorite ? ($isEnglish ? 'Saved in Collection' : 'Tersimpan di Koleksi') : ($isEnglish ? 'Save to Collection' : 'Simpan ke Koleksi') }}
             </button>
 
             @if(!$userId)
                 <p class="text-sm mt-3" style="color: var(--color-text-secondary);">
-                    <a href="{{ route('app.login') }}" class="font-semibold underline">Login</a> untuk menyimpan resep ke koleksi.
+                    <a href="{{ route('app.login') }}" class="font-semibold underline">{{ $isEnglish ? 'Log in' : 'Login' }}</a> {{ $isEnglish ? 'to save recipes to a collection.' : 'untuk menyimpan resep ke koleksi.' }}
                 </p>
             @elseif(empty($favoriteBoards))
                 <p class="text-sm mt-3" style="color: var(--color-text-secondary);">
-                    Belum ada koleksi — buka pemilih lalu <a href="{{ route('app.favorites') }}" class="font-semibold underline">buat koleksi baru</a>.
+                    {{ $isEnglish ? 'No collections yet' : 'Belum ada koleksi' }} — {{ $isEnglish ? 'open the selector, then' : 'buka pemilih lalu' }} <a href="{{ route('app.favorites') }}" class="font-semibold underline">{{ $isEnglish ? 'create a new collection' : 'buat koleksi baru' }}</a>.
                 </p>
             @endif
 
@@ -293,7 +350,7 @@
                                 class="text-3xl transition-transform hover:scale-110 {{ $i <= ($userRating ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</button>
                     @endfor
                     @if($userRating)
-                        <span class="text-sm ml-2" style="color: var(--color-text-secondary);">Rating kamu: {{ $userRating }}/5</span>
+                        <span class="text-sm ml-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Your rating' : 'Rating kamu' }}: {{ $userRating }}/5</span>
                     @endif
                 </div>
             </form>
@@ -302,7 +359,9 @@
         {{-- Comments --}}
         <div class="card-savora p-5 mb-4">
             <div class="mb-4 flex items-center justify-between">
-                <x-app-theme.section-header title="Komentar" :icon="$svgChat" />
+                <div class="flex items-center gap-3">
+                    <x-app-theme.section-header :title="$isEnglish ? 'Comments' : 'Komentar'" :icon="$svgChat" />
+                </div>
                 <span class="badge-savora" style="background: var(--gradient-category);">{{ count($comments) }}</span>
             </div>
 
@@ -314,16 +373,16 @@
                         {{ strtoupper(substr(session('user_username', 'U'), 0, 1)) }}
                     </div>
                     <div class="flex-1">
-                        <textarea name="content" rows="2" placeholder="Tulis komentar..."
+                        <textarea name="content" rows="2" placeholder="{{ $isEnglish ? 'Write a comment...' : 'Tulis komentar...' }}"
                                   class="input-savora resize-none mb-2"></textarea>
-                        <button type="submit" class="btn-primary-savora px-5 py-2 text-sm">Kirim</button>
+                        <button type="submit" class="btn-primary-savora px-5 py-2 text-sm">{{ $isEnglish ? 'Send' : 'Kirim' }}</button>
                     </div>
                 </div>
             </form>
 
             @forelse($comments as $comment)
                 @php $commenter = $comment['profiles'] ?? []; @endphp
-                <div class="flex gap-3 mb-4 last:mb-0">
+                <div class="savora-comment-item flex gap-3 mb-4 last:mb-0">
                     @if(!empty($commenter['avatar_url']))
                         <img src="{{ $commenter['avatar_url'] }}" class="w-9 h-9 rounded-full object-cover shrink-0">
                     @else
@@ -335,7 +394,7 @@
                     <div class="flex-1">
                         <div class="px-4 py-3 rounded-2xl" style="background: var(--color-bg-light);">
                             <p class="font-bold text-sm mb-1" style="color: var(--color-text-primary);">{{ $commenter['username'] ?? 'Unknown' }}</p>
-                            <p class="text-sm leading-relaxed" style="color: var(--color-text-primary);">{{ $comment['content'] }}</p>
+                            <p class="text-sm leading-relaxed savora-comment-copy" style="color: var(--color-text-primary);">{{ $comment['content'] }}</p>
                         </div>
                         <div class="flex items-center gap-3 mt-1 px-2">
                             <span class="text-xs" style="color: var(--color-text-secondary);">
@@ -343,10 +402,18 @@
                             </span>
                             @if($userId && ($comment['user_id'] === $userId || $currentUserRole === 'admin'))
                                 <form action="{{ route('app.comment.delete', $comment['id']) }}" method="POST"
-                                      onsubmit="return confirm('Hapus komentar?')">
+                                      onsubmit="return confirm('{{ $isEnglish ? 'Delete comment?' : 'Hapus komentar?' }}')">
                                     @csrf
-                                    <button type="submit" class="text-xs text-red-400 hover:text-red-600 font-medium">Hapus</button>
+                                    <button type="submit" class="text-xs text-red-400 hover:text-red-600 font-medium">{{ $isEnglish ? 'Delete' : 'Hapus' }}</button>
                                 </form>
+                            @endif
+                            @if($showTranslate)
+                                <button type="button"
+                                        class="btn-translate-savora !px-2 !py-1"
+                                        data-savora-translate=".savora-comment-copy"
+                                        data-savora-translate-scope=".savora-comment-item"
+                                        data-savora-label="{{ $translateLabel }}"
+                                        data-savora-undo-label="{{ $undoTranslateLabel }}">{{ $translateLabel }}</button>
                             @endif
                         </div>
                     </div>
@@ -354,8 +421,8 @@
             @empty
                 <x-app-theme.empty-state
                     icon="bi bi-chat-square"
-                    title="Belum ada komentar"
-                    subtitle="Jadilah yang pertama berkomentar!" />
+                    :title="$isEnglish ? 'No comments yet' : 'Belum ada komentar'"
+                    :subtitle="$isEnglish ? 'Be the first to comment!' : 'Jadilah yang pertama berkomentar!'" />
             @endforelse
         </div>
 

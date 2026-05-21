@@ -80,19 +80,20 @@ class _CustomAppBarState extends State<CustomAppBar>
             child: Icon(Icons.logout_rounded, color: Colors.red.shade600, size: 24),
           ),
           const SizedBox(width: 16),
-          const Expanded(
-            child: Text('Keluar dari Akun',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(_t('Sign Out', 'Keluar dari Akun'),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ),
         ]),
         content: Text(
-          'Apakah Anda yakin ingin keluar dari akun Savora?',
+          _t('Are you sure you want to sign out of Savora?',
+              'Apakah Anda yakin ingin keluar dari akun Savora?'),
           style: TextStyle(fontSize: 15, color: Colors.grey.shade700, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child    : Text('Batal', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+            child    : Text(_t('Cancel', 'Batal'), style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
           ),
           Container(
             decoration: BoxDecoration(
@@ -102,7 +103,7 @@ class _CustomAppBarState extends State<CustomAppBar>
             ),
             child: TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child    : const Text('Keluar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child    : Text(_t('Sign Out', 'Keluar'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],

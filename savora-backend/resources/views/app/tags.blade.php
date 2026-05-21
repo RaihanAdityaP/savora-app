@@ -1,14 +1,15 @@
+@php($isEnglish = session('user_language', 'en') === 'en')
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Tag — Savora</title>
+    <title>{{ $isEnglish ? 'Manage Tags' : 'Kelola Tag' }} — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
 </head>
-<body class="bg-[#F5F7FA] text-gray-900">
+<body style="background: var(--color-bg-light); color: var(--color-text-primary);">
 
     <x-unified-navigation
         :avatar-url="session('user_avatar')"
@@ -29,10 +30,10 @@
         {{-- Header --}}
         <div class="mb-6">
             <x-app-theme.section-header
-                title="Kelola Tag"
+                :title="$isEnglish ? 'Manage Tags' : 'Kelola Tag'"
                 :icon="$tagHeaderIcon"
             />
-            <p class="app-body-small text-gray-500 mt-2">Buat dan cari tag komunitas</p>
+            <p class="app-body-small mt-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Create and find community tags' : 'Buat dan cari tag komunitas' }}</p>
         </div>
 
         @if(session('status'))
@@ -49,7 +50,7 @@
         {{-- Create tag --}}
         <div class="card-savora p-5 mb-4">
             <div class="mb-4">
-                <x-app-theme.section-header title="Tambah Tag Baru" :icon="$addTagIcon" />
+                <x-app-theme.section-header :title="$isEnglish ? 'Add New Tag' : 'Tambah Tag Baru'" :icon="$addTagIcon" />
             </div>
             <form action="{{ route('app.tags.store') }}" method="POST">
                 @csrf
@@ -61,19 +62,19 @@
                             </svg>
                         </div>
                         <input type="text" name="name" value="{{ old('name') }}"
-                               placeholder="Nama tag baru (cth: sarapan, vegan)"
+                               placeholder="{{ $isEnglish ? 'New tag name (ex: breakfast, vegan)' : 'Nama tag baru (cth: sarapan, vegan)' }}"
                                class="input-savora pl-10 pr-4 py-3">
                     </div>
                     <button type="submit" class="btn-primary-savora flex items-center gap-2 shrink-0 px-5 py-3">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>
-                        Buat
+                        {{ $isEnglish ? 'Create' : 'Buat' }}
                     </button>
                 </div>
             </form>
             <div class="mt-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
-                Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.
+                {{ $isEnglish ? 'New tags will wait for admin approval before they can be used.' : 'Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.' }}
             </div>
         </div>
 
@@ -86,7 +87,7 @@
                     </svg>
                 </div>
                 <input type="text" name="q" value="{{ $query }}"
-                       placeholder="Cari tag yang sudah ada..."
+                       placeholder="{{ $isEnglish ? 'Search existing tags...' : 'Cari tag yang sudah ada...' }}"
                        class="input-savora pl-12 pr-12 py-3.5">
                 @if($query)
                     <a href="{{ route('app.tags') }}"
@@ -105,7 +106,7 @@
                 <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
                     <div class="flex-1">
                         <x-app-theme.section-header
-                            title="{{ $query ? 'Hasil Pencarian' : 'Tag Populer' }}"
+                            :title="$query ? ($isEnglish ? 'Search Results' : 'Hasil Pencarian') : ($isEnglish ? 'Popular Tags' : 'Tag Populer')"
                             :icon="$popularTagIcon"
                         />
                     </div>
@@ -122,7 +123,7 @@
 
                         <div class="flex-1 min-w-0">
                             <p class="font-semibold text-gray-900 text-sm">{{ $tag['name'] }}</p>
-                            <p class="text-xs text-gray-500 mt-0.5">Dipakai {{ $tag['usage_count'] ?? 0 }} resep</p>
+                            <p class="text-xs mt-0.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Used in' : 'Dipakai' }} {{ $tag['usage_count'] ?? 0 }} {{ $isEnglish ? 'recipes' : 'resep' }}</p>
                         </div>
 
                         @if($tag['is_approved'] ?? false)
@@ -152,10 +153,10 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-bold text-gray-700 mb-2">
-                    {{ $query ? 'Tag tidak ditemukan' : 'Belum ada tag' }}
+                    {{ $query ? ($isEnglish ? 'Tag not found' : 'Tag tidak ditemukan') : ($isEnglish ? 'No tags yet' : 'Belum ada tag') }}
                 </h3>
                 <p class="text-gray-400 text-sm">
-                    {{ $query ? 'Coba kata kunci lain atau buat tag baru di atas' : 'Buat tag pertama di atas' }}
+                    {{ $query ? ($isEnglish ? 'Try another keyword or create a new tag above' : 'Coba kata kunci lain atau buat tag baru di atas') : ($isEnglish ? 'Create the first tag above' : 'Buat tag pertama di atas') }}
                 </p>
             </div>
         @endif

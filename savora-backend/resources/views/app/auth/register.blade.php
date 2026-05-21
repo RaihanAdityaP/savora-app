@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Akun — Savora</title>
+    <title>Register Account — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
@@ -59,10 +59,10 @@
         {{-- Title --}}
         <div class="anim-title flex flex-col items-center gap-2">
             <div class="px-4 py-1.5 bg-white/20 border border-white/40 rounded-full">
-                <span class="text-white text-xs font-bold tracking-widest">BERGABUNG</span>
+                <span class="text-white text-xs font-bold tracking-widest">JOIN</span>
             </div>
-            <h1 class="text-4xl font-black text-white tracking-tight">Buat Akun</h1>
-            <p class="text-white/80 text-sm text-center">Mulai Petualangan Kuliner Anda</p>
+            <h1 class="text-4xl font-black text-white tracking-tight">Create Account</h1>
+            <p class="text-white/80 text-sm text-center">Start your culinary journey</p>
         </div>
 
         {{-- White card --}}
@@ -107,7 +107,7 @@
                                   d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <input type="text" name="full_name" value="{{ old('full_name') }}"
-                               placeholder="Nama Lengkap" maxlength="100" required
+                               placeholder="Full Name" maxlength="100" required
                                class="input-savora has-icon py-3.5"
                                style="border-radius: 1rem">
                     </div>
@@ -137,7 +137,7 @@
                                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                         <input :type="showPassword ? 'text' : 'password'" name="password"
-                               placeholder="Password (min. 6 karakter)" minlength="6"
+                               placeholder="Password (min. 6 characters)" minlength="6"
                                autocomplete="new-password" required
                                class="input-savora has-icon pr-12 py-3.5"
                                style="border-radius: 1rem">
@@ -168,13 +168,12 @@
                         </div>
                     </div>
                     <span class="text-sm text-gray-600 leading-relaxed">
-                        Dengan mendaftar, Anda menyetujui
+                        By registering, you agree to our
                         <button type="button" @click.prevent="TermsModal.show()"
-                                class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Syarat &amp; Ketentuan</button>
-                        dan
+                                class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Terms &amp; Conditions</button>
+                        and
                         <button type="button" @click.prevent="PrivacyModal.show()"
-                                class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Kebijakan Privasi</button>
-                        kami.
+                                class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Privacy Policy</button>.
                     </span>
                 </label>
 
@@ -182,13 +181,13 @@
                 <button type="submit" :disabled="!agreeTerms || loading"
                         class="btn-primary-savora w-full py-4 rounded-2xl text-base tracking-widest hover:scale-[1.01] active:scale-[0.99]"
                         :class="(!agreeTerms || loading) ? 'opacity-50 cursor-not-allowed !scale-100' : ''">
-                    <span x-show="!loading">DAFTAR SEKARANG</span>
+                    <span x-show="!loading">REGISTER NOW</span>
                     <span x-show="loading" class="flex items-center gap-2">
                         <svg class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                         </svg>
-                        Memproses...
+                        Processing...
                     </span>
                 </button>
             </form>
@@ -196,11 +195,11 @@
 
         {{-- Login pill --}}
         <div class="anim-footer flex items-center gap-3 px-5 py-3 bg-white/15 border border-white/30 rounded-full">
-            <span class="text-white/80 text-sm">Sudah punya akun?</span>
+            <span class="text-white/80 text-sm">Already have an account?</span>
             <a href="{{ route('app.login') }}"
                class="px-4 py-1.5 bg-white rounded-full font-bold text-sm hover:bg-white/90 transition-all shadow"
                style="color: var(--color-primary-coral)">
-                Masuk →
+                Log In →
             </a>
         </div>
 

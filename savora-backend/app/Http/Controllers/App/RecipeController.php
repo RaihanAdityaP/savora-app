@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\App;
 
 use App\Http\Controllers\Controller;
+use App\Services\NotificationService;
 use App\Services\SupabaseService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Exception;
 
 class RecipeController extends Controller
 {
-    public function __construct(private SupabaseService $supabase) {}
+    public function __construct(
+        private SupabaseService $supabase,
+        private UserSettingsService $settingsService,
+        private NotificationService $notification,
+    ) {}
 
     // GET /app/recipes/{id}
     public function show(string $id)
@@ -68,6 +74,8 @@ class RecipeController extends Controller
             $isFavorite = false;
             $favoriteBoards = [];
             $savedBoardIds = [];
+            $likesCount = 0;
+            $isLiked = false;
             if ($userId) {
                 try {
                     $boards = $this->supabase->select('recipe_boards', ['id', 'name', 'description'], ['user_id' => $userId], ['order' => 'created_at.asc']);
@@ -81,17 +89,29 @@ class RecipeController extends Controller
                     }
                 } catch (Exception) {}
             }
-
             try {
-                $this->supabase->update('recipes', ['views_count' => ($recipe['views_count'] ?? 0) + 1], ['id' => $id]);
+                $likesCount = $this->supabase->count('recipe_likes', ['recipe_id' => $id]);
+                if ($userId) {
+                    $isLiked = ! empty($this->supabase->select('recipe_likes', ['id'], [
+                        'recipe_id' => $id,
+                        'user_id'   => $userId,
+                    ]));
+                }
             } catch (Exception) {}
+
+            if ($this->settingsService->enabled($userId, 'allow_analytics')) {
+                try {
+                    $this->supabase->update('recipes', ['views_count' => ($recipe['views_count'] ?? 0) + 1], ['id' => $id]);
+                } catch (Exception) {}
+            }
 
             $currentUserRole = session('user_role', 'user');
 
             return view('app.recipes.detail', compact(
                 'recipe', 'ratings', 'avgRating', 'totalRatings',
                 'userRating', 'comments', 'tags', 'isFavorite',
-                'userId', 'currentUserRole', 'favoriteBoards', 'savedBoardIds'
+                'userId', 'currentUserRole', 'favoriteBoards', 'savedBoardIds',
+                'likesCount', 'isLiked'
             ));
 
         } catch (Exception $e) {
@@ -344,6 +364,29 @@ class RecipeController extends Controller
                 'content'   => $request->input('content'),
             ]);
 
+            $recipes = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
+            if (! empty($recipes)) {
+                $ownerId = $recipes[0]['user_id'] ?? null;
+                if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_comments')) {
+                    $this->supabase->insert('notifications', [
+                        'user_id'             => $ownerId,
+                        'type'                => 'new_comment',
+                        'title'               => 'Komentar Baru',
+                        'message'             => session('user_username', 'Seseorang') . " berkomentar di resep '" . ($recipes[0]['title'] ?? 'Anda') . "'",
+                        'related_entity_type' => 'recipe',
+                        'related_entity_id'   => $id,
+                    ]);
+
+                    $this->sendPushToUser(
+                        $ownerId,
+                        'Komentar Baru',
+                        session('user_username', 'Seseorang') . ' berkomentar di resep Anda',
+                        'new_comment',
+                        $id
+                    );
+                }
+            }
+
             return back()->with('status', 'Komentar berhasil dikirim.');
         } catch (Exception $e) {
             return back()->with('error', 'Gagal: ' . $e->getMessage());
@@ -384,6 +427,78 @@ class RecipeController extends Controller
             return back()->with('status', 'Rating berhasil dikirim.');
         } catch (Exception $e) {
             return back()->with('error', 'Gagal: ' . $e->getMessage());
+        }
+    }
+
+    public function toggleLike(string $id)
+    {
+        try {
+            $userId = session('user_id');
+            $recipes = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
+            if (empty($recipes)) abort(404);
+
+            $existing = $this->supabase->select('recipe_likes', ['id'], [
+                'recipe_id' => $id,
+                'user_id'   => $userId,
+            ]);
+
+            if (! empty($existing)) {
+                $this->supabase->delete('recipe_likes', [
+                    'recipe_id' => $id,
+                    'user_id'   => $userId,
+                ]);
+                return back()->with('status', 'Like dibatalkan.');
+            }
+
+            $this->supabase->insert('recipe_likes', [
+                'recipe_id' => $id,
+                'user_id'   => $userId,
+            ]);
+
+            $ownerId = $recipes[0]['user_id'] ?? null;
+            if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_likes')) {
+                $this->supabase->insert('notifications', [
+                    'user_id'             => $ownerId,
+                    'type'                => 'new_like',
+                    'title'               => 'Like Baru',
+                    'message'             => session('user_username', 'Seseorang') . " menyukai resep '" . ($recipes[0]['title'] ?? 'Anda') . "'",
+                    'related_entity_type' => 'recipe',
+                    'related_entity_id'   => $id,
+                ]);
+
+                $this->sendPushToUser(
+                    $ownerId,
+                    'Like Baru',
+                    session('user_username', 'Seseorang') . ' menyukai resep Anda',
+                    'new_like',
+                    $id
+                );
+            }
+
+            return back()->with('status', 'Resep disukai.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal: ' . $e->getMessage());
+        }
+    }
+
+    private function sendPushToUser(string $userId, string $title, string $message, string $type, string $entityId): void
+    {
+        try {
+            $deviceTokens = $this->supabase->select('device_tokens', ['token'], [
+                'user_id' => $userId,
+                'is_active' => true,
+            ]);
+
+            if (empty($deviceTokens)) return;
+
+            $this->notification->sendToMultipleDevices(
+                array_column($deviceTokens, 'token'),
+                $title,
+                $message,
+                $this->notification->generatePayload($type, $entityId)
+            );
+        } catch (Exception $e) {
+            \Log::warning('Failed to send push notification: ' . $e->getMessage());
         }
     }
 }

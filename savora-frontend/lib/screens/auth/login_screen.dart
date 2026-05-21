@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (isBanned) {
           ApiService.clearToken();
           final reason =
-              response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+              response['user']?['banned_reason'] ?? 'Not specified';
           final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (mounted) _showSnackBar(e.message, isError: true);
     } catch (e) {
       if (mounted) {
-        _showSnackBar('Google Sign In gagal: ${e.toString()}', isError: true);
+        _showSnackBar('Google Sign In failed: ${e.toString()}', isError: true);
       }
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _signIn() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showSnackBar('Email dan password harus diisi!', isError: true);
+      _showSnackBar('Email and password are required!', isError: true);
       return;
     }
     setState(() => _isLoading = true);
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (isBanned) {
           ApiService.clearToken();
           final reason =
-              response['user']?['banned_reason'] ?? 'Tidak disebutkan';
+              response['user']?['banned_reason'] ?? 'Not specified';
           final bannedAt = response['user']?['banned_at'];
           if (mounted) _showBannedDialog(reason: reason, bannedAt: bannedAt);
           return;
@@ -113,16 +113,16 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
       String errorMsg = e.message;
       if (errorMsg.contains('Invalid login credentials')) {
-        errorMsg = 'Email atau password salah';
+        errorMsg = 'Email or password is incorrect';
       } else if (errorMsg.contains('Email not confirmed')) {
-        errorMsg = 'Silakan verifikasi email Anda terlebih dahulu';
+        errorMsg = 'Please verify your email first';
       }
       _showSnackBar(errorMsg, isError: true);
     } catch (e) {
       if (!mounted) return;
       String errorMsg = e.toString().replaceFirst('Exception: ', '');
       if (errorMsg.contains('timeout')) {
-        errorMsg = 'Koneksi timeout. Cek internet Anda.';
+        errorMsg = 'Connection timed out. Check your internet connection.';
       }
       _showSnackBar(errorMsg, isError: true);
     } finally {
@@ -149,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             const SizedBox(width: 14),
             const Expanded(
-                child: Text('Verifikasi Email',
+                child: Text('Email Verification',
                     style: TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold))),
           ],
@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-                'Masukkan email Anda untuk mengirim ulang link verifikasi:'),
+                'Enter your email to resend the verification link:'),
             const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Batal',
+            child: Text('Cancel',
                 style: TextStyle(color: Colors.grey.shade600)),
           ),
           Container(
@@ -201,16 +201,16 @@ class _LoginScreenState extends State<LoginScreen>
                       await AuthClient.resendVerificationEmail(email);
                   if (mounted) {
                     if (success) {
-                      _showSnackBar('Email verifikasi dikirim ke $email',
+                      _showSnackBar('Verification email sent to $email',
                           isError: false);
                     } else {
-                      _showSnackBar('Gagal mengirim email verifikasi',
+                      _showSnackBar('Failed to send verification email',
                           isError: true);
                     }
                   }
                 } catch (e) {
                   if (mounted) {
-                    _showSnackBar('Gagal: $e', isError: true);
+                    _showSnackBar('Failed: $e', isError: true);
                   }
                 }
               },
@@ -219,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen>
                 children: [
                   Icon(Icons.send_rounded, color: Colors.white, size: 18),
                   SizedBox(width: 8),
-                  Text('Kirim',
+                  Text('Send',
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold)),
@@ -252,17 +252,17 @@ class _LoginScreenState extends State<LoginScreen>
                   color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
-            const Text('Akun Dinonaktifkan'),
+            const Text('Account Disabled'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Akun Anda telah dinonaktifkan oleh administrator.',
+            const Text('Your account has been disabled by an administrator.',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            const Text('Alasan:',
+            const Text('Reason:',
                 style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
@@ -285,7 +285,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             child: TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Tutup',
+              child: const Text('Close',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
             ),
@@ -385,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   color: Colors.white.withValues(alpha: 0.4),
                                   width: 2),
                             ),
-                            child: const Text('SELAMAT DATANG',
+                            child: const Text('WELCOME',
                                 style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -401,7 +401,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   height: 1.1,
                                   letterSpacing: -1)),
                           const SizedBox(height: 10),
-                          Text('Petualangan Kuliner Dimulai Disini',
+                          Text('Your Culinary Journey Starts Here',
                               style: TextStyle(
                                   fontSize: 15,
                                   color: Colors.white.withValues(alpha: 0.95),
@@ -471,7 +471,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             child: CircularProgressIndicator(
                                                 strokeWidth: 3,
                                                 color: Colors.white))
-                                        : const Text('MASUK',
+                                        : const Text('LOG IN',
                                             style: TextStyle(
                                                 fontSize: 17,
                                                 fontWeight: FontWeight.bold,
@@ -491,7 +491,7 @@ class _LoginScreenState extends State<LoginScreen>
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 16),
-                                child: Text('ATAU',
+                                child: Text('OR',
                                     style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontWeight: FontWeight.bold,
@@ -545,7 +545,7 @@ class _LoginScreenState extends State<LoginScreen>
                                                           size: 26)),
                                               const SizedBox(width: 12),
                                               Text(
-                                                  'Lanjutkan dengan Google',
+                                                  'Continue with Google',
                                                   style: TextStyle(
                                                       fontSize: 15,
                                                       fontWeight:
@@ -579,7 +579,7 @@ class _LoginScreenState extends State<LoginScreen>
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text('Belum verifikasi email?',
+                      child: Text('Email not verified?',
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.95),
                               fontSize: 14,
@@ -604,7 +604,7 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Belum punya akun?',
+                          Text('Do not have an account?',
                               style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.95),
                                   fontSize: 15,
@@ -631,7 +631,7 @@ class _LoginScreenState extends State<LoginScreen>
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text('Daftar',
+                                  Text('Register',
                                       style: TextStyle(
                                           color: AppTheme.primaryCoral,
                                           fontSize: 15,
@@ -667,13 +667,13 @@ class _LoginScreenState extends State<LoginScreen>
       text: TextSpan(
         style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
         children: [
-          const TextSpan(text: 'Dengan masuk, Anda setuju dengan '),
+          const TextSpan(text: 'By logging in, you agree to our '),
           WidgetSpan(
             alignment: PlaceholderAlignment.middle,
             child: GestureDetector(
               onTap: () => PrivacyModal.show(context),
               child: const Text(
-                'Privasi',
+                'Privacy',
                 style: TextStyle(
                   fontSize: 11,
                   color: Color(0xFF2A9D8F),
@@ -693,7 +693,7 @@ class _LoginScreenState extends State<LoginScreen>
             child: GestureDetector(
               onTap: () => TermsModal.show(context),
               child: const Text(
-                'Ketentuan',
+                'Terms',
                 style: TextStyle(
                   fontSize: 11,
                   color: Color(0xFFE76F51),
@@ -705,7 +705,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
           TextSpan(
-            text: ' kami.',
+            text: '.',
             style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
           ),
         ],

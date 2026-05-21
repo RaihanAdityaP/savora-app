@@ -137,15 +137,15 @@ class _PrivacyModalState extends State<PrivacyModal>
                 child: const Icon(Icons.lock_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Kebijakan Privasi',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                    SizedBox(height: 4),
-                    Text('Perlindungan data Anda adalah prioritas kami',
-                        style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+                    Text('Privacy Policy',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Text('Protecting your data is our priority',
+                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -212,7 +212,7 @@ class _PrivacyModalState extends State<PrivacyModal>
           ),
           const SizedBox(width: 8),
           Text(
-            'Terakhir diperbarui: 19 Maret 2026',
+            'Last updated: March 19, 2026',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
         ],
@@ -252,7 +252,7 @@ class _PrivacyModalState extends State<PrivacyModal>
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'Penggunaan Proxy AI Pihak Ketiga',
+                  'Third-Party AI Proxy Usage',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -266,7 +266,7 @@ class _PrivacyModalState extends State<PrivacyModal>
                   color: Colors.orange.shade600,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('PENTING',
+                child: const Text('IMPORTANT',
                     style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
             ],
@@ -275,7 +275,7 @@ class _PrivacyModalState extends State<PrivacyModal>
 
           // Intro
           Text(
-            'Savora menyediakan fitur opsional untuk menghubungkan layanan AI pihak ketiga (seperti OpenRouter) melalui pengaturan proxy. Dengan menggunakan fitur ini, Anda memahami dan menyetujui hal-hal berikut:',
+            'Savora provides an optional feature to connect third-party AI services (such as OpenRouter) through proxy settings. By using this feature, you understand and agree to the following:',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
           ),
           const SizedBox(height: 14),
@@ -284,8 +284,8 @@ class _PrivacyModalState extends State<PrivacyModal>
           _proxyPolicyItem(
             icon: Icons.credit_card_off_rounded,
             color: Colors.red.shade600,
-            title: 'Tidak Ada Tanggung Jawab Pembayaran',
-            desc: 'Savora tidak bertanggung jawab atas biaya, tagihan, atau pembayaran apapun yang timbul dari penggunaan layanan AI pihak ketiga. Pengguna sepenuhnya bertanggung jawab atas pengelolaan kredit, kuota, dan biaya yang dikenakan oleh provider yang dipilih.',
+            title: 'No Payment Responsibility',
+            desc: 'Savora is not responsible for any costs, charges, or payments arising from third-party AI services. Users are fully responsible for managing credits, quotas, and fees charged by the selected provider.',
           ),
           const SizedBox(height: 10),
 
@@ -293,7 +293,7 @@ class _PrivacyModalState extends State<PrivacyModal>
           _proxyPolicyItem(
             icon: Icons.handshake_outlined,
             color: Colors.purple.shade600,
-            title: 'Tidak Ada Hubungan Resmi',
+            title: 'No Official Relationship',
             desc: 'Savora tidak memiliki kemitraan, afiliasi, kerja sama, atau hubungan resmi apapun dengan layanan AI pihak ketiga yang dapat dikonfigurasi melalui fitur ini (termasuk namun tidak terbatas pada OpenRouter, dan penyedia lainnya). Nama dan logo pihak ketiga hanya ditampilkan sebagai referensi pengguna.',
           ),
           const SizedBox(height: 10),
@@ -302,8 +302,8 @@ class _PrivacyModalState extends State<PrivacyModal>
           _proxyPolicyItem(
             icon: Icons.warning_amber_rounded,
             color: Colors.orange.shade700,
-            title: 'Persetujuan Risiko Pengguna',
-            desc: 'Dengan mengaktifkan dan menggunakan fitur proxy AI pihak ketiga, Anda secara eksplisit menyetujui segala risiko yang mungkin timbul, termasuk: risiko keamanan API key, ketidaktersediaan layanan, perubahan kebijakan penyedia, dan konsekuensi finansial dari penggunaan model berbayar.',
+            title: 'User Risk Consent',
+            desc: 'By enabling and using the third-party AI proxy feature, you explicitly accept all risks that may arise, including API key security risks, service unavailability, provider policy changes, and financial consequences from using paid models.',
           ),
           const SizedBox(height: 10),
 
@@ -312,7 +312,7 @@ class _PrivacyModalState extends State<PrivacyModal>
             icon: Icons.send_rounded,
             color: Colors.blue.shade600,
             title: 'Pengiriman Data ke Pihak Ketiga',
-            desc: 'Saat menggunakan proxy pihak ketiga, pesan dan konten yang Anda kirim akan diteruskan ke server penyedia yang bersangkutan. Savora tidak dapat menjamin bagaimana data tersebut diproses, disimpan, atau digunakan oleh pihak ketiga. Harap baca kebijakan privasi penyedia sebelum menggunakannya.',
+            desc: 'When using a third-party proxy, messages and content you send will be forwarded to the relevant provider servers. Savora cannot guarantee how that data is processed, stored, or used by third parties. Please read the provider privacy policy before using it.',
           ),
           const SizedBox(height: 14),
 
@@ -331,7 +331,7 @@ class _PrivacyModalState extends State<PrivacyModal>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Penggunaan fitur ini bersifat opsional. Savora menyediakan Groq sebagai layanan AI default yang gratis dan dikelola oleh server tanpa konfigurasi tambahan dari pengguna.',
+                    'This feature is optional. Savora provides Groq as the default free AI service managed by the server without additional user configuration.',
                     style: TextStyle(fontSize: 12, color: Colors.orange.shade800, height: 1.5),
                   ),
                 ),
@@ -389,21 +389,21 @@ class _PrivacyModalState extends State<PrivacyModal>
 
   Widget _buildSection1() {
     final items = [
-      {'icon': Icons.person_outline,    'title': 'Informasi Akun',   'desc': 'Email, username, nama lengkap, foto profil'},
-      {'icon': Icons.visibility_outlined,'title': 'Konten',           'desc': 'Resep, foto, video, komentar, dan ulasan yang Anda unggah'},
-      {'icon': Icons.share_outlined,    'title': 'Aktivitas',        'desc': 'Resep yang Anda simpan, ikuti, dan rating yang diberikan'},
-      {'icon': Icons.storage_outlined,  'title': 'Data Teknis',      'desc': 'Alamat IP, browser, perangkat, dan log aktivitas'},
-      {'icon': Icons.cookie_outlined,   'title': 'Cookies',          'desc': 'Data untuk menjaga sesi login dan preferensi'},
+      {'icon': Icons.person_outline,    'title': 'Account Information', 'desc': 'Email, username, full name, profile photo'},
+      {'icon': Icons.visibility_outlined,'title': 'Content',             'desc': 'Recipes, photos, videos, comments, and reviews you upload'},
+      {'icon': Icons.share_outlined,    'title': 'Activity',            'desc': 'Recipes you save, follow activity, and ratings you submit'},
+      {'icon': Icons.storage_outlined,  'title': 'Technical Data',      'desc': 'IP address, browser, device, and activity logs'},
+      {'icon': Icons.cookie_outlined,   'title': 'Cookies',             'desc': 'Data used to keep login sessions and preferences'},
     ];
 
     return _buildSectionCard(
       icon: Icons.storage_outlined,
       iconBg: const Color(0xFF2A9D8F),
-      title: 'Informasi yang Kami Kumpulkan',
+      title: 'Information We Collect',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Kami mengumpulkan informasi berikut saat Anda menggunakan Savora:',
+          Text('We collect the following information when you use Savora:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 12),
           ...items.map((item) => Container(
@@ -451,7 +451,7 @@ class _PrivacyModalState extends State<PrivacyModal>
   Widget _buildSection2() {
     final items = [
       'Menyediakan dan meningkatkan layanan platform',
-      'Memproses autentikasi dan keamanan akun',
+      'Process authentication and account security',
       'Menampilkan konten yang relevan dan personal',
       'Mengirim notifikasi terkait aktivitas akun',
       'Menganalisis penggunaan platform untuk perbaikan',
@@ -462,11 +462,11 @@ class _PrivacyModalState extends State<PrivacyModal>
     return _buildSectionCard(
       icon: Icons.visibility_outlined,
       iconBg: Colors.blue,
-      title: 'Penggunaan Informasi',
+      title: 'Use of Information',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Informasi yang kami kumpulkan digunakan untuk:',
+          Text('We use the information we collect to:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 12),
           Column(
@@ -501,10 +501,10 @@ class _PrivacyModalState extends State<PrivacyModal>
 
   Widget _buildDataNotSoldSection() {
     final items = [
-      {'title': 'Konten Publik',       'desc': 'Resep, profil, dan komentar yang Anda publikasikan dapat dilihat pengguna lain'},
-      {'title': 'Penyedia Layanan',    'desc': 'Supabase (database), Vercel (hosting), dan layanan pihak ketiga terpercaya lainnya'},
-      {'title': 'Kewajiban Hukum',     'desc': 'Jika diminta oleh otoritas yang berwenang'},
-      {'title': 'Perlindungan Hak',    'desc': 'Untuk melindungi hak, properti, atau keamanan Savora dan penggunanya'},
+      {'title': 'Public Content',      'desc': 'Recipes, profiles, and comments you publish may be visible to other users'},
+      {'title': 'Service Providers',   'desc': 'Supabase (database), Vercel (hosting), and other trusted third-party services'},
+      {'title': 'Legal Obligations',   'desc': 'When requested by authorized authorities'},
+      {'title': 'Rights Protection',   'desc': 'To protect the rights, property, or safety of Savora and its users'},
     ];
 
     return Container(
@@ -530,13 +530,13 @@ class _PrivacyModalState extends State<PrivacyModal>
               ),
               const SizedBox(width: 12),
               const Expanded(
-                child: Text('Berbagi Informasi',
+                child: Text('Information Sharing',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
-                child: const Text('TIDAK DIJUAL',
+                child: const Text('NOT SOLD',
                     style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
             ],
@@ -545,11 +545,11 @@ class _PrivacyModalState extends State<PrivacyModal>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
-            child: const Text('Kami TIDAK menjual data pribadi Anda.',
+            child: const Text('We do NOT sell your personal data.',
                 style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1a5c2a))),
           ),
           const SizedBox(height: 12),
-          Text('Informasi Anda dapat dibagikan dalam kondisi berikut:',
+          Text('Your information may be shared in the following situations:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 8),
           ...items.map((item) => Container(
@@ -579,9 +579,9 @@ class _PrivacyModalState extends State<PrivacyModal>
     return _buildSectionCard(
       icon: Icons.shield_outlined,
       iconBg: Colors.purple,
-      title: 'Keamanan Data',
+      title: 'Data Security',
       child: Text(
-        'Kami menerapkan langkah-langkah keamanan yang wajar untuk melindungi data Anda, termasuk enkripsi, kontrol akses, dan monitoring keamanan. Namun, tidak ada sistem yang 100% aman dari serangan cyber. Anda bertanggung jawab untuk menjaga kerahasiaan password dan API key akun Anda.',
+        'We apply reasonable security measures to protect your data, including encryption, access controls, and security monitoring. However, no system is 100% secure from cyberattacks. You are responsible for keeping your account password and API keys confidential.',
         style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
       ),
     );
@@ -589,21 +589,21 @@ class _PrivacyModalState extends State<PrivacyModal>
 
   Widget _buildUserRightsSection() {
     final rights = [
-      {'title': 'Akses',        'desc': 'Melihat data pribadi yang kami simpan'},
-      {'title': 'Koreksi',      'desc': 'Memperbarui informasi yang tidak akurat'},
-      {'title': 'Penghapusan',  'desc': 'Menghapus akun dan data pribadi Anda'},
-      {'title': 'Portabilitas', 'desc': 'Mengunduh data Anda dalam format terstruktur'},
-      {'title': 'Keberatan',    'desc': 'Menolak pemrosesan data tertentu'},
+      {'title': 'Access',       'desc': 'View the personal data we store'},
+      {'title': 'Correction',   'desc': 'Update inaccurate information'},
+      {'title': 'Deletion',     'desc': 'Delete your account and personal data'},
+      {'title': 'Portability',  'desc': 'Download your data in a structured format'},
+      {'title': 'Objection',    'desc': 'Object to certain data processing'},
     ];
 
     return _buildSectionCard(
       icon: Icons.person_outline,
       iconBg: Colors.indigo,
-      title: 'Hak Pengguna',
+      title: 'User Rights',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Anda memiliki hak untuk:',
+          Text('You have the right to:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 10),
           ...rights.asMap().entries.map((entry) => Container(
@@ -640,7 +640,7 @@ class _PrivacyModalState extends State<PrivacyModal>
                 ),
               )),
           const SizedBox(height: 8),
-          Text('Untuk menggunakan hak ini, hubungi kami melalui email atau fitur kontak di platform.',
+          Text('To exercise these rights, contact us by email or through the platform contact feature.',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
         ],
       ),
@@ -652,26 +652,26 @@ class _PrivacyModalState extends State<PrivacyModal>
       {
         'icon': Icons.access_time,
         'color': Colors.orange,
-        'title': 'Retensi Data',
-        'text': 'Kami menyimpan data Anda selama akun Anda aktif dan periode wajar setelahnya untuk keperluan hukum dan keamanan. Data yang sudah tidak diperlukan akan dihapus secara berkala.'
+        'title': 'Data Retention',
+        'text': 'We retain your data while your account is active and for a reasonable period afterward for legal and security purposes. Data that is no longer needed will be deleted periodically.'
       },
       {
         'icon': Icons.cookie_outlined,
         'color': Colors.amber,
-        'title': 'Cookies dan Teknologi Pelacakan',
-        'text': 'Kami menggunakan cookies untuk menjaga sesi login, mengingat preferensi, dan menganalisis penggunaan platform. Anda dapat mengatur browser untuk menolak cookies, namun beberapa fitur mungkin tidak berfungsi dengan baik.'
+        'title': 'Cookies and Tracking Technologies',
+        'text': 'We use cookies to maintain login sessions, remember preferences, and analyze platform usage. You can configure your browser to reject cookies, but some features may not work properly.'
       },
       {
         'icon': Icons.child_care,
         'color': Colors.pink,
-        'title': 'Privasi Anak-anak',
-        'text': 'Platform ini tidak ditujukan untuk anak-anak di bawah 13 tahun. Kami tidak secara sengaja mengumpulkan data pribadi dari anak-anak. Jika kami mengetahui adanya data anak-anak, kami akan segera menghapusnya.'
+        'title': 'Children\'s Privacy',
+        'text': 'This platform is not intended for children under 13. We do not knowingly collect personal data from children. If we become aware of children\'s data, we will delete it promptly.'
       },
       {
         'icon': Icons.visibility_outlined,
         'color': Colors.blueGrey,
-        'title': 'Perubahan Kebijakan',
-        'text': 'Kami dapat memperbarui kebijakan privasi ini sewaktu-waktu. Perubahan signifikan akan diberitahukan melalui email atau notifikasi di platform. Penggunaan platform setelah perubahan berarti Anda menyetujui kebijakan yang baru.'
+        'title': 'Policy Changes',
+        'text': 'We may update this privacy policy from time to time. Significant changes will be communicated through email or platform notifications. Continued use of the platform after changes means you accept the updated policy.'
       },
     ];
 
@@ -691,16 +691,16 @@ class _PrivacyModalState extends State<PrivacyModal>
     return _buildSectionCard(
       icon  : Icons.mail_outline,
       iconBg: const Color(0xFF2A9D8F),
-      title : 'Kontak',
+      title : 'Contact',
       child : Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Jika Anda memiliki pertanyaan tentang kebijakan privasi ini, silakan hubungi kami:',
+          Text('If you have questions about this privacy policy, please contact us:',
               style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
           const SizedBox(height: 10),
           _contactRow(Icons.mail_outline,  'Email',   'adminsavora@gmail.com'),
           const SizedBox(height: 8),
-          _contactRow(Icons.language,      'Website', 'savora-app-productions.up.railway.app'),
+          _contactRow(Icons.language,      'Website', 'savora-app.up.railway.app'),
         ],
       ),
     );
@@ -772,11 +772,11 @@ class _PrivacyModalState extends State<PrivacyModal>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Komitmen Kami',
+                Text('Our Commitment',
                     style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade900, fontSize: 14)),
                 const SizedBox(height: 4),
                 Text(
-                  'Kami berkomitmen untuk melindungi privasi Anda dan menggunakan data Anda secara bertanggung jawab sesuai dengan hukum yang berlaku di Indonesia.',
+                  'We are committed to protecting your privacy and using your data responsibly under applicable Indonesian law.',
                   style: TextStyle(fontSize: 12, color: Colors.blue.shade800, height: 1.5),
                 ),
               ],
@@ -838,13 +838,13 @@ class _PrivacyModalState extends State<PrivacyModal>
               BoxShadow(color: const Color(0xFF2A9D8F).withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 6)),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 10),
-              Text('Saya Mengerti & Menyetujui',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const Icon(Icons.lock_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text('I Understand & Agree',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
         ),

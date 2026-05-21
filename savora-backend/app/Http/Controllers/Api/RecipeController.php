@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Enums\RecipeStatus;
 use App\Services\SupabaseService;
 use App\Services\NotificationService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -16,11 +17,13 @@ class RecipeController extends Controller
 {
     private $supabase;
     private $notification;
+    private $settingsService;
 
-    public function __construct(SupabaseService $supabase, NotificationService $notification)
+    public function __construct(SupabaseService $supabase, NotificationService $notification, UserSettingsService $settingsService)
     {
         $this->supabase = $supabase;
         $this->notification = $notification;
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -189,6 +192,9 @@ class RecipeController extends Controller
                     'total'   => $totalRatings,
                 ];
             }
+            unset($recipe);
+
+            $recipes = $this->attachRecipeLikes($recipes, $this->resolveRequestUserId($request));
 
             return response()->json([
                 'success'    => true,
@@ -210,7 +216,7 @@ class RecipeController extends Controller
      * Get single recipe by ID
      * GET /api/recipes/{id}
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
             $columns = ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'];
@@ -238,10 +244,13 @@ class RecipeController extends Controller
                 'average' => $avgRating,
                 'total'   => $totalRatings,
             ];
+            $recipe = $this->attachRecipeLikes([$recipe], $this->resolveRequestUserId($request))[0];
 
-            $this->supabase->update('recipes', [
-                'views_count' => ($recipe['views_count'] ?? 0) + 1,
-            ], ['id' => $id]);
+            if ($this->settingsService->enabled($request->input('user_id'), 'allow_analytics')) {
+                $this->supabase->update('recipes', [
+                    'views_count' => ($recipe['views_count'] ?? 0) + 1,
+                ], ['id' => $id]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -675,6 +684,9 @@ class RecipeController extends Controller
 
                 $recipe['rating_info'] = ['average' => $avgRating, 'total' => $totalRatings];
             }
+            unset($recipe);
+
+            $recipes = $this->attachRecipeLikes($recipes, $this->resolveRequestUserId($request));
 
             return response()->json([
                 'success'    => true,
@@ -816,7 +828,7 @@ class RecipeController extends Controller
      * Increment recipe views explicitly
      * POST /api/recipes/{id}/view
      */
-    public function incrementView($id)
+    public function incrementView(Request $request, $id)
     {
         try {
             $recipes = $this->supabase->select('recipes', ['id', 'views_count'], ['id' => $id]);
@@ -825,9 +837,11 @@ class RecipeController extends Controller
                 return response()->json(['success' => false, 'message' => 'Recipe not found'], 404);
             }
 
-            $this->supabase->update('recipes', [
-                'views_count' => (int) ($recipes[0]['views_count'] ?? 0) + 1,
-            ], ['id' => $id]);
+            if ($this->settingsService->enabled($request->input('user_id'), 'allow_analytics')) {
+                $this->supabase->update('recipes', [
+                    'views_count' => (int) ($recipes[0]['views_count'] ?? 0) + 1,
+                ], ['id' => $id]);
+            }
 
             return response()->json(['success' => true, 'message' => 'Recipe view incremented']);
         } catch (Exception $e) {
@@ -859,6 +873,186 @@ class RecipeController extends Controller
             return response()->json(['success' => true, 'data' => $tags]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Toggle authenticated user's public like on a recipe.
+     * POST /api/recipes/{id}/like
+     */
+    public function toggleLike(Request $request, $id)
+    {
+        try {
+            $userId = $this->resolveRequestUserId($request);
+            if (!$userId) {
+                return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+            }
+
+            $recipes = $this->supabase->select('recipes', ['id', 'user_id', 'title'], ['id' => $id]);
+            if (empty($recipes)) {
+                return response()->json(['success' => false, 'message' => 'Recipe not found'], 404);
+            }
+
+            $existing = $this->supabase->select('recipe_likes', ['id'], [
+                'recipe_id' => $id,
+                'user_id' => $userId,
+            ]);
+
+            if (!empty($existing)) {
+                $this->supabase->delete('recipe_likes', [
+                    'recipe_id' => $id,
+                    'user_id' => $userId,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Recipe unliked',
+                    'data' => $this->recipeLikePayload($id, $userId),
+                ]);
+            }
+
+            $this->supabase->insert('recipe_likes', [
+                'recipe_id' => $id,
+                'user_id' => $userId,
+            ]);
+
+            $ownerId = $recipes[0]['user_id'] ?? null;
+            if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_likes')) {
+                $profiles = $this->supabase->select('profiles', ['username', 'full_name'], ['id' => $userId]);
+                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Seseorang';
+                $title = $recipes[0]['title'] ?? 'resep Anda';
+
+                $this->supabase->insert('notifications', [
+                    'user_id' => $ownerId,
+                    'title' => 'Like Baru',
+                    'message' => "{$actorName} menyukai resep '{$title}'",
+                    'type' => 'new_like',
+                    'related_entity_type' => 'recipe',
+                    'related_entity_id' => $id,
+                ]);
+
+                $this->sendPushToUser(
+                    $ownerId,
+                    'Like Baru',
+                    "{$actorName} menyukai resep Anda",
+                    'new_like',
+                    $id
+                );
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Recipe liked',
+                'data' => $this->recipeLikePayload($id, $userId),
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get public like count, plus current user's like state when available.
+     * GET /api/recipes/{id}/likes
+     */
+    public function likes(Request $request, $id)
+    {
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => $this->recipeLikePayload($id, $this->resolveRequestUserId($request)),
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    private function resolveRequestUserId(Request $request): ?string
+    {
+        if ($request->user()) {
+            return $this->getSupabaseUserIdFromRequest($request);
+        }
+
+        return Auth::id() ?: $request->input('user_id');
+    }
+
+    private function attachRecipeLikes(array $recipes, ?string $userId): array
+    {
+        $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($recipeIds)) {
+            return $recipes;
+        }
+
+        $likeCounts = [];
+        $likedRecipeIds = [];
+
+        try {
+            $rows = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'user_id'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($rows as $row) {
+                $recipeId = $row['recipe_id'] ?? null;
+                if (!$recipeId) {
+                    continue;
+                }
+
+                $likeCounts[$recipeId] = ($likeCounts[$recipeId] ?? 0) + 1;
+                if ($userId && ($row['user_id'] ?? null) === $userId) {
+                    $likedRecipeIds[$recipeId] = true;
+                }
+            }
+        } catch (Exception) {
+        }
+
+        foreach ($recipes as $index => $recipe) {
+            $recipeId = $recipe['id'] ?? null;
+            $recipes[$index]['likes_count'] = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
+            $recipes[$index]['is_liked'] = $recipeId ? !empty($likedRecipeIds[$recipeId]) : false;
+        }
+
+        return $recipes;
+    }
+
+    private function recipeLikePayload(string $recipeId, ?string $userId): array
+    {
+        $count = $this->supabase->count('recipe_likes', ['recipe_id' => $recipeId]);
+        $isLiked = false;
+
+        if ($userId) {
+            $existing = $this->supabase->select('recipe_likes', ['id'], [
+                'recipe_id' => $recipeId,
+                'user_id' => $userId,
+            ]);
+            $isLiked = !empty($existing);
+        }
+
+        return [
+            'recipe_id' => $recipeId,
+            'likes_count' => $count,
+            'is_liked' => $isLiked,
+        ];
+    }
+
+    private function sendPushToUser(string $userId, string $title, string $message, string $type, string $entityId): void
+    {
+        try {
+            $deviceTokens = $this->supabase->select('device_tokens', ['token'], [
+                'user_id' => $userId,
+                'is_active' => true,
+            ]);
+
+            if (empty($deviceTokens)) return;
+
+            $this->notification->sendToMultipleDevices(
+                array_column($deviceTokens, 'token'),
+                $title,
+                $message,
+                $this->notification->generatePayload($type, $entityId)
+            );
+        } catch (Exception $e) {
+            \Log::warning('Failed to send push notification: ' . $e->getMessage());
         }
     }
 }

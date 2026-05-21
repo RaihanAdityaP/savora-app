@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../services/app_settings_service.dart';
 import '../../services/favorite_client.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_bottom_nav.dart';
@@ -26,6 +27,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
@@ -135,6 +138,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   }
 
   Future<void> _deleteCollection(Map<String, dynamic> collection) async {
+    final collectionName = collection['name']?.toString() ?? '';
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -150,14 +154,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   color: Colors.red.shade600, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text('Hapus Koleksi'),
+            Text(_t('Delete Collection', 'Hapus Koleksi')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Apakah Anda yakin ingin menghapus koleksi "${collection['name']}"?'),
+            Text(_t('Are you sure you want to delete "$collectionName"?',
+                'Apakah Anda yakin ingin menghapus koleksi "$collectionName"?')),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -170,10 +175,11 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   Icon(Icons.warning_rounded,
                       color: Colors.amber.shade700, size: 20),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                       child: Text(
-                          'Semua resep dalam koleksi ini akan dihapus dari koleksi.',
-                          style: TextStyle(fontSize: 12))),
+                          _t('All recipes in this collection will be removed from the collection.',
+                              'Semua resep dalam koleksi ini akan dihapus dari koleksi.'),
+                          style: const TextStyle(fontSize: 12))),
                 ],
               ),
             ),
@@ -182,13 +188,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
+              child: Text(_t('Cancel', 'Batal'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white),
-            child: const Text('Hapus'),
+            child: Text(_t('Delete', 'Hapus')),
           ),
         ],
       ),
@@ -200,10 +206,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             await FavoriteClient.deleteBoard(collection['id'].toString());
         if (!mounted) return;
         if (success) {
-          _showSnackBar('Koleksi berhasil dihapus!', isError: false);
+          _showSnackBar(_t('Collection deleted!', 'Koleksi berhasil dihapus!'), isError: false);
           _loadCollections();
         } else {
-          _showSnackBar('Gagal menghapus koleksi', isError: true);
+          _showSnackBar(_t('Failed to delete collection', 'Gagal menghapus koleksi'), isError: true);
         }
       } catch (e) {
         if (!mounted) return;
@@ -231,7 +237,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text('Edit Koleksi', style: AppTheme.headingMedium),
+            Text(_t('Edit Collection', 'Edit Koleksi'), style: AppTheme.headingMedium),
           ],
         ),
         content: Column(
@@ -242,7 +248,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               child: TextField(
                 controller: nameController,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Nama Koleksi',
+                  hint: _t('Collection Name', 'Nama Koleksi'),
                   icon: Icons.collections_bookmark_rounded,
                   iconColor: AppTheme.primaryCoral,
                 ),
@@ -255,7 +261,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 controller: descController,
                 maxLines: 3,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Deskripsi (opsional)',
+                  hint: _t('Description (optional)', 'Deskripsi (opsional)'),
                   icon: Icons.description_rounded,
                   iconColor: AppTheme.primaryOrange,
                   maxLines: 3,
@@ -268,7 +274,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            child: const Text('Batal'),
+            child: Text(_t('Cancel', 'Batal')),
           ),
           Container(
             decoration: AppTheme.primaryButtonDecoration,
@@ -276,7 +282,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Nama koleksi harus diisi')));
+                      SnackBar(content: Text(_t('Collection name is required',
+                          'Nama koleksi harus diisi'))));
                   return;
                 }
                 try {
@@ -289,16 +296,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   Navigator.pop(dialogContext);
                   if (!mounted) return;
                   if (success) {
-                    _showSnackBar('Koleksi berhasil diperbarui!', isError: false);
+                    _showSnackBar(_t('Collection updated!', 'Koleksi berhasil diperbarui!'), isError: false);
                     _loadCollections();
                   } else {
-                    _showSnackBar('Gagal memperbarui koleksi', isError: true);
+                    _showSnackBar(_t('Failed to update collection', 'Gagal memperbarui koleksi'), isError: true);
                   }
                 } catch (e) {
                   _showSnackBar('Error: $e', isError: true);
                 }
               },
-              child: const Text('Simpan', style: AppTheme.buttonText),
+              child: Text(_t('Save', 'Simpan'), style: AppTheme.buttonText),
             ),
           ),
         ],
@@ -308,22 +315,24 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
   Future<void> _removeRecipeFromCollection(Map<String, dynamic> boardRecipe) async {
     final recipe = boardRecipe['recipes'] ?? boardRecipe;
+    final recipeTitle = recipe['title']?.toString() ?? '';
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Hapus dari Koleksi'),
-        content: Text('Hapus "${recipe['title']}" dari koleksi ini?'),
+        title: Text(_t('Remove from Collection', 'Hapus dari Koleksi')),
+        content: Text(_t('Remove "$recipeTitle" from this collection?',
+            'Hapus "$recipeTitle" dari koleksi ini?')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
+              child: Text(_t('Cancel', 'Batal'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white),
-            child: const Text('Hapus'),
+            child: Text(_t('Delete', 'Hapus')),
           ),
         ],
       ),
@@ -337,10 +346,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         );
         if (!mounted) return;
         if (success) {
-          _showSnackBar('Resep dihapus dari koleksi', isError: false);
+          _showSnackBar(_t('Recipe removed from collection', 'Resep dihapus dari koleksi'), isError: false);
           _loadCollectionRecipes(_selectedCollection!['id'].toString());
         } else {
-          _showSnackBar('Gagal menghapus resep', isError: true);
+          _showSnackBar(_t('Failed to remove recipe', 'Gagal menghapus resep'), isError: true);
         }
       } catch (e) {
         _showSnackBar('Error: $e', isError: true);
@@ -389,7 +398,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
-            const Text('Koleksi Baru', style: AppTheme.headingMedium),
+            Text(_t('New Collection', 'Koleksi Baru'), style: AppTheme.headingMedium),
           ],
         ),
         content: Column(
@@ -400,7 +409,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               child: TextField(
                 controller: nameController,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Nama Koleksi',
+                  hint: _t('Collection Name', 'Nama Koleksi'),
                   icon: Icons.collections_bookmark_rounded,
                   iconColor: AppTheme.primaryCoral,
                 ),
@@ -413,7 +422,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 controller: descController,
                 maxLines: 3,
                 decoration: AppTheme.buildInputDecoration(
-                  hint: 'Deskripsi (opsional)',
+                  hint: _t('Description (optional)', 'Deskripsi (opsional)'),
                   icon: Icons.description_rounded,
                   iconColor: AppTheme.primaryOrange,
                   maxLines: 3,
@@ -426,7 +435,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            child: const Text('Batal'),
+            child: Text(_t('Cancel', 'Batal')),
           ),
           Container(
             decoration: AppTheme.primaryButtonDecoration,
@@ -434,7 +443,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Nama koleksi harus diisi')));
+                      SnackBar(content: Text(_t('Collection name is required',
+                          'Nama koleksi harus diisi'))));
                   return;
                 }
                 try {
@@ -450,15 +460,15 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   if (!mounted) return;
                   if (result != null) {
                     _loadCollections();
-                    _showSnackBar('Koleksi berhasil dibuat!', isError: false);
+                    _showSnackBar(_t('Collection created!', 'Koleksi berhasil dibuat!'), isError: false);
                   } else {
-                    _showSnackBar('Gagal membuat koleksi', isError: true);
+                    _showSnackBar(_t('Failed to create collection', 'Gagal membuat koleksi'), isError: true);
                   }
                 } catch (e) {
                   _showSnackBar('Error: $e', isError: true);
                 }
               },
-              child: const Text('Buat', style: AppTheme.buttonText),
+              child: Text(_t('Create', 'Buat'), style: AppTheme.buttonText),
             ),
           ),
         ],
@@ -502,13 +512,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_rounded, color: Colors.white, size: 24),
-                        SizedBox(width: 8),
-                        Text('Koleksi Baru',
-                            style: TextStyle(
+                        const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                        const SizedBox(width: 8),
+                        Text(_t('New Collection', 'Koleksi Baru'),
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold)),
@@ -539,7 +549,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                 strokeWidth: 3),
           ),
           const SizedBox(height: 24),
-          const Text('Memuat koleksi...', style: AppTheme.bodyLarge),
+          Text(_t('Loading collections...', 'Memuat koleksi...'), style: AppTheme.bodyLarge),
         ],
       ),
     );
@@ -584,13 +594,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Koleksi Resep',
+                                  _t('Recipe Collections', 'Koleksi Resep'),
                                   style: AppTheme.headingMedium
                                       .copyWith(color: AppTheme.textPrimary),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Kumpulan resep favorit Anda',
+                                  _t('Your favorite recipe collections', 'Kumpulan resep favorit Anda'),
                                   style: TextStyle(
                                       fontSize: 14,
                                       color: AppTheme.textSecondary),
@@ -617,7 +627,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                 color: AppTheme.primaryCoral, size: 16),
                             const SizedBox(width: 6),
                             Text(
-                              '${_collections.length} Koleksi',
+                              '${_collections.length} ${_t('Collections', 'Koleksi')}',
                               style: const TextStyle(
                                   fontSize: 13,
                                   color: AppTheme.primaryCoral,
@@ -716,7 +726,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       )
                     else
                       Text(
-                        'Koleksi resep spesial',
+                        _t('Special recipe collection', 'Koleksi resep spesial'),
                         style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade400,
@@ -737,7 +747,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                               size: 13, color: AppTheme.primaryCoral),
                           const SizedBox(width: 4),
                           Text(
-                            '$recipeCount Resep',
+                            '$recipeCount ${_t('Recipes', 'Resep')}',
                             style: TextStyle(
                                 fontSize: 12,
                                 color: AppTheme.primaryCoral,
@@ -840,14 +850,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ],
             ),
             const SizedBox(height: 24),
-            _buildOptionTile(Icons.edit_rounded, 'Edit Koleksi',
-                'Ubah nama dan deskripsi', Colors.blue.shade600, () {
+            _buildOptionTile(Icons.edit_rounded, _t('Edit Collection', 'Edit Koleksi'),
+                _t('Change name and description', 'Ubah nama dan deskripsi'), Colors.blue.shade600, () {
               Navigator.pop(context);
               _showEditCollectionDialog(collection);
             }),
             const SizedBox(height: 12),
-            _buildOptionTile(Icons.delete_rounded, 'Hapus Koleksi',
-                'Hapus koleksi ini secara permanen', Colors.red.shade600, () {
+            _buildOptionTile(Icons.delete_rounded, _t('Delete Collection', 'Hapus Koleksi'),
+                _t('Delete this collection permanently', 'Hapus koleksi ini secara permanen'), Colors.red.shade600, () {
               Navigator.pop(context);
               _deleteCollection(collection);
             }),
@@ -935,7 +945,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                 .copyWith(color: AppTheme.textPrimary),
                           ),
                           Text(
-                            '${_collectionRecipes.length} resep',
+                            '${_collectionRecipes.length} ${_t('recipes', 'resep')}',
                             style: TextStyle(
                                 fontSize: 13, color: AppTheme.textSecondary),
                           ),
@@ -957,8 +967,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             SliverFillRemaining(
               child: AppTheme.buildEmptyState(
                 icon: Icons.restaurant_rounded,
-                title: 'Belum ada resep',
-                subtitle: 'Tambahkan resep ke koleksi ini',
+                title: _t('No recipes yet', 'Belum ada resep'),
+                subtitle: _t('Add recipes to this collection', 'Tambahkan resep ke koleksi ini'),
               ),
             )
           else
@@ -972,6 +982,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       ...((boardRecipe['recipes'] as Map<String, dynamic>?) ??
                           boardRecipe),
                     };
+                    final recipeTitle = recipe['title']?.toString() ?? '';
                     return Dismissible(
                       key: Key(
                           boardRecipe['id']?.toString() ?? index.toString()),
@@ -984,14 +995,14 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                         ),
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 24),
-                        child: const Column(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.delete_rounded,
+                            const Icon(Icons.delete_rounded,
                                 color: Colors.white, size: 28),
-                            SizedBox(height: 4),
-                            Text('Hapus',
-                                style: TextStyle(
+                            const SizedBox(height: 4),
+                            Text(_t('Delete', 'Hapus'),
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold)),
                           ],
@@ -1003,21 +1014,22 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                             builder: (context) => AlertDialog(
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20)),
-                              title: const Text('Hapus dari Koleksi'),
+                              title: Text(_t('Remove from Collection', 'Hapus dari Koleksi')),
                               content: Text(
-                                  'Hapus "${recipe['title']}" dari koleksi ini?'),
+                                  _t('Remove "$recipeTitle" from this collection?',
+                                      'Hapus "$recipeTitle" dari koleksi ini?')),
                               actions: [
                                 TextButton(
                                     onPressed: () =>
                                         Navigator.pop(context, false),
-                                    child: const Text('Batal')),
+                                    child: Text(_t('Cancel', 'Batal'))),
                                 ElevatedButton(
                                   onPressed: () =>
                                       Navigator.pop(context, true),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red.shade600,
                                       foregroundColor: Colors.white),
-                                  child: const Text('Hapus'),
+                                  child: Text(_t('Delete', 'Hapus')),
                                 ),
                               ],
                             ),
@@ -1029,7 +1041,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                             boardId: _selectedCollection!['id'].toString(),
                             recipeId: recipe['id'].toString(),
                           );
-                          _showSnackBar('Resep dihapus dari koleksi',
+                          _showSnackBar(_t('Recipe removed from collection',
+                              'Resep dihapus dari koleksi'),
                               isError: false);
                           setState(() => _collectionRecipes.removeAt(index));
                         } catch (e) {
@@ -1126,11 +1139,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ),
             ),
             const SizedBox(height: 32),
-            const Text('Belum Ada Koleksi',
+            Text(_t('No Collections Yet', 'Belum Ada Koleksi'),
                 style: AppTheme.headingMedium, textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Text(
-                'Mulai kumpulkan resep favoritmu!\nBuat koleksi untuk mengorganisir resep.',
+                _t('Start collecting your favorite recipes!\nCreate collections to organize them.',
+                    'Mulai kumpulkan resep favoritmu!\nBuat koleksi untuk mengorganisir resep.'),
                 style: AppTheme.bodyLarge
                     .copyWith(color: AppTheme.textSecondary, height: 1.5),
                 textAlign: TextAlign.center),
@@ -1155,7 +1169,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       Icon(Icons.lightbulb_outline_rounded,
                           color: AppTheme.primaryCoral, size: 20),
                       const SizedBox(width: 8),
-                      Text('Tips',
+                      Text(_t('Tips', 'Tips'),
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -1164,7 +1178,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Buat koleksi berdasarkan kategori seperti "Sarapan Sehat", "Menu Cepat", atau "Makanan Favorit Keluarga"',
+                    _t('Create collections by category, like "Healthy Breakfast", "Quick Meals", or "Family Favorites"',
+                        'Buat koleksi berdasarkan kategori seperti "Sarapan Sehat", "Menu Cepat", atau "Makanan Favorit Keluarga"'),
                     style: TextStyle(
                         fontSize: 13,
                         color: AppTheme.textSecondary,

@@ -38,8 +38,8 @@ class AIController extends Controller
     {
         $provider = $settings['is_active_provider'] ?? 'groq';
         $model    = $provider === 'openrouter'
-            ? ($settings['openrouter_model'] ?? 'meta-llama/llama-3.3-70b-instruct:free')
-            : ($settings['groq_model']       ?? 'llama-3.3-70b-versatile');
+            ? ($settings['openrouter_model'] ?? null)
+            : ($settings['groq_model']       ?? $this->aiChat->defaultModel('groq'));
 
         return [$provider, $model];
     }
@@ -109,32 +109,14 @@ class AIController extends Controller
             ], 422);
         }
 
+        $fullPath = null;
+
         try {
             $image    = $request->file('image');
             $tempPath = $image->store('temp', 'local');
             $fullPath = storage_path('app/' . $tempPath);
 
-            // Buat caption sederhana dari nama file / ekstensi
-            $caption = 'Gambar makanan yang dikirim pengguna';
-
-            // Generate analisis menggunakan AI
-            $settings = $this->getUserSettings($request);
-            [$provider, $model] = $this->resolveProviderAndModel($settings);
-
-            $prompt = "Berdasarkan gambar makanan yang dikirim, berikan analisis:\n"
-                    . "1. Prediksi nama makanan\n"
-                    . "2. Bahan-bahan utama yang mungkin digunakan\n"
-                    . "3. Perkiraan cara memasak (3-5 langkah)\n"
-                    . "4. Tips memasak makanan ini\n\n"
-                    . "Jawab dalam Bahasa Indonesia dengan format yang rapi.";
-
-            $messages = [['role' => 'user', 'content' => $prompt]];
-            $analysis = $this->aiChat->chat($messages, $provider, $model, $settings);
-
-            // Hapus temp file
-            if (file_exists($fullPath)) {
-                unlink($fullPath);
-            }
+            $analysis = $this->aiChat->analyzeImage($fullPath, $image->getMimeType());
 
             return response()->json([
                 'success' => true,
@@ -142,6 +124,10 @@ class AIController extends Controller
             ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        } finally {
+            if ($fullPath && file_exists($fullPath)) {
+                unlink($fullPath);
+            }
         }
     }
 

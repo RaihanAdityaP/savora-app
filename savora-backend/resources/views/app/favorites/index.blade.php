@@ -1,9 +1,10 @@
+@php($isEnglish = session('user_language', 'en') === 'en')
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Koleksi Resep — Savora</title>
+    <title>{{ $isEnglish ? 'Recipe Collections' : 'Koleksi Resep' }} — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
@@ -30,11 +31,11 @@
         {{-- Page Header --}}
         <div class="mb-6">
             <x-app-theme.section-header
-                title="Koleksi Resep"
+                :title="$isEnglish ? 'Recipe Collections' : 'Koleksi Resep'"
                 :icon="$boardHeaderIcon"
             />
             <p class="mt-2 text-sm" style="color: var(--color-text-secondary); padding-left: 56px;">
-                Kumpulan resep favorit Anda
+                {{ $isEnglish ? 'Your favorite recipe collections' : 'Kumpulan resep favorit Anda' }}
             </p>
         </div>
 
@@ -58,7 +59,7 @@
         {{-- Stats pill --}}
         <div class="flex items-center justify-between mb-5">
             <span class="badge-savora" style="font-size: 13px; padding: 6px 14px; border-radius: var(--radius-full);">
-                {{ count($boards ?? []) }} Koleksi
+                {{ count($boards ?? []) }} {{ $isEnglish ? 'Collections' : 'Koleksi' }}
             </span>
         </div>
 
@@ -74,7 +75,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>
                     </div>
-                    <span class="font-bold" style="color: var(--color-text-primary);">Buat Koleksi Baru</span>
+                    <span class="font-bold" style="color: var(--color-text-primary);">{{ $isEnglish ? 'Create New Collection' : 'Buat Koleksi Baru' }}</span>
                 </div>
                 <svg class="w-5 h-5 transition-transform" :class="showCreate ? 'rotate-180' : ''"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -89,20 +90,20 @@
                     @csrf
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wide mb-2"
-                               style="color: var(--color-text-secondary);">Nama Koleksi</label>
+                               style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Collection Name' : 'Nama Koleksi' }}</label>
                         <input type="text" name="name" value="{{ old('name') }}" required
-                               placeholder="Contoh: Resep Sarapan"
+                               placeholder="{{ $isEnglish ? 'Example: Breakfast Recipes' : 'Contoh: Resep Sarapan' }}"
                                class="input-savora">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wide mb-2"
-                               style="color: var(--color-text-secondary);">Deskripsi (opsional)</label>
+                               style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Description (optional)' : 'Deskripsi (opsional)' }}</label>
                         <textarea name="description" rows="2"
-                                  placeholder="Deskripsi singkat koleksi ini..."
+                                  placeholder="{{ $isEnglish ? 'Short description for this collection...' : 'Deskripsi singkat koleksi ini...' }}"
                                   class="input-savora resize-none">{{ old('description') }}</textarea>
                     </div>
                     <button type="submit" class="btn-primary-savora w-full">
-                        Buat Koleksi
+                        {{ $isEnglish ? 'Create Collection' : 'Buat Koleksi' }}
                     </button>
                 </form>
             </div>
@@ -161,7 +162,7 @@
                                 {{ $board['description'] }}
                             </p>
                         @else
-                            <p class="text-sm italic mb-2" style="color: #9CA3AF;">Koleksi resep spesial</p>
+                            <p class="text-sm italic mb-2" style="color: #9CA3AF;">{{ $isEnglish ? 'Special recipe collection' : 'Koleksi resep spesial' }}</p>
                         @endif
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
                               style="background: rgba(231,111,81,0.10); color: var(--color-primary-coral);">
@@ -169,7 +170,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                             </svg>
-                            {{ $recipeCount }} Resep
+                            {{ $recipeCount }} {{ $isEnglish ? 'Recipes' : 'Resep' }}
                         </span>
                     </div>
 
@@ -190,16 +191,16 @@
                     <a href="{{ route('app.favorites.board', $board['id']) }}"
                        class="flex-1 py-3 text-center text-sm font-semibold transition-colors hover:bg-orange-50"
                        style="color: var(--color-primary-coral);">
-                        Lihat Resep
+                        {{ $isEnglish ? 'View Recipes' : 'Lihat Resep' }}
                     </a>
                     <div class="w-px" style="background: rgba(231,111,81,0.10);"></div>
                     <form action="{{ route('app.favorites.board.delete', $board['id']) }}" method="POST"
                           class="flex-1"
-                          onsubmit="return confirm('Hapus koleksi {{ addslashes($board['name']) }}?')">
+                          onsubmit="return confirm('{{ $isEnglish ? 'Delete collection' : 'Hapus koleksi' }} {{ addslashes($board['name']) }}?')">
                         @csrf
                         <button type="submit"
                                 class="w-full py-3 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                            Hapus
+                            {{ $isEnglish ? 'Delete' : 'Hapus' }}
                         </button>
                     </form>
                 </div>
@@ -207,14 +208,14 @@
         @empty
             <x-app-theme.empty-state
                 icon="bi bi-collection"
-                title="Belum ada koleksi"
-                subtitle="Mulai buat koleksi resep favorit agar mudah diakses kembali">
+                :title="$isEnglish ? 'No collections yet' : 'Belum ada koleksi'"
+                :subtitle="$isEnglish ? 'Create collections so your favorite recipes are easy to find again' : 'Mulai buat koleksi resep favorit agar mudah diakses kembali'">
                 <button @click="showCreate = true; $nextTick(() => document.querySelector('[name=name]')?.focus())"
                         class="btn-primary-savora mt-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
-                    Buat Koleksi Pertama
+                    {{ $isEnglish ? 'Create First Collection' : 'Buat Koleksi Pertama' }}
                 </button>
             </x-app-theme.empty-state>
         @endforelse

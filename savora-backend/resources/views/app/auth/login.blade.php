@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,10 +49,10 @@
         {{-- Title --}}
         <div class="anim-title flex flex-col items-center gap-2">
             <div class="px-4 py-1.5 bg-white/20 border border-white/40 rounded-full">
-                <span class="text-white text-xs font-bold tracking-widest">SELAMAT DATANG</span>
+                <span class="text-white text-xs font-bold tracking-widest">WELCOME</span>
             </div>
             <h1 class="text-4xl font-black text-white tracking-tight">Savora</h1>
-            <p class="text-white/80 text-sm text-center">Petualangan Kuliner Dimulai Disini</p>
+            <p class="text-white/80 text-sm text-center">Your culinary journey starts here</p>
         </div>
 
         {{-- White card --}}
@@ -67,14 +67,14 @@
                                 <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524L13.476 14.89zm1.414-1.414L6.524 5.11A6 6 0 0114.89 13.476zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/>
                             </svg>
                         </div>
-                        <p class="text-red-700 font-bold text-sm">Akun Dinonaktifkan</p>
+                        <p class="text-red-700 font-bold text-sm">Account Disabled</p>
                     </div>
                     <p class="text-red-600 text-xs leading-relaxed ml-12">
-                        Akun Anda telah dinonaktifkan oleh administrator.
+                        Your account has been disabled by an administrator.
                     </p>
                     <div class="mt-2 ml-12 p-2.5 bg-red-100 rounded-xl">
-                        <p class="text-red-500 text-xs font-semibold mb-0.5">Alasan:</p>
-                        <p class="text-red-700 text-xs">{{ session('banned_reason', 'Tidak disebutkan') }}</p>
+                        <p class="text-red-500 text-xs font-semibold mb-0.5">Reason:</p>
+                        <p class="text-red-700 text-xs">{{ session('banned_reason', 'Not specified') }}</p>
                     </div>
                 </div>
 
@@ -146,35 +146,34 @@
                     </div>
                 </div>
 
-                {{-- MASUK button --}}
+                {{-- Login button --}}
                 <button type="submit" :disabled="loading"
                         class="btn-primary-savora w-full py-4 rounded-2xl text-base tracking-widest disabled:opacity-60 hover:scale-[1.01] active:scale-[0.99]">
-                    <span x-show="!loading">MASUK</span>
+                    <span x-show="!loading">LOG IN</span>
                     <span x-show="loading" class="flex items-center gap-2">
                         <svg class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                         </svg>
-                        Memproses...
+                        Processing...
                     </span>
                 </button>
 
                 {{-- OR divider --}}
                 <div class="flex items-center gap-3 my-4">
                     <div class="flex-1 h-px bg-gray-200"></div>
-                    <span class="text-gray-400 text-xs font-semibold">ATAU</span>
+                    <span class="text-gray-400 text-xs font-semibold">OR</span>
                     <div class="flex-1 h-px bg-gray-200"></div>
                 </div>
 
                 {{-- Policy links --}}
                 <p class="text-center text-xs text-gray-500 leading-relaxed">
-                    Dengan masuk, Anda setuju dengan
+                    By logging in, you agree to our
                     <button type="button" @click.prevent="PrivacyModal.show()"
-                            class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Privasi</button>
+                            class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Privacy</button>
                     &amp;
                     <button type="button" @click.prevent="TermsModal.show()"
-                            class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Syarat</button>
-                    kami
+                            class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Terms</button>
                 </p>
             </form>
         </div>
@@ -183,17 +182,17 @@
         <div class="anim-footer w-full">
             <button onclick="document.getElementById('resend-modal').classList.remove('hidden')"
                     class="w-full text-center text-white/75 text-sm hover:text-white underline underline-offset-2 transition-colors">
-                Belum verifikasi email?
+                Email not verified?
             </button>
         </div>
 
         {{-- Register pill --}}
         <div class="anim-footer flex items-center gap-3 px-5 py-3 bg-white/15 border border-white/30 rounded-full">
-            <span class="text-white/80 text-sm">Belum punya akun?</span>
+            <span class="text-white/80 text-sm">Do not have an account?</span>
             <a href="{{ route('app.register') }}"
                class="px-4 py-1.5 bg-white rounded-full font-bold text-sm hover:bg-white/90 transition-all shadow"
                style="color: var(--color-primary-coral)">
-                Daftar →
+                Register →
             </a>
         </div>
 
@@ -214,8 +213,8 @@
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <h3 class="font-bold text-gray-900 text-sm">Verifikasi Email</h3>
-                    <p class="text-xs text-gray-500">Kirim ulang link verifikasi</p>
+                    <h3 class="font-bold text-gray-900 text-sm">Email Verification</h3>
+                    <p class="text-xs text-gray-500">Resend verification link</p>
                 </div>
                 <button onclick="document.getElementById('resend-modal').classList.add('hidden')"
                         class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -236,7 +235,7 @@
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     <input type="email" name="resend_email" required
-                           placeholder="Email Anda"
+                           placeholder="Your email"
                            class="input-savora has-icon py-3.5"
                            style="border-radius: 1rem">
                 </div>
@@ -245,7 +244,7 @@
                     <button type="button"
                             onclick="document.getElementById('resend-modal').classList.add('hidden')"
                             class="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
-                        Batal
+                        Cancel
                     </button>
                     <button type="submit" :disabled="loading"
                             class="btn-primary-savora flex-1 py-3 rounded-2xl text-sm disabled:opacity-60">
@@ -254,7 +253,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                       d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                             </svg>
-                            Kirim
+                            Send
                         </span>
                         <span x-show="loading">
                             <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

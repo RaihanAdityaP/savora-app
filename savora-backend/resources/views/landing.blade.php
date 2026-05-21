@@ -1,3 +1,9 @@
+@php
+    $apkPath = env('APK_DOWNLOAD_PATH')
+        ? base_path(env('APK_DOWNLOAD_PATH'))
+        : public_path('downloads/savora.apk');
+    $apkDownloadAvailable = is_file($apkPath);
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -331,8 +337,8 @@
                 </p>
 
                 <div class="fade-up-4 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    @if(env('APK_DOWNLOAD_URL'))
-                    <a href="{{ env('APK_DOWNLOAD_URL') }}" download
+                    @if($apkDownloadAvailable)
+                    <a href="{{ route('apk.download') }}"
                        class="btn-primary-savora rounded-2xl px-7 py-4 text-base shadow-xl">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2"
                              stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -621,7 +627,7 @@
     <div class="section-glow"></div>
 
     {{-- DOWNLOAD CTA --}}
-    @if(env('APK_DOWNLOAD_URL'))
+    @if($apkDownloadAvailable)
     <section class="py-24 px-6">
         <div class="max-w-2xl mx-auto text-center">
             <div class="cta-card p-14">
@@ -635,7 +641,7 @@
                 </div>
                 <h2 class="text-3xl font-black mb-3">Download Savora</h2>
                 <p class="mb-9" style="color:rgba(255,255,255,.48)">Available on Android. Free forever.</p>
-                <a href="{{ env('APK_DOWNLOAD_URL') }}" download
+                <a href="{{ route('apk.download') }}"
                    class="btn-primary-savora rounded-2xl px-8 py-4 text-base shadow-xl mx-auto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2"
                          stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">

@@ -5,20 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
 use App\Services\NotificationService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Exception;
 
 class UserController extends Controller
 {
-    private $supabase;
-    private $notification;
+    private SupabaseService $supabase;
+    private NotificationService $notification;
+    private UserSettingsService $settingsService;
 
-    public function __construct(SupabaseService $supabase, NotificationService $notification)
+    public function __construct(SupabaseService $supabase, NotificationService $notification, UserSettingsService $settingsService)
     {
         $this->supabase = $supabase;
         $this->notification = $notification;
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -58,7 +62,7 @@ class UserController extends Controller
      * Get single user profile
      * GET /api/v1/users/{id}
      */
-    public function show($id)
+    public function show(Request $request, string $id)
     {
         try {
             $users = $this->supabase->select('profiles', ['*'], ['id' => $id]);
@@ -71,6 +75,13 @@ class UserController extends Controller
             }
 
             $user = $users[0];
+            $viewerId = $this->resolveViewerId($request);
+            if (! $this->canViewProfile($id, $viewerId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile is private',
+                ], 403);
+            }
 
             // Keep profile endpoint resilient even if supporting tables/views are unavailable.
             $user['followers_count'] = 0;
@@ -78,6 +89,7 @@ class UserController extends Controller
             $user['following_count'] = 0;
             $user['total_following'] = 0;
             $user['recipes_count'] = 0;
+            $user['liked_recipes_count'] = 0;
 
             try {
                 // Schema table name is 'follows', not 'followers'
@@ -113,6 +125,12 @@ class UserController extends Controller
                 // keep default value
             }
 
+            try {
+                $user['liked_recipes_count'] = $this->supabase->count('recipe_likes', ['user_id' => $id]);
+            } catch (Exception $e) {
+                // keep default value
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $user,
@@ -130,16 +148,82 @@ class UserController extends Controller
      * Get single user profile (alias)
      * GET /api/v1/users/{id}/profile
      */
-    public function profile($id)
+    public function profile(Request $request, string $id)
     {
-        return $this->show($id);
+        return $this->show($request, $id);
+    }
+
+    public function likedRecipes(Request $request, string $id)
+    {
+        try {
+            $limit = (int) $request->input('limit', 20);
+            $limit = max(1, min(50, $limit));
+            $viewerId = $this->resolveViewerId($request);
+            if (! $this->canViewProfile($id, $viewerId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile is private',
+                ], 403);
+            }
+
+            $likes = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'created_at'],
+                ['user_id' => $id],
+                ['order' => 'created_at.desc', 'limit' => $limit]
+            );
+
+            $recipeIds = collect($likes)->pluck('recipe_id')->filter()->unique()->values()->all();
+            if (empty($recipeIds)) {
+                return response()->json(['success' => true, 'data' => []]);
+            }
+
+            $recipes = $this->supabase->select(
+                'recipes',
+                ['*', 'profiles!recipes_user_id_fkey(id, username, full_name, avatar_url, role, is_premium)', 'categories(name)', 'recipe_tags(tags(id, name))'],
+                ['id' => ['operator' => 'in', 'values' => $recipeIds], 'status' => 'approved']
+            );
+
+            $order = array_flip($recipeIds);
+            usort($recipes, fn ($a, $b) => ($order[$a['id'] ?? ''] ?? 9999) <=> ($order[$b['id'] ?? ''] ?? 9999));
+
+            foreach ($recipes as $index => $recipe) {
+                $recipeId = $recipe['id'] ?? null;
+                if (! $recipeId) continue;
+
+                try {
+                    $recipes[$index]['likes_count'] = $this->supabase->count('recipe_likes', ['recipe_id' => $recipeId]);
+                } catch (Exception $e) {
+                    $recipes[$index]['likes_count'] = 0;
+                }
+
+                try {
+                    $recipes[$index]['is_liked'] = $viewerId ? ! empty($this->supabase->select('recipe_likes', ['id'], [
+                        'recipe_id' => $recipeId,
+                        'user_id' => $viewerId,
+                    ])) : false;
+                } catch (Exception $e) {
+                    $recipes[$index]['is_liked'] = false;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $recipes,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
      * Update user profile
      * PUT /api/v1/users/{id}
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'username' => 'nullable|string|max:50',
@@ -191,7 +275,7 @@ class UserController extends Controller
      * Follow user
      * POST /api/v1/users/{id}/follow
      */
-    public function follow(Request $request, $id)
+    public function follow(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'follower_id' => 'required|uuid',
@@ -240,15 +324,26 @@ class UserController extends Controller
                 'is_read' => false,
             ]);
 
-            if (empty($existingNotification)) {
+            if (empty($existingNotification) && $this->settingsService->enabled($id, 'notify_follows')) {
+                $profiles = $this->supabase->select('profiles', ['username', 'full_name'], ['id' => $followerId]);
+                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Seseorang';
+
                 $this->supabase->insert('notifications', [
                     'user_id' => $id,
                     'type' => 'new_follower',
                     'title' => 'Follower Baru',
-                    'message' => 'Seseorang mulai mengikuti Anda!',
+                    'message' => "{$actorName} mulai mengikuti Anda!",
                     'related_entity_type' => 'profile',
                     'related_entity_id' => $followerId,
                 ]);
+
+                $this->sendPushToUser(
+                    $id,
+                    'Follower Baru',
+                    "{$actorName} mulai mengikuti Anda!",
+                    'new_follower',
+                    $followerId
+                );
             }
 
             return response()->json([
@@ -267,7 +362,7 @@ class UserController extends Controller
      * Unfollow user
      * POST /api/v1/users/{id}/unfollow
      */
-    public function unfollow(Request $request, $id)
+    public function unfollow(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'follower_id' => 'required|uuid',
@@ -302,11 +397,76 @@ class UserController extends Controller
         }
     }
 
+    private function sendPushToUser(string $userId, string $title, string $message, string $type, string $entityId): void
+    {
+        try {
+            $deviceTokens = $this->supabase->select('device_tokens', ['token'], [
+                'user_id' => $userId,
+                'is_active' => true,
+            ]);
+
+            if (empty($deviceTokens)) return;
+
+            $this->notification->sendToMultipleDevices(
+                array_column($deviceTokens, 'token'),
+                $title,
+                $message,
+                $this->notification->generatePayload($type, $entityId)
+            );
+        } catch (Exception $e) {
+            Log::warning('Failed to send push notification: ' . $e->getMessage());
+        }
+    }
+
+    private function resolveViewerId(Request $request): ?string
+    {
+        return $request->input('viewer_id') ?? $request->input('user_id') ?? auth()->id();
+    }
+
+    private function canViewProfile(string $targetId, ?string $viewerId): bool
+    {
+        if ($viewerId === $targetId) {
+            return true;
+        }
+
+        if ($viewerId && $this->isAdminUser($viewerId)) {
+            return true;
+        }
+
+        if ($this->settingsService->enabled($targetId, 'profile_public')) {
+            return true;
+        }
+
+        return $viewerId ? $this->isFollower($viewerId, $targetId) : false;
+    }
+
+    private function isFollower(string $viewerId, string $targetId): bool
+    {
+        try {
+            return ! empty($this->supabase->select('follows', ['id'], [
+                'follower_id' => $viewerId,
+                'following_id' => $targetId,
+            ]));
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    private function isAdminUser(string $userId): bool
+    {
+        try {
+            $users = $this->supabase->select('profiles', ['role'], ['id' => $userId]);
+            return ($users[0]['role'] ?? null) === 'admin';
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
     /**
      * Check if a user is following another user
      * GET /api/v1/users/{id}/is-following?follower_id={followerId}
      */
-    public function isFollowing(Request $request, $id)
+    public function isFollowing(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'follower_id' => 'required|uuid',
@@ -347,9 +507,16 @@ class UserController extends Controller
      * Get user followers
      * GET /api/v1/users/{id}/followers
      */
-    public function followers($id)
+    public function followers(Request $request, string $id)
     {
         try {
+            if (! $this->canViewProfile($id, $this->resolveViewerId($request))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile is private',
+                ], 403);
+            }
+
             // Schema table name is 'follows'; FK hint updated accordingly
             $followers = $this->supabase->select('follows',
                 ['*, profiles!follows_follower_id_fkey(*)'],
@@ -380,9 +547,16 @@ class UserController extends Controller
      * Get users that this user is following
      * GET /api/v1/users/{id}/following
      */
-    public function following($id)
+    public function following(Request $request, string $id)
     {
         try {
+            if (! $this->canViewProfile($id, $this->resolveViewerId($request))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile is private',
+                ], 403);
+            }
+
             // Schema table name is 'follows'; FK hint updated accordingly
             $following = $this->supabase->select('follows',
                 ['*, profiles!follows_following_id_fkey(*)'],
@@ -413,12 +587,18 @@ class UserController extends Controller
      * Get user recipes
      * GET /api/v1/users/{id}/recipes
      */
-    public function recipes(Request $request, $id)
+    public function recipes(Request $request, string $id)
     {
         try {
             $status = $request->input('status', 'approved');
             $limit = $request->input('limit', 10);
             $offset = $request->input('offset', 0);
+            if (! $this->canViewProfile($id, $this->resolveViewerId($request))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Profile is private',
+                ], 403);
+            }
 
             $recipes = $this->supabase->select('recipes',
                 ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
@@ -442,7 +622,7 @@ class UserController extends Controller
      * Ban user (admin only)
      * POST /api/v1/users/{id}/ban
      */
-    public function ban(Request $request, $id)
+    public function ban(Request $request, string $id)
     {
         try {
             $this->supabase->update('profiles',
@@ -472,7 +652,7 @@ class UserController extends Controller
      * Unban user (admin only)
      * POST /api/v1/users/{id}/unban
      */
-    public function unban($id)
+    public function unban(string $id)
     {
         try {
             $this->supabase->update('profiles',
@@ -502,7 +682,7 @@ class UserController extends Controller
      * Toggle premium status (admin only)
      * POST /api/v1/users/{id}/toggle-premium
      */
-    public function togglePremium($id)
+    public function togglePremium(string $id)
     {
         try {
             $users = $this->supabase->select('profiles', ['id', 'is_premium', 'username'], ['id' => $id]);

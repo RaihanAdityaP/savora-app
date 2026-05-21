@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\SupabaseService;
+use App\Services\NotificationService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ use Illuminate\View\View;
 
 class AdminWebController extends Controller
 {
-    public function __construct(private readonly SupabaseService $supabase) {}
+    public function __construct(
+        private readonly SupabaseService $supabase,
+        private readonly NotificationService $notification,
+    ) {}
 
     public function dashboard(): View
     {
@@ -117,6 +121,62 @@ class AdminWebController extends Controller
         ]);
     }
 
+    public function broadcast(): View
+    {
+        [$stats, $error] = $this->loadStats();
+        $users = collect();
+
+        try {
+            $users = collect($this->supabase->select(
+                'profiles',
+                ['id', 'username', 'full_name'],
+                ['is_banned' => false],
+                ['order' => 'username.asc', 'limit' => 300]
+            ));
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+        }
+
+        return view('admin.broadcast', compact('stats', 'error', 'users'));
+    }
+
+    public function sendBroadcast(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'audience' => 'required|in:all,user',
+            'user_id' => 'nullable|uuid',
+            'title' => 'required|string|max:120',
+            'message' => 'required|string|max:500',
+            'route' => 'nullable|in:home,recipe,profile',
+            'related_entity_id' => 'nullable|string|max:120',
+        ]);
+
+        try {
+            $targetIds = [];
+
+            if ($validated['audience'] === 'user') {
+                if (empty($validated['user_id'])) {
+                    return back()->withInput()->with('error', 'Pilih user tujuan.');
+                }
+                $targetIds = [$validated['user_id']];
+            } else {
+                $targetIds = collect($this->supabase->select('profiles', ['id'], ['is_banned' => false], ['limit' => 1000]))
+                    ->pluck('id')
+                    ->filter()
+                    ->values()
+                    ->all();
+            }
+
+            $route = $validated['route'] ?? 'home';
+            $entityId = $validated['related_entity_id'] ?? '';
+            $sent = $this->sendManualNotification($targetIds, $validated['title'], $validated['message'], $route, $entityId);
+
+            return back()->with('status', "Broadcast dibuat untuk {$sent} user.");
+        } catch (Exception $e) {
+            return back()->withInput()->with('error', 'Broadcast gagal: ' . $e->getMessage());
+        }
+    }
+
     public function toggleUserBan(Request $request, string $id): RedirectResponse
     {
         $isBanned     = $request->boolean('is_banned');
@@ -218,6 +278,42 @@ class AdminWebController extends Controller
         }
 
         return [$stats, $error];
+    }
+
+    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): int
+    {
+        $sent = 0;
+        $payload = ['route' => $route, 'id' => $entityId];
+
+        foreach (array_unique($userIds) as $userId) {
+            if (! $userId) continue;
+
+            $this->supabase->insert('notifications', [
+                'user_id' => $userId,
+                'title' => $title,
+                'message' => $message,
+                'type' => 'admin',
+                'related_entity_type' => $route === 'home' ? null : $route,
+                'related_entity_id' => $entityId ?: null,
+                'is_read' => false,
+            ]);
+
+            try {
+                $tokens = $this->supabase->select('device_tokens', ['token'], [
+                    'user_id' => $userId,
+                    'is_active' => true,
+                ]);
+
+                if (! empty($tokens)) {
+                    $this->notification->sendToMultipleDevices(array_column($tokens, 'token'), $title, $message, $payload);
+                }
+            } catch (Exception) {
+            }
+
+            $sent++;
+        }
+
+        return $sent;
     }
 
     private function banReasonFromType(string $type, string $customReason): string

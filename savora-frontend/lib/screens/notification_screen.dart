@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/app_settings_service.dart';
 import '../widgets/theme.dart';
 import 'profile_screen.dart';
 import 'recipes/detail_screen.dart';
@@ -18,6 +19,8 @@ class _NotificationScreenState extends State<NotificationScreen>
   int _unreadCount = 0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   @override
   void initState() {
@@ -91,10 +94,11 @@ class _NotificationScreenState extends State<NotificationScreen>
       _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Semua notifikasi ditandai sudah dibaca')
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(_t('All notifications marked as read',
+                'Semua notifikasi ditandai sudah dibaca'))
           ]),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,
@@ -117,17 +121,18 @@ class _NotificationScreenState extends State<NotificationScreen>
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: const [
-            Icon(Icons.delete_sweep, color: Colors.red, size: 28),
-            SizedBox(width: 8),
+          children: [
+            const Icon(Icons.delete_sweep, color: Colors.red, size: 28),
+            const SizedBox(width: 8),
             Expanded(
-              child: Text('Hapus Semua Notifikasi',
+              child: Text(_t('Delete All Notifications',
+                  'Hapus Semua Notifikasi'),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
-        content: const Text(
-            'Apakah Anda yakin ingin menghapus semua notifikasi?'),
+        content: Text(_t('Are you sure you want to delete all notifications?',
+            'Apakah Anda yakin ingin menghapus semua notifikasi?')),
         actions: [
           Wrap(
             alignment: WrapAlignment.end,
@@ -136,7 +141,7 @@ class _NotificationScreenState extends State<NotificationScreen>
             children: [
               TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Batal')),
+                  child: Text(_t('Cancel', 'Batal'))),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
@@ -144,7 +149,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10))),
-                child: const Text('Hapus Semua'),
+                child: Text(_t('Delete All', 'Hapus Semua')),
               ),
             ],
           ),
@@ -158,10 +163,11 @@ class _NotificationScreenState extends State<NotificationScreen>
       _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text('Semua notifikasi berhasil dihapus')
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(_t('All notifications deleted successfully',
+                'Semua notifikasi berhasil dihapus'))
           ]),
           backgroundColor: Colors.green.shade600,
           behavior: SnackBarBehavior.floating,
@@ -189,10 +195,10 @@ class _NotificationScreenState extends State<NotificationScreen>
       _loadNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Row(children: [
-            Icon(Icons.delete, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Notifikasi dihapus')
+          content: Row(children: [
+            const Icon(Icons.delete, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(_t('Notification deleted', 'Notifikasi dihapus'))
           ]),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -227,6 +233,8 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'new_recipe_from_following':
       case 'recipe_approved':
       case 'recipe_rejected':
+      case 'new_comment':
+      case 'new_like':
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => DetailScreen(recipeId: relatedId)));
         break;
@@ -242,10 +250,17 @@ class _NotificationScreenState extends State<NotificationScreen>
     if (difference.inDays > 7) {
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
-    if (difference.inDays > 0) return '${difference.inDays} hari lalu';
-    if (difference.inHours > 0) return '${difference.inHours} jam lalu';
-    if (difference.inMinutes > 0) return '${difference.inMinutes} menit lalu';
-    return 'Baru saja';
+    if (difference.inDays > 0) {
+      return _t('${difference.inDays} days ago', '${difference.inDays} hari lalu');
+    }
+    if (difference.inHours > 0) {
+      return _t('${difference.inHours} hours ago', '${difference.inHours} jam lalu');
+    }
+    if (difference.inMinutes > 0) {
+      return _t('${difference.inMinutes} minutes ago',
+          '${difference.inMinutes} menit lalu');
+    }
+    return _t('Just now', 'Baru saja');
   }
 
   Color _getNotificationColor(String type) {
@@ -258,6 +273,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         return AppTheme.primaryTeal;
       case 'new_recipe_from_following':
         return AppTheme.primaryOrange;
+      case 'new_like':
+        return AppTheme.primaryCoral;
+      case 'new_comment':
+        return AppTheme.primaryYellow;
       case 'admin':
         return AppTheme.primaryCoral;
       default:
@@ -275,6 +294,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         return Icons.person_add_rounded;
       case 'new_recipe_from_following':
         return Icons.restaurant_rounded;
+      case 'new_like':
+        return Icons.favorite_rounded;
+      case 'new_comment':
+        return Icons.chat_bubble_rounded;
       case 'admin':
         return Icons.admin_panel_settings_rounded;
       default:
@@ -323,7 +346,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                         icon: const Icon(Icons.done_all_rounded,
                             color: AppTheme.primaryTeal),
                         onPressed: _markAllAsRead,
-                        tooltip: 'Tandai semua sudah dibaca'),
+                        tooltip: _t('Mark all as read',
+                            'Tandai semua sudah dibaca')),
                   ),
                 ),
               Padding(
@@ -342,13 +366,13 @@ class _NotificationScreenState extends State<NotificationScreen>
                       if (value == 'delete_all') _deleteAllNotifications();
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                           value: 'delete_all',
                           child: Row(children: [
-                            Icon(Icons.delete_sweep_rounded,
+                            const Icon(Icons.delete_sweep_rounded,
                                 color: Colors.red, size: 20),
-                            SizedBox(width: 8),
-                            Text('Hapus Semua')
+                            const SizedBox(width: 8),
+                            Text(_t('Delete All', 'Hapus Semua'))
                           ])),
                     ],
                   ),
@@ -385,7 +409,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Notifikasi',
+                                Text(_t('Notifications', 'Notifikasi'),
                                     style: AppTheme.headingMedium.copyWith(
                                         color: AppTheme.textPrimary)),
                                 if (_unreadCount > 0)
@@ -401,7 +425,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                                           color: AppTheme.primaryOrange
                                               .withValues(alpha: 0.3)),
                                     ),
-                                    child: Text('$_unreadCount baru',
+                                    child: Text(
+                                        _t('$_unreadCount new',
+                                            '$_unreadCount baru'),
                                         style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -471,13 +497,14 @@ class _NotificationScreenState extends State<NotificationScreen>
                 size: 80, color: Colors.grey.shade400),
           ),
           const SizedBox(height: 24),
-          Text('Tidak ada notifikasi',
+          Text(_t('No notifications', 'Tidak ada notifikasi'),
               style: TextStyle(
                   fontSize: 20,
                   color: Colors.grey.shade700,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Notifikasi akan muncul di sini', style: AppTheme.bodySmall),
+          Text(_t('Notifications will appear here',
+              'Notifikasi akan muncul di sini'), style: AppTheme.bodySmall),
         ],
       ),
     );
@@ -497,17 +524,17 @@ class _NotificationScreenState extends State<NotificationScreen>
         builder: (context) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(children: [
-            Icon(Icons.delete_rounded, color: Colors.red, size: 24),
-            SizedBox(width: 8),
-            Text('Hapus Notifikasi')
+          title: Row(children: [
+            const Icon(Icons.delete_rounded, color: Colors.red, size: 24),
+            const SizedBox(width: 8),
+            Text(_t('Delete Notification', 'Hapus Notifikasi'))
           ]),
-          content:
-              const Text('Apakah Anda yakin ingin menghapus notifikasi ini?'),
+          content: Text(_t('Are you sure you want to delete this notification?',
+              'Apakah Anda yakin ingin menghapus notifikasi ini?')),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Batal')),
+                child: Text(_t('Cancel', 'Batal'))),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
@@ -515,7 +542,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10))),
-              child: const Text('Hapus'),
+              child: Text(_t('Delete', 'Hapus')),
             ),
           ],
         ),
@@ -528,13 +555,13 @@ class _NotificationScreenState extends State<NotificationScreen>
             borderRadius: BorderRadius.circular(16)),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.delete_rounded, color: Colors.white, size: 32),
-            SizedBox(height: 4),
-            Text('Hapus',
-                style: TextStyle(
+            const Icon(Icons.delete_rounded, color: Colors.white, size: 32),
+            const SizedBox(height: 4),
+            Text(_t('Delete', 'Hapus'),
+                style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 13))

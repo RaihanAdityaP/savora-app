@@ -5,34 +5,20 @@ namespace App\Http\Controllers\App;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
+use App\Services\UserSettingsService;
 use Exception;
 
 class SettingsController extends Controller
 {
-    public function __construct(private SupabaseService $supabase) {}
+    public function __construct(
+        private SupabaseService $supabase,
+        private UserSettingsService $settingsService,
+    ) {}
 
     public function show()
     {
         $userId = session('user_id');
-        $defaults = [
-            'theme'             => 'light',
-            'language'          => 'en',
-            'font_size'         => 14,
-            'notify_likes'      => true,
-            'notify_comments'   => true,
-            'notify_follows'    => true,
-            'notify_email'      => false,
-            'allow_analytics'   => true,
-            'profile_public'    => true,
-            'auto_save_drafts'  => true,
-        ];
-
-        try {
-            $rows = $this->supabase->select('user_settings', ['*'], ['user_id' => $userId]);
-            $userSettings = !empty($rows) ? array_merge($defaults, $rows[0]) : $defaults;
-        } catch (Exception) {
-            $userSettings = $defaults;
-        }
+        $userSettings = $this->settingsService->get($userId);
 
         return view('app.settings', compact('userSettings'));
     }
@@ -46,7 +32,6 @@ class SettingsController extends Controller
             'notify_likes'     => 'nullable|boolean',
             'notify_comments'  => 'nullable|boolean',
             'notify_follows'   => 'nullable|boolean',
-            'notify_email'     => 'nullable|boolean',
             'allow_analytics'  => 'nullable|boolean',
             'profile_public'   => 'nullable|boolean',
             'auto_save_drafts' => 'nullable|boolean',
@@ -62,7 +47,6 @@ class SettingsController extends Controller
             'notify_likes'     => $request->boolean('notify_likes'),
             'notify_comments'  => $request->boolean('notify_comments'),
             'notify_follows'   => $request->boolean('notify_follows'),
-            'notify_email'     => $request->boolean('notify_email'),
             'allow_analytics'  => $request->boolean('allow_analytics'),
             'profile_public'   => $request->boolean('profile_public'),
             'auto_save_drafts' => $request->boolean('auto_save_drafts'),
@@ -80,9 +64,11 @@ class SettingsController extends Controller
 
             // Sync ke session supaya app-theme langsung reflect
             session([
-                'user_theme'     => $validated['theme'],
-                'user_language'  => $validated['language'],
-                'user_font_size' => $validated['font_size'],
+                'user_theme'           => $validated['theme'],
+                'user_language'        => $validated['language'],
+                'user_font_size'       => $validated['font_size'],
+                'user_settings'        => $data + ['user_id' => $userId],
+                'user_settings_loaded' => true,
             ]);
 
         } catch (Exception $e) {

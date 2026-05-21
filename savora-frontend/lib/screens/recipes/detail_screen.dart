@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../../services/api_service.dart';
+import '../../services/app_settings_service.dart';
+import '../../services/recipe_client.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/theme.dart';
 import '../home_screen.dart';
@@ -26,10 +28,19 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   Map<String, dynamic>? _recipe;
   bool _isLoading = true;
   bool _isFavorite = false;
+  bool _isLiked = false;
+  bool _isTogglingLike = false;
+  bool _isTranslatingRecipe = false;
+  bool _recipeTranslated = false;
+  int _likesCount = 0;
   int? _userRating;
   double? _averageRating;
   int? _ratingCount;
   List<Map<String, dynamic>> _comments = [];
+  final Set<String> _translatingCommentIds = {};
+  final Set<String> _translatedCommentIds = {};
+  final Map<String, String> _originalComments = {};
+  final Map<String, dynamic> _originalRecipeText = {};
   List<String> _tags = [];
   final TextEditingController _commentController = TextEditingController();
   String? _userAvatarUrl;
@@ -40,6 +51,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   bool _isVideoInitializing = false;
   late AnimationController _shareButtonAnimationController;
   late Animation<double> _scaleAnimation;
+
+  String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
   List<Map<String, dynamic>> _extractMapList(dynamic payload) {
     if (payload is List) {
@@ -167,7 +180,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               children: [
                 Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
                 const SizedBox(height: 16),
-                Text('Gagal memuat video', style: TextStyle(color: Colors.red.shade600)),
+                Text(_t('Failed to load video', 'Gagal memuat video'), style: TextStyle(color: Colors.red.shade600)),
               ],
             ),
           );
@@ -189,7 +202,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         final data = response['data'] ?? response;
         setState(() {
           _userAvatarUrl = data['avatar_url'];
-          _currentUserRole = data['role'];
+          _currentUserRole = data['role']?.toString() ?? 'user';
         });
       }
     } catch (e) {
@@ -210,6 +223,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       final ratings = _extractMapList(ratingResponse['data'] ?? ratingResponse);
       setState(() {
         _recipe = Map<String, dynamic>.from(data);
+        _likesCount = _toInt(_recipe?['likes_count']);
+        _isLiked = _recipe?['is_liked'] == true;
         _ratingCount = ratings.length;
         if (_ratingCount! > 0) {
           final total = ratings.fold(0, (sum, r) => sum + (r['rating'] as int));
@@ -225,7 +240,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       if (error.contains('recipe not found') ||
           error.contains('resep tidak ditemukan') ||
           error.contains('404')) {
-        _showSnackBar('Resep tidak ditemukan atau sudah dihapus.', isError: true);
+        _showSnackBar(_t('Recipe not found or deleted.', 'Resep tidak ditemukan atau sudah dihapus.'), isError: true);
       } else {
         _showSnackBar('Error loading recipe: ${e.toString().replaceFirst('Exception: ', '')}', isError: true);
       }
@@ -234,9 +249,150 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
 
   Future<void> _incrementViews() async {
     try {
-      await ApiService.post('/recipes/${widget.recipeId}/view', {});
+      await ApiService.post('/recipes/${widget.recipeId}/view', {
+        if (ApiService.currentUserId != null) 'user_id': ApiService.currentUserId,
+      });
     } catch (e) {
       debugPrint('Error incrementing views: $e');
+    }
+  }
+
+  int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  Future<void> _toggleLike() async {
+    if (_isTogglingLike) return;
+    if (ApiService.currentUserId == null) {
+      _showSnackBar(_t('Please log in to like recipes', 'Silakan login untuk menyukai resep'), isError: true);
+      return;
+    }
+
+    setState(() => _isTogglingLike = true);
+    final result = await RecipeClient.toggleLike(widget.recipeId);
+    if (!mounted) return;
+
+    if (result != null) {
+      setState(() {
+        _likesCount = _toInt(result['likes_count']);
+        _isLiked = result['is_liked'] == true;
+        _recipe?['likes_count'] = _likesCount;
+        _recipe?['is_liked'] = _isLiked;
+      });
+    } else {
+      _showSnackBar(_t('Failed to update like', 'Gagal memperbarui like'), isError: true);
+    }
+
+    if (mounted) setState(() => _isTogglingLike = false);
+  }
+
+  bool get _shouldShowTranslate => AppSettingsService.current.language == 'en';
+
+  Future<String> _translateTextToEnglish(String text) async {
+    final original = text.trim();
+    if (original.isEmpty) return text;
+
+    final uri = Uri.https('api.mymemory.translated.net', '/get', {
+      'q': original,
+      'langpair': 'id|en',
+    });
+    final response = await http.get(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) return text;
+
+    final decoded = jsonDecode(response.body);
+    final responseData = decoded is Map ? decoded['responseData'] : null;
+    final translated = responseData is Map ? responseData['translatedText']?.toString() : null;
+    return translated != null && translated.trim().isNotEmpty ? translated : text;
+  }
+
+  Future<void> _toggleRecipeTranslate() async {
+    if (!_shouldShowTranslate || _recipe == null || _isTranslatingRecipe) return;
+
+    if (_recipeTranslated) {
+      setState(() {
+        _recipe!.addAll(_originalRecipeText);
+        _recipeTranslated = false;
+      });
+      return;
+    }
+
+    setState(() => _isTranslatingRecipe = true);
+    try {
+      _originalRecipeText
+        ..clear()
+        ..addAll({
+          'title': _recipe!['title'],
+          'description': _recipe!['description'],
+          'ingredients': _recipe!['ingredients'],
+          'steps': _recipe!['steps'],
+        });
+
+      final translatedTitle = await _translateTextToEnglish((_recipe!['title'] ?? '').toString());
+      final translatedDescription = await _translateTextToEnglish((_recipe!['description'] ?? '').toString());
+      final translatedIngredients = await _translateDynamicTextList(_recipe!['ingredients']);
+      final translatedSteps = await _translateDynamicTextList(_recipe!['steps']);
+
+      if (!mounted) return;
+      setState(() {
+        _recipe!['title'] = translatedTitle;
+        _recipe!['description'] = translatedDescription;
+        _recipe!['ingredients'] = translatedIngredients;
+        _recipe!['steps'] = translatedSteps;
+        _recipeTranslated = true;
+      });
+    } finally {
+      if (mounted) setState(() => _isTranslatingRecipe = false);
+    }
+  }
+
+  Future<dynamic> _translateDynamicTextList(dynamic value) async {
+    final items = _extractDynamicList(value);
+    final translated = <dynamic>[];
+
+    for (final item in items) {
+      if (item is String) {
+        translated.add(await _translateTextToEnglish(item));
+      } else if (item is Map) {
+        final copy = Map<String, dynamic>.from(item);
+        for (final key in ['name', 'description', 'text', 'step']) {
+          if (copy[key] != null) {
+            copy[key] = await _translateTextToEnglish(copy[key].toString());
+          }
+        }
+        translated.add(copy);
+      } else {
+        translated.add(item);
+      }
+    }
+
+    return translated;
+  }
+
+  Future<void> _toggleCommentTranslate(String commentId, int index) async {
+    if (!_shouldShowTranslate || _translatingCommentIds.contains(commentId)) return;
+
+    if (_translatedCommentIds.contains(commentId)) {
+      setState(() {
+        _comments[index]['content'] = _originalComments[commentId] ?? _comments[index]['content'];
+        _translatedCommentIds.remove(commentId);
+      });
+      return;
+    }
+
+    setState(() => _translatingCommentIds.add(commentId));
+    try {
+      final original = (_comments[index]['content'] ?? '').toString();
+      _originalComments[commentId] = original;
+      final translated = await _translateTextToEnglish(original);
+      if (!mounted) return;
+      setState(() {
+        _comments[index]['content'] = translated;
+        _translatedCommentIds.add(commentId);
+      });
+    } finally {
+      if (mounted) setState(() => _translatingCommentIds.remove(commentId));
     }
   }
 
@@ -278,7 +434,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   }
 
   // ============ SHARE FEATURE ============
-  static const String _webBase = 'https://savora-app-productions.up.railway.app';
+  static const String _webBase = 'https://savora-app.up.railway.app';
 
   String _getRecipeWebUrl() => '$_webBase/r/${widget.recipeId}';
 
@@ -333,7 +489,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           subject: 'Resep dari Savora: ${_recipe?['title']}',
         ));
       } else {
-        _showSnackBar('Gagal mengunduh gambar', isError: true);
+        _showSnackBar(_t('Failed to download image', 'Gagal mengunduh gambar'), isError: true);
       }
     } catch (e) {
       _showSnackBar('Error saat berbagi gambar: $e', isError: true);
@@ -443,7 +599,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Bagikan Resep', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    Text(_t('Share Recipe', 'Bagikan Resep'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                     IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: Colors.grey.shade600)),
                   ],
                 ),
@@ -455,13 +611,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   controller: controller,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   children: [
-                    _buildShareOption(icon: Icons.link_rounded, color: Colors.blue, title: 'Share Link', subtitle: 'Bagikan link resep', onTap: _shareLink),
+                    _buildShareOption(icon: Icons.link_rounded, color: Colors.blue, title: _t('Share Link', 'Bagikan Link'), subtitle: _t('Share recipe link', 'Bagikan link resep'), onTap: _shareLink),
                     _buildShareOption(icon: Icons.content_copy_rounded, color: Colors.blueGrey, title: 'Copy Link', subtitle: 'Salin link ke clipboard', onTap: _copyLinkToClipboard),
-                    _buildShareOption(icon: Icons.description_rounded, color: AppTheme.primaryCoral, title: 'Share Detail Lengkap', subtitle: 'Bagikan dengan deskripsi lengkap', onTap: _shareDetail),
+                    _buildShareOption(icon: Icons.description_rounded, color: AppTheme.primaryCoral, title: _t('Share Full Detail', 'Share Detail Lengkap'), subtitle: _t('Share with full description', 'Bagikan dengan deskripsi lengkap'), onTap: _shareDetail),
                     if (_recipe?['image_url'] != null)
-                      _buildShareOption(icon: Icons.image_rounded, color: Colors.green, title: 'Share dengan Gambar', subtitle: 'Bagikan gambar + caption', onTap: _shareImage),
+                      _buildShareOption(icon: Icons.image_rounded, color: Colors.green, title: _t('Share with Image', 'Share dengan Gambar'), subtitle: _t('Share image + caption', 'Bagikan gambar + caption'), onTap: _shareImage),
                     _buildShareOption(icon: Icons.chat, color: const Color(0xFF25D366), title: 'Share ke WhatsApp', subtitle: 'Kirim langsung ke WhatsApp', onTap: _shareToWhatsApp),
-                    _buildShareOption(icon: Icons.share_rounded, color: Colors.purple, title: 'Share Lainnya', subtitle: 'Pilih aplikasi untuk berbagi', onTap: _shareWithChooser),
+                    _buildShareOption(icon: Icons.share_rounded, color: Colors.purple, title: _t('More Sharing Options', 'Share Lainnya'), subtitle: _t('Choose an app to share', 'Pilih aplikasi untuk berbagi'), onTap: _shareWithChooser),
                     const SizedBox(height: 16),
                   ],
                 ),
@@ -478,7 +634,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     try {
       final userId = ApiService.currentUserId;
       if (userId == null) {
-        _showSnackBar('Silakan login terlebih dahulu', isError: true);
+        _showSnackBar(_t('Please log in first', 'Silakan login terlebih dahulu'), isError: true);
         return;
       }
       final response = await ApiService.get('/favorites/boards');
@@ -507,7 +663,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
             children: [
               Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 24)),
               const SizedBox(width: 12),
-              const Expanded(child: Text('Simpan ke Koleksi', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+              Expanded(child: Text(_t('Save to Collection', 'Simpan ke Koleksi'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
             ],
           ),
           const SizedBox(height: 20),
@@ -524,7 +680,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     children: [
                       Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.add_rounded, color: Colors.white, size: 20)),
                       const SizedBox(width: 12),
-                      const Expanded(child: Text('Buat Koleksi Baru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))),
+                      Expanded(child: Text(_t('Create New Collection', 'Buat Koleksi Baru'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))),
                       const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
                     ],
                   ),
@@ -542,7 +698,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   children: [
                     Icon(Icons.collections_bookmark_outlined, size: 48, color: Colors.grey.shade400),
                     const SizedBox(height: 12),
-                    Text('Belum ada koleksi', style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    Text(_t('No collections yet', 'Belum ada koleksi'), style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -613,7 +769,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           children: [
             Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.add_rounded, color: Colors.white, size: 24)),
             const SizedBox(width: 12),
-            const Text('Koleksi Baru', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(_t('New Collection', 'Koleksi Baru'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -624,7 +780,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               child: TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  hintText: 'Nama Koleksi', hintStyle: TextStyle(color: Colors.grey.shade400),
+                  hintText: _t('Collection Name', 'Nama Koleksi'), hintStyle: TextStyle(color: Colors.grey.shade400),
                   prefixIcon: const Icon(Icons.collections_bookmark_rounded, color: AppTheme.primaryCoral),
                   border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -646,13 +802,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600), child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600), child: Text(_t('Cancel', 'Batal'), style: const TextStyle(fontWeight: FontWeight.w600))),
           Container(
             decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)),
             child: TextButton(
               onPressed: () async {
                 if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Nama koleksi harus diisi')));
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text(_t('Collection name is required', 'Nama koleksi harus diisi'))));
                   return;
                 }
                 try {
@@ -663,13 +819,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   if (!dialogContext.mounted) return;
                   Navigator.pop(dialogContext);
                   if (!mounted) return;
-                  _showSnackBar('Koleksi berhasil dibuat!', isError: false);
+                  _showSnackBar(_t('Collection created!', 'Koleksi berhasil dibuat!'), isError: false);
                   _showBoardSelector();
                 } catch (e) {
                   _showSnackBar('Error: $e', isError: true);
                 }
               },
-              child: const Text('Buat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text(_t('Create', 'Buat'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -682,12 +838,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       await ApiService.post('/favorites/boards/$boardId/recipes', {'recipe_id': widget.recipeId});
       if (mounted) {
         setState(() => _isFavorite = true);
-        _showSnackBar('Ditambahkan ke "$boardName"', isError: false);
+        _showSnackBar('${_t('Added to', 'Ditambahkan ke')} "$boardName"', isError: false);
       }
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('sudah ada') || msg.contains('already')) {
-        _showSnackBar('Resep sudah ada di koleksi ini', isError: true);
+        _showSnackBar(_t('Recipe is already in this collection', 'Resep sudah ada di koleksi ini'), isError: true);
       } else {
         _showSnackBar('Error: $msg', isError: true);
       }
@@ -698,7 +854,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     try {
       final userId = ApiService.currentUserId;
       if (userId == null) {
-        _showSnackBar('Silakan login untuk memberi rating', isError: true);
+        _showSnackBar(_t('Please log in to rate', 'Silakan login untuk memberi rating'), isError: true);
         return;
       }
       await ApiService.post('/ratings/recipe/${widget.recipeId}', {'rating': rating});
@@ -707,7 +863,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       await _loadRecipe();
       _showSnackBar('Rating dikirim!', isError: false);
     } catch (e) {
-      _showSnackBar('Gagal mengirim rating', isError: true);
+      _showSnackBar(_t('Failed to send rating', 'Gagal mengirim rating'), isError: true);
     }
   }
 
@@ -723,22 +879,23 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
 
   Future<void> _postComment() async {
     if (_commentController.text.trim().isEmpty) {
-      _showSnackBar('Komentar tidak boleh kosong', isError: true);
+      _showSnackBar(_t('Comment cannot be empty', 'Komentar tidak boleh kosong'), isError: true);
       return;
     }
     try {
       final userId = ApiService.currentUserId;
       if (userId == null) {
-        _showSnackBar('Silakan login untuk berkomentar', isError: true);
+        _showSnackBar(_t('Please log in to comment', 'Silakan login untuk berkomentar'), isError: true);
         return;
       }
       await ApiService.post('/comments', {
         'recipe_id': widget.recipeId,
+        'user_id': userId,
         'content': _commentController.text.trim(),
       });
       _commentController.clear();
       await _loadComments();
-      _showSnackBar('Komentar berhasil dikirim!', isError: false);
+      _showSnackBar(_t('Comment sent!', 'Komentar berhasil dikirim!'), isError: false);
     } catch (e) {
       _showSnackBar('Error: $e', isError: true);
     }
@@ -749,7 +906,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     try {
       await ApiService.put('/comments/$commentId', {'content': newContent.trim()});
       await _loadComments();
-      _showSnackBar('Komentar berhasil diperbarui!', isError: false);
+      _showSnackBar(_t('Comment updated!', 'Komentar berhasil diperbarui!'), isError: false);
     } catch (e) {
       _showSnackBar('Error: $e', isError: true);
     }
@@ -760,7 +917,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     final isAdmin = _currentUserRole == 'admin';
     
     if (!isOwner && !isAdmin) {
-      _showSnackBar('Anda tidak memiliki izin untuk menghapus komentar ini', isError: true);
+      _showSnackBar(_t('You do not have permission to delete this comment', 'Anda tidak memiliki izin untuk menghapus komentar ini'), isError: true);
       return;
     }
 
@@ -772,14 +929,14 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           children: [
             Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.warning_rounded, color: Colors.red, size: 20)),
             const SizedBox(width: 12),
-            const Text('Hapus Komentar'),
+            Text(_t('Delete Comment', 'Hapus Komentar')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Apakah Anda yakin ingin menghapus komentar ini?'),
+            Text(_t('Are you sure you want to delete this comment?', 'Apakah Anda yakin ingin menghapus komentar ini?')),
             if (isAdmin && !isOwner) ...[
               const SizedBox(height: 12),
               Container(
@@ -789,7 +946,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   children: [
                     Icon(Icons.admin_panel_settings, size: 18, color: Colors.orange.shade700),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Anda menghapus komentar sebagai Admin', style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.w600))),
+                    Expanded(child: Text(_t('You are deleting this comment as Admin', 'Anda menghapus komentar sebagai Admin'), style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.w600))),
                   ],
                 ),
               ),
@@ -797,8 +954,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(_t('Cancel', 'Batal'))),
+          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: Text(_t('Delete', 'Hapus'), style: const TextStyle(fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -807,7 +964,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       try {
         await ApiService.delete('/comments/$commentId');
         await _loadComments();
-        _showSnackBar(isAdmin && !isOwner ? 'Komentar berhasil dihapus oleh Admin!' : 'Komentar berhasil dihapus!', isError: false);
+        _showSnackBar(isAdmin && !isOwner ? _t('Comment deleted by Admin!', 'Komentar berhasil dihapus oleh Admin!') : _t('Comment deleted!', 'Komentar berhasil dihapus!'), isError: false);
       } catch (e) {
         _showSnackBar('Error: $e', isError: true);
       }
@@ -819,7 +976,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     final isAdmin = _currentUserRole == 'admin';
     
     if (!isOwner && !isAdmin) {
-      _showSnackBar('Anda tidak memiliki izin untuk menghapus resep ini', isError: true);
+      _showSnackBar(_t('You do not have permission to delete this recipe', 'Anda tidak memiliki izin untuk menghapus resep ini'), isError: true);
       return;
     }
 
@@ -831,14 +988,14 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           children: [
             Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)), child: const Icon(Icons.warning_rounded, color: Colors.red, size: 24)),
             const SizedBox(width: 12),
-            const Text('Hapus Resep'),
+            Text(_t('Delete Recipe', 'Hapus Resep')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Apakah Anda yakin ingin menghapus resep ini?'),
+            Text(_t('Are you sure you want to delete this recipe?', 'Apakah Anda yakin ingin menghapus resep ini?')),
             const SizedBox(height: 8),
             Text('Tindakan ini tidak dapat dibatalkan.', style: TextStyle(fontSize: 12, color: Colors.red.shade600, fontWeight: FontWeight.w500)),
             if (isAdmin && !isOwner) ...[
@@ -850,7 +1007,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   children: [
                     Icon(Icons.admin_panel_settings, size: 20, color: Colors.orange.shade700),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Anda menghapus resep sebagai Admin', style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontWeight: FontWeight.w600))),
+                    Expanded(child: Text(_t('You are deleting this recipe as Admin', 'Anda menghapus resep sebagai Admin'), style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontWeight: FontWeight.w600))),
                   ],
                 ),
               ),
@@ -858,8 +1015,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
-          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red, backgroundColor: Colors.red.withValues(alpha: 0.1)), child: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(_t('Cancel', 'Batal'))),
+          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red, backgroundColor: Colors.red.withValues(alpha: 0.1)), child: Text(_t('Delete', 'Hapus'), style: const TextStyle(fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -868,7 +1025,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       try {
         await ApiService.delete('/recipes/${widget.recipeId}');
         if (!mounted) return;
-        _showSnackBar(isAdmin && !isOwner ? 'Resep berhasil dihapus oleh Admin!' : 'Resep berhasil dihapus!', isError: false);
+        _showSnackBar(isAdmin && !isOwner ? _t('Recipe deleted by Admin!', 'Resep berhasil dihapus oleh Admin!') : _t('Recipe deleted!', 'Resep berhasil dihapus!'), isError: false);
         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false);
       } catch (e) {
         _showSnackBar('Error: $e', isError: true);
@@ -916,14 +1073,14 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Edit Ulasan'),
-        content: TextField(controller: controller, maxLines: 3, decoration: const InputDecoration(hintText: 'Edit ulasan Anda', border: OutlineInputBorder())),
+        title: Text(_t('Edit Review', 'Edit Ulasan')),
+        content: TextField(controller: controller, maxLines: 3, decoration: InputDecoration(hintText: _t('Edit your review', 'Edit ulasan Anda'), border: const OutlineInputBorder())),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(_t('Cancel', 'Batal'))),
           ElevatedButton(
             onPressed: () { Navigator.pop(context); _editComment(commentId, controller.text); },
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryCoral, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            child: const Text('Simpan'),
+            child: Text(_t('Save', 'Simpan')),
           ),
         ],
       ),
@@ -933,14 +1090,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final isOwner = _currentUserId == _recipe?['user_id'].toString();
-    final isCurrentUserAdmin = _currentUserRole == 'admin';
-    final canEdit = isOwner || isCurrentUserAdmin;
+    final canEdit = isOwner;
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryCoral))
           : _recipe == null
-              ? const Center(child: Text('Resep tidak ditemukan'))
+              ? Center(child: Text(_t('Recipe not found', 'Resep tidak ditemukan')))
               : CustomScrollView(
                   slivers: [
                     _buildAppBar(),
@@ -987,13 +1143,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         child: const Icon(Icons.restaurant_rounded, color: Colors.white, size: 32),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Detail Resep', style: AppTheme.headingLarge),
-                            SizedBox(height: 4),
-                            Text('Informasi lengkap resep', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                            Text(_t('Recipe Detail', 'Detail Resep'), style: AppTheme.headingLarge),
+                            const SizedBox(height: 4),
+                            Text(_t('Complete recipe information', 'Informasi lengkap resep'), style: const TextStyle(fontSize: 14, color: Colors.white70)),
                           ],
                         ),
                       ),
@@ -1030,13 +1186,59 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   Widget _buildCompactInfoChip(String text, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5)),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryCoral.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryCoral.withValues(alpha: 0.18), width: 1.2),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.white),
+          Icon(icon, size: 14, color: AppTheme.primaryCoral),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhotoPill({
+    required IconData icon,
+    required String label,
+    required Color backgroundColor,
+    required Color foregroundColor,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 170),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.22),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: foregroundColor),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: foregroundColor,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1046,9 +1248,11 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     final profile = _recipe!['profiles'];
     final username = profile?['username'] ?? 'Anonymous';
     final avatarUrl = profile?['avatar_url'];
-    final role = profile?['role'] ?? 'user';
+    final role = profile?['role'] == 'admin' ? 'user' : (profile?['role'] ?? 'user');
     final isPremium = profile?['is_premium'] ?? false;
     final oderId = _recipe!['user_id'];
+    final category = _recipe!['categories'];
+    final categoryName = category is Map ? category['name']?.toString() : null;
     return Container(
       decoration: AppTheme.cardDecoration,
       child: Column(
@@ -1064,28 +1268,96 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 Positioned(
                   bottom: 0, left: 0, right: 0,
                   child: Container(
-                    height: 140,
-                    decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withValues(alpha: 0.4), Colors.black.withValues(alpha: 0.8)])),
+                    height: 100,
+                    decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withValues(alpha: 0.25), Colors.black.withValues(alpha: 0.65)])),
                   ),
                 ),
                 Positioned(
-                  bottom: 20, left: 20, right: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_recipe!['title'] ?? 'Untitled', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2, shadows: [Shadow(color: Colors.black54, blurRadius: 8)])),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _buildCompactInfoChip('${_recipe!['cooking_time'] ?? 15} min', Icons.access_time_rounded),
-                          const SizedBox(width: 8),
-                          _buildCompactInfoChip('${_recipe!['servings'] ?? 1} porsi', Icons.restaurant_menu_rounded),
-                          const SizedBox(width: 8),
-                          _buildCompactInfoChip((_recipe!['difficulty'] ?? 'mudah').toUpperCase(), Icons.bar_chart_rounded),
-                        ],
+                  top: 14,
+                  left: 14,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.18),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
                       ),
-                    ],
+                    ),
                   ),
+                ),
+                if (_averageRating != null && _averageRating! > 0)
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: _buildPhotoPill(
+                      icon: Icons.star_rounded,
+                      label: '${_averageRating!.toStringAsFixed(1)} (${_ratingCount ?? 0})',
+                      backgroundColor: AppTheme.primaryYellow,
+                      foregroundColor: const Color(0xFF3B2A00),
+                    ),
+                  )
+                else
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: _buildPhotoPill(
+                      icon: Icons.star_border_rounded,
+                      label: _t('No rating yet', 'Belum ada rating'),
+                      backgroundColor: Colors.black.withValues(alpha: 0.55),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                if (categoryName != null && categoryName.isNotEmpty)
+                  Positioned(
+                    bottom: 16,
+                    right: 16,
+                    child: _buildPhotoPill(
+                      icon: Icons.category_rounded,
+                      label: categoryName,
+                      backgroundColor: AppTheme.primaryCoral,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_recipe!['title'] ?? 'Untitled', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textPrimary, height: 1.2)),
+                if (_shouldShowTranslate) ...[
+                  const SizedBox(height: 10),
+                  _buildTranslateChip(
+                    isTranslated: _recipeTranslated,
+                    isLoading: _isTranslatingRecipe,
+                    onTap: _toggleRecipeTranslate,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildCompactInfoChip('${_recipe!['cooking_time'] ?? 15} min', Icons.access_time_rounded),
+                    _buildCompactInfoChip('${_recipe!['servings'] ?? 1} ${_t('servings', 'porsi')}', Icons.restaurant_menu_rounded),
+                    _buildCompactInfoChip((_recipe!['difficulty'] ?? 'mudah').toUpperCase(), Icons.bar_chart_rounded),
+                  ],
                 ),
               ],
             ),
@@ -1096,7 +1368,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_recipe!['description'] != null && _recipe!['description'].toString().isNotEmpty) ...[
-                  AppTheme.buildSectionHeader('Deskripsi', Icons.description_rounded),
+                  AppTheme.buildSectionHeader(_t('Description', 'Deskripsi'), Icons.description_rounded),
                   const SizedBox(height: 12),
                   Text(_recipe!['description'], style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.6)),
                   const SizedBox(height: 20),
@@ -1129,10 +1401,10 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: role == 'admin' ? const Color(0xFFFFD700) : isPremium ? const Color(0xFF6C63FF) : Colors.grey.shade400,
+                                  color: isPremium ? const Color(0xFF6C63FF) : Colors.grey.shade400,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(role == 'admin' ? 'ADMIN' : isPremium ? 'SAVORA CHEF' : 'PENGGUNA', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                                child: Text(isPremium ? 'SAVORA CHEF' : _t('USER', 'PENGGUNA'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
                               ),
                             ],
                           ),
@@ -1146,17 +1418,17 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoDetailCard('${_recipe!['cooking_time'] ?? 15}', 'Menit', Icons.access_time_rounded, AppTheme.primaryTeal)),
+                    Expanded(child: _buildInfoDetailCard('${_recipe!['cooking_time'] ?? 15}', _t('Minutes', 'Menit'), Icons.access_time_rounded, AppTheme.primaryTeal)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildInfoDetailCard('${_recipe!['servings'] ?? 1}', 'Porsi', Icons.restaurant_menu_rounded, AppTheme.primaryDark)),
+                    Expanded(child: _buildInfoDetailCard('${_recipe!['servings'] ?? 1}', _t('Servings', 'Porsi'), Icons.restaurant_menu_rounded, AppTheme.primaryDark)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoDetailCard((_recipe!['difficulty'] ?? 'mudah').toUpperCase(), 'Tingkat', Icons.bar_chart_rounded, AppTheme.primaryOrange)),
+                    Expanded(child: _buildInfoDetailCard((_recipe!['difficulty'] ?? 'mudah').toUpperCase(), _t('Level', 'Tingkat'), Icons.bar_chart_rounded, AppTheme.primaryOrange)),
                     const SizedBox(width: 12),
-                    Expanded(child: _buildInfoDetailCard(_recipe!['calories'] != null ? '${_recipe!['calories']}' : 'N/A', 'Kalori', Icons.local_fire_department_rounded, AppTheme.primaryCoral)),
+                    Expanded(child: _buildInfoDetailCard(_recipe!['calories'] != null ? '${_recipe!['calories']}' : 'N/A', _t('Calories', 'Kalori'), Icons.local_fire_department_rounded, AppTheme.primaryCoral)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -1193,6 +1465,47 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     return Container(width: double.infinity, height: 280, decoration: const BoxDecoration(gradient: AppTheme.primaryGradient), child: const Icon(Icons.restaurant_rounded, size: 80, color: Colors.white));
   }
 
+  Widget _buildTranslateChip({
+    required bool isTranslated,
+    required bool isLoading,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppTheme.primaryCoral.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isTranslated ? Icons.undo_rounded : Icons.translate_rounded,
+                size: 15,
+                color: AppTheme.primaryCoral,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isLoading ? 'Translating...' : (isTranslated ? 'Undo' : 'Translate'),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryCoral,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(bool canEdit) {
     final isAdmin = _currentUserRole == 'admin';
     return Column(
@@ -1213,7 +1526,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     child: InkWell(
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EditRecipeScreen(recipe: _recipe!))).then((_) => _loadRecipe()),
                       borderRadius: BorderRadius.circular(14),
-                      child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.edit_rounded, size: 20, color: AppTheme.primaryDark), SizedBox(width: 8), Text('Edit Resep', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark))]),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.edit_rounded, size: 20, color: AppTheme.primaryDark), const SizedBox(width: 8), Text(_t('Edit Recipe', 'Edit Resep'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark))]),
                     ),
                   ),
                 ),
@@ -1228,7 +1541,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     child: InkWell(
                       onTap: _deleteRecipe,
                       borderRadius: BorderRadius.circular(14),
-                      child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.delete_rounded, size: 20, color: Colors.white), SizedBox(width: 8), Text('Hapus', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white))]),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.delete_rounded, size: 20, color: Colors.white), const SizedBox(width: 8), Text(_t('Delete', 'Hapus'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white))]),
                     ),
                   ),
                 ),
@@ -1245,12 +1558,98 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               child: InkWell(
                 onTap: _deleteRecipe,
                 borderRadius: BorderRadius.circular(14),
-                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.admin_panel_settings, size: 20, color: Colors.white), SizedBox(width: 8), Text('Hapus Resep (Admin)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white))]),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.admin_panel_settings, size: 20, color: Colors.white), const SizedBox(width: 8), Text(_t('Delete Recipe (Admin)', 'Hapus Resep (Admin)'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white))]),
               ),
             ),
           ),
           const SizedBox(height: 12),
         ],
+        Container(
+          height: 64,
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            gradient: _isLiked
+                ? AppTheme.accentGradient
+                : LinearGradient(colors: [
+                    AppTheme.primaryCoral.withValues(alpha: 0.10),
+                    AppTheme.primaryOrange.withValues(alpha: 0.08),
+                  ]),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: _isLiked
+                  ? Colors.white.withValues(alpha: 0.20)
+                  : AppTheme.borderColor,
+              width: 1.5,
+            ),
+            boxShadow: _isLiked ? AppTheme.buttonShadow : AppTheme.cardShadow,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _isTogglingLike ? null : _toggleLike,
+              borderRadius: BorderRadius.circular(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: _isLiked ? 0.24 : 0.85),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      size: 24,
+                      color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isLiked ? _t('Liked', 'Disukai') : _t('Like this recipe', 'Suka resep ini'),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _t('$_likesCount people like this recipe', '$_likesCount orang menyukai resep ini'),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                            color: _isLiked ? Colors.white.withValues(alpha: 0.88) : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: _isLiked ? 0.22 : 0.85),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      _likesCount.toString(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         Row(
           children: [
             if (!canEdit && !isAdmin)
@@ -1272,7 +1671,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         children: [
                           Icon(_isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: Colors.white),
                           const SizedBox(width: 10),
-                          Text(_isFavorite ? 'Tersimpan' : 'Simpan Resep', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                          Text(_isFavorite ? _t('Saved', 'Tersimpan') : _t('Save Recipe', 'Simpan Resep'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                         ],
                       ),
                     ),
@@ -1299,7 +1698,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                       child: InkWell(
                         onTap: _showShareBottomSheet,
                         borderRadius: BorderRadius.circular(14),
-                        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.share_rounded, color: Colors.white, size: 22), SizedBox(width: 10), Text('Bagikan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white))]),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.share_rounded, color: Colors.white, size: 22), const SizedBox(width: 10), Text(_t('Share', 'Bagikan'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white))]),
                       ),
                     ),
                   ),
@@ -1320,27 +1719,27 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_recipe!['video_url'] != null) ...[
-            AppTheme.buildSectionHeader('Video Tutorial', Icons.videocam_rounded),
+            AppTheme.buildSectionHeader(_t('Video Tutorial', 'Video Tutorial'), Icons.videocam_rounded),
             const SizedBox(height: 16),
             _buildVideoPlayer(),
             const SizedBox(height: 28),
             const Divider(height: 1),
             const SizedBox(height: 28),
           ] else ...[
-            AppTheme.buildSectionHeader('Video Tutorial', Icons.videocam_rounded),
+            AppTheme.buildSectionHeader(_t('Video Tutorial', 'Video Tutorial'), Icons.videocam_rounded),
             const SizedBox(height: 16),
-            AppTheme.buildEmptyState(icon: Icons.videocam_off_rounded, title: 'User tidak mengunggah video'),
+            AppTheme.buildEmptyState(icon: Icons.videocam_off_rounded, title: _t('User did not upload a video', 'User tidak mengunggah video')),
             const SizedBox(height: 28),
             const Divider(height: 1),
             const SizedBox(height: 28),
           ],
-          AppTheme.buildSectionHeader('Bahan-bahan', Icons.restaurant_menu_rounded),
+          AppTheme.buildSectionHeader(_t('Ingredients', 'Bahan-bahan'), Icons.restaurant_menu_rounded),
           const SizedBox(height: 16),
           _buildIngredientsList(),
           const SizedBox(height: 28),
           const Divider(height: 1),
           const SizedBox(height: 28),
-          AppTheme.buildSectionHeader('Langkah-langkah', Icons.format_list_numbered_rounded),
+          AppTheme.buildSectionHeader(_t('Steps', 'Langkah-langkah'), Icons.format_list_numbered_rounded),
           const SizedBox(height: 16),
           _buildStepsList(),
           const SizedBox(height: 28),
@@ -1364,13 +1763,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     return Container(
       height: 200,
       decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(12)),
-      child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline, size: 48, color: Colors.red.shade400), const SizedBox(height: 12), Text('Gagal memuat video', style: TextStyle(color: Colors.red.shade400))])),
+      child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.error_outline, size: 48, color: Colors.red.shade400), const SizedBox(height: 12), Text(_t('Failed to load video', 'Gagal memuat video'), style: TextStyle(color: Colors.red.shade400))])),
     );
   }
 
   Widget _buildIngredientsList() {
     final ingredients = _extractDynamicList(_recipe!['ingredients']);
-    if (ingredients.isEmpty) return AppTheme.buildEmptyState(icon: Icons.restaurant_menu_rounded, title: 'Belum ada bahan');
+    if (ingredients.isEmpty) return AppTheme.buildEmptyState(icon: Icons.restaurant_menu_rounded, title: _t('No ingredients yet', 'Belum ada bahan'));
     return Column(
       children: ingredients.asMap().entries.map((entry) {
         final index = entry.key;
@@ -1409,7 +1808,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
 
   Widget _buildStepsList() {
     final steps = _extractDynamicList(_recipe!['steps']);
-    if (steps.isEmpty) return AppTheme.buildEmptyState(icon: Icons.format_list_numbered_rounded, title: 'Belum ada langkah');
+    if (steps.isEmpty) return AppTheme.buildEmptyState(icon: Icons.format_list_numbered_rounded, title: _t('No steps yet', 'Belum ada langkah'));
     return Column(
       children: List.generate(steps.length, (index) => Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -1441,7 +1840,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   }
 
   Widget _buildTagsList() {
-    if (_tags.isEmpty) return AppTheme.buildEmptyState(icon: Icons.label_rounded, title: 'Belum ada tag');
+    if (_tags.isEmpty) return AppTheme.buildEmptyState(icon: Icons.label_rounded, title: _t('No tags yet', 'Belum ada tag'));
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -1470,7 +1869,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTheme.buildSectionHeader('Rating & Ulasan', Icons.star_rounded),
+          AppTheme.buildSectionHeader(_t('Rating & Reviews', 'Rating & Ulasan'), Icons.star_rounded),
           const SizedBox(height: 20),
           if (_averageRating != null)
             Container(
@@ -1488,7 +1887,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(_averageRating!.toStringAsFixed(1), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                      Text('dari $_ratingCount rating', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text(_t('from $_ratingCount ratings', 'dari $_ratingCount rating'), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                     ],
                   ),
                 ],
@@ -1498,10 +1897,10 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.grey.shade100, Colors.grey.shade50]), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200)),
-              child: Row(children: [Icon(Icons.star_outline_rounded, color: Colors.grey.shade400, size: 28), const SizedBox(width: 12), Text('Belum ada rating', style: TextStyle(color: Colors.grey.shade500))]),
+              child: Row(children: [Icon(Icons.star_outline_rounded, color: Colors.grey.shade400, size: 28), const SizedBox(width: 12), Text(_t('No rating yet', 'Belum ada rating'), style: TextStyle(color: Colors.grey.shade500))]),
             ),
           const SizedBox(height: 20),
-          Text('Beri Rating Anda', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+          Text(_t('Give Your Rating', 'Beri Rating Anda'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
           const SizedBox(height: 10),
           Row(
             children: List.generate(5, (index) {
@@ -1515,7 +1914,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           const SizedBox(height: 24),
           const Divider(height: 1),
           const SizedBox(height: 20),
-          Text('Ulasan (${_comments.length})', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+          Text(_t('Reviews (${_comments.length})', 'Ulasan (${_comments.length})'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
           Container(
             decoration: AppTheme.inputDecoration(AppTheme.primaryYellow),
@@ -1524,7 +1923,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               maxLines: 3,
               minLines: 1,
               decoration: InputDecoration(
-                hintText: 'Tulis ulasan Anda...',
+                hintText: _t('Write your review...', 'Tulis ulasan Anda...'),
                 hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1540,7 +1939,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ),
           const SizedBox(height: 16),
           if (_comments.isEmpty)
-            AppTheme.buildEmptyState(icon: Icons.chat_bubble_outline_rounded, title: 'Belum ada ulasan', subtitle: 'Jadilah yang pertama memberikan ulasan!')
+            AppTheme.buildEmptyState(icon: Icons.chat_bubble_outline_rounded, title: _t('No reviews yet', 'Belum ada ulasan'), subtitle: _t('Be the first to leave a review!', 'Jadilah yang pertama memberikan ulasan!'))
           else
             ListView.builder(
               shrinkWrap: true,
@@ -1552,9 +1951,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 final username = profile?['username'] ?? 'Anonymous';
                 final avatarUrl = profile?['avatar_url'];
                 final commentUserId = comment['user_id'].toString();
+                final commentId = comment['id']?.toString() ?? 'comment-$index';
                 final isCommentOwner = _currentUserId == commentUserId;
                 final isAdmin = _currentUserRole == 'admin';
                 final canManageComment = isCommentOwner || isAdmin;
+                final commentTranslated = _translatedCommentIds.contains(commentId);
+                final commentTranslating = _translatingCommentIds.contains(commentId);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
@@ -1590,13 +1992,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                               },
                               itemBuilder: (_) => [
                                 if (isCommentOwner)
-                                  const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_rounded, size: 16), SizedBox(width: 8), Text('Edit')])),
+                                  PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit_rounded, size: 16), const SizedBox(width: 8), Text(_t('Edit', 'Edit'))])),
                                 PopupMenuItem(
                                   value: 'delete',
                                   child: Row(children: [
                                     Icon(isAdmin && !isCommentOwner ? Icons.admin_panel_settings : Icons.delete_rounded, size: 16, color: Colors.red),
                                     const SizedBox(width: 8),
-                                    Text(isAdmin && !isCommentOwner ? 'Hapus (Admin)' : 'Hapus', style: const TextStyle(color: Colors.red)),
+                                    Text(isAdmin && !isCommentOwner ? _t('Delete (Admin)', 'Hapus (Admin)') : _t('Delete', 'Hapus'), style: const TextStyle(color: Colors.red)),
                                   ]),
                                 ),
                               ],
@@ -1612,6 +2014,35 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                           Icon(Icons.access_time_rounded, size: 12, color: Colors.grey.shade400),
                           const SizedBox(width: 4),
                           Text(_formatDateTime(comment['created_at']), style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                          if (_shouldShowTranslate) ...[
+                            const SizedBox(width: 10),
+                            InkWell(
+                              onTap: commentTranslating ? null : () => _toggleCommentTranslate(commentId, index),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      commentTranslated ? Icons.undo_rounded : Icons.translate_rounded,
+                                      size: 12,
+                                      color: AppTheme.primaryCoral,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      commentTranslating ? 'Translating...' : (commentTranslated ? 'Undo' : 'Translate'),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.primaryCoral,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],

@@ -4,6 +4,8 @@
     'savedBoardIds' => [],
 ])
 
+@php($isEnglish = session('user_language', 'en') === 'en')
+
 <template x-teleport="body">
     <div
         x-show="openBoardSelector"
@@ -22,7 +24,7 @@
                         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
                 </div>
-                <h3 class="text-[22px] font-bold leading-tight flex-1" style="color: var(--color-text-primary);">Simpan ke Koleksi</h3>
+                <h3 class="text-[22px] font-bold leading-tight flex-1" style="color: var(--color-text-primary);">{{ $isEnglish ? 'Save to Collection' : 'Simpan ke Koleksi' }}</h3>
             </div>
 
             <a href="{{ route('app.favorites') }}"
@@ -33,7 +35,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                     </svg>
                 </span>
-                <span class="flex-1 text-left text-base">Buat Koleksi Baru</span>
+                <span class="flex-1 text-left text-base">{{ $isEnglish ? 'Create New Collection' : 'Buat Koleksi Baru' }}</span>
                 <svg class="w-4 h-4 text-white shrink-0 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -44,7 +46,7 @@
                     <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
-                    <p class="text-base font-semibold text-gray-600">Belum ada koleksi</p>
+                    <p class="text-base font-semibold text-gray-600">{{ $isEnglish ? 'No collections yet' : 'Belum ada koleksi' }}</p>
                 </div>
             @else
                 <div class="space-y-3">
@@ -68,7 +70,7 @@
                                         <p class="text-xs mt-0.5 truncate text-gray-600">{{ $board['description'] }}</p>
                                     @endif
                                     @if(collect($savedBoardIds ?? [])->contains(fn ($id) => (string) $id === (string) ($board['id'] ?? '')))
-                                        <p class="text-xs mt-1 font-semibold" style="color: #10B981;">Sudah tersimpan di koleksi ini</p>
+                                        <p class="text-xs mt-1 font-semibold" style="color: #10B981;">{{ $isEnglish ? 'Already saved in this collection' : 'Sudah tersimpan di koleksi ini' }}</p>
                                     @endif
                                 </div>
                                 <svg class="w-3.5 h-3.5 shrink-0" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

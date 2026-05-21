@@ -8,8 +8,8 @@
 
     @props:
       icon     (string) - icon class Bootstrap Icons / Heroicons
-      title    (string) - pesan utama
-      subtitle (string) - pesan tambahan (opsional)
+      title    (string) - main message
+      subtitle (string) - optional supporting message
 --}}
 @props(['icon', 'title', 'subtitle' => null])
 

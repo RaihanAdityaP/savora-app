@@ -33,16 +33,27 @@ Route::get('/.well-known/assetlinks.json', function () {
 })->name('assetlinks');
 
 Route::prefix('errors')->name('errors.')->group(function () {
-    Route::view('403', 'app.errors.403')->name('403');
-    Route::view('404', 'app.errors.404')->name('404');
-    Route::view('419', 'app.errors.419')->name('419');
-    Route::view('429', 'app.errors.429')->name('429');
-    Route::view('500', 'app.errors.500')->name('500');
-    Route::view('503', 'app.errors.503')->name('503');
+    Route::view('403', 'errors.403')->name('403');
+    Route::view('404', 'errors.404')->name('404');
+    Route::view('419', 'errors.419')->name('419');
+    Route::view('429', 'errors.429')->name('429');
+    Route::view('500', 'errors.500')->name('500');
+    Route::view('503', 'errors.503')->name('503');
 });
 
 // ── Public pages ───────────────────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/download-apk', function () {
+    $path = env('APK_DOWNLOAD_PATH')
+        ? base_path(env('APK_DOWNLOAD_PATH'))
+        : public_path('downloads/savora.apk');
+
+    abort_unless(is_file($path), 404);
+
+    return response()->download($path, 'Savora.apk', [
+        'Content-Type' => 'application/vnd.android.package-archive',
+    ]);
+})->name('apk.download');
 Route::get('/license', [LandingController::class, 'license'])->name('license');
 
 // ── Admin auth ─────────────────────────────────────────────────
@@ -57,6 +68,8 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('users',     [AdminWebController::class, 'users'])->name('users');
     Route::get('recipes',   [AdminWebController::class, 'recipes'])->name('recipes');
     Route::get('logs',      [AdminWebController::class, 'logs'])->name('logs');
+    Route::get('broadcast',  [AdminWebController::class, 'broadcast'])->name('broadcast');
+    Route::post('broadcast', [AdminWebController::class, 'sendBroadcast'])->name('broadcast.send');
 
     Route::post('users/{id}/toggle-ban',     [AdminWebController::class, 'toggleUserBan'])->name('users.toggle-ban');
     Route::post('users/{id}/toggle-premium', [AdminWebController::class, 'togglePremium'])->name('users.toggle-premium');
@@ -105,14 +118,19 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::post('recipes/{id}/delete', [RecipeController::class, 'destroy'])->name('recipe.destroy');
     Route::post('recipes/{id}/comment',[RecipeController::class, 'postComment'])->name('recipe.comment');
     Route::post('recipes/{id}/rate',   [RecipeController::class, 'rate'])->name('recipe.rate');
+    Route::post('recipes/{id}/like',   [RecipeController::class, 'toggleLike'])->name('recipe.like');
     Route::post('comments/{id}/delete',[RecipeController::class, 'deleteComment'])->name('comment.delete');
     Route::get('recipes/{id}',         [RecipeController::class, 'show'])->name('recipe.show');
 
     // Profile
     Route::get('profile',                    [ProfileController::class, 'show'])->name('profile');
+    Route::get('profile/edit',               [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('profile',                   [ProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/{userId}/follow',   [ProfileController::class, 'follow'])->name('profile.follow');
     Route::post('profile/{userId}/unfollow', [ProfileController::class, 'unfollow'])->name('profile.unfollow');
+    Route::get('profile/{userId}/likes',     [ProfileController::class, 'liked'])->name('profile.likes');
+    Route::get('profile/{userId}/followers', [ProfileController::class, 'followers'])->name('profile.followers');
+    Route::get('profile/{userId}/following', [ProfileController::class, 'following'])->name('profile.following');
     Route::get('profile/{userId}',           [ProfileController::class, 'show'])->name('profile.user');
 
     // Favorites

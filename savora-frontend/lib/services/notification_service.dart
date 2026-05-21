@@ -1,12 +1,33 @@
 import 'dart:convert';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'api_service.dart';
+import '../firebase_options.dart';
 import 'notification_client.dart';
+
+@pragma('vm:entry-point')
+Future<void> savoraFirebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {}
+  await NotificationService.showBackgroundMessage(message);
+}
+
+@pragma('vm:entry-point')
+void savoraNotificationTapBackground(NotificationResponse response) {
+  debugPrint(
+    'Background notification action: ${response.actionId} payload: ${response.payload}',
+  );
+}
 
 /// NotificationService — handle FCM + local notifications di device.
 class NotificationService {
@@ -19,9 +40,12 @@ class NotificationService {
 
   bool _isInitialized = false;
 
-  // Callback opsional saat notifikasi di-tap
-  // Set ini dari luar jika mau navigasi ke screen tertentu
-  static Function(String? payload)? onNotificationTapped;
+  static const String actionLikeRecipe = 'like_recipe';
+  static const String actionReplyRecipe = 'reply_recipe';
+
+  // Callback opsional saat notifikasi atau action button di-tap.
+  static void Function(String? payload, {String? actionId})?
+      onNotificationTapped;
 
   // ─────────────────────────────────────────────
   // INITIALIZE
@@ -55,6 +79,8 @@ class NotificationService {
           await _flutterLocalNotificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveBackgroundNotificationResponse:
+            savoraNotificationTapBackground,
       );
 
       debugPrint('Plugin initialization result: $initialized');
@@ -183,13 +209,15 @@ class NotificationService {
 
   void _onNotificationTapped(NotificationResponse response) {
     final String? payload = response.payload;
-    debugPrint('Notification tapped with payload: $payload');
-    _triggerTapCallback(payload);
+    debugPrint(
+      'Notification tapped with payload: $payload action: ${response.actionId}',
+    );
+    _triggerTapCallback(payload, actionId: response.actionId);
   }
 
-  void _triggerTapCallback(String? payload) {
+  void _triggerTapCallback(String? payload, {String? actionId}) {
     if (onNotificationTapped != null && payload != null) {
-      onNotificationTapped!(payload);
+      onNotificationTapped!(payload, actionId: actionId);
     }
   }
 
@@ -216,6 +244,7 @@ class NotificationService {
     }
 
     try {
+      final bool canActOnRecipe = _isRecipePayload(payload);
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
         'savora_channel',
@@ -241,6 +270,22 @@ class NotificationService {
         channelShowBadge: true,
         autoCancel: true,
         ongoing: false,
+        actions: canActOnRecipe
+            ? const <AndroidNotificationAction>[
+                AndroidNotificationAction(
+                  actionLikeRecipe,
+                  'Like',
+                  showsUserInterface: true,
+                  cancelNotification: true,
+                ),
+                AndroidNotificationAction(
+                  actionReplyRecipe,
+                  'Balas',
+                  showsUserInterface: true,
+                  cancelNotification: true,
+                ),
+              ]
+            : null,
       );
 
       final NotificationDetails notificationDetails = NotificationDetails(
@@ -263,6 +308,117 @@ class NotificationService {
       debugPrint('Error showing notification: $e');
       debugPrint('Stack trace: $stackTrace');
     }
+  }
+
+  bool _isRecipePayload(String? payload) {
+    if (payload == null || payload.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is! Map) return false;
+      final route = decoded['route']?.toString();
+      final id = decoded['id']?.toString();
+      return route == 'recipe' && id != null && id.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> showBackgroundMessage(RemoteMessage message) async {
+    if (kIsWeb) return;
+
+    final title =
+        message.notification?.title ?? message.data['title']?.toString();
+    final body = message.notification?.body ?? message.data['body']?.toString();
+
+    if (title == null || body == null) return;
+
+    final plugin = FlutterLocalNotificationsPlugin();
+    const initializationSettings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    );
+
+    await plugin.initialize(
+      initializationSettings,
+      onDidReceiveBackgroundNotificationResponse:
+          savoraNotificationTapBackground,
+    );
+
+    const channel = AndroidNotificationChannel(
+      'savora_channel',
+      'Savora Notifications',
+      description: 'Notifikasi dari aplikasi Savora',
+      importance: Importance.max,
+      enableVibration: true,
+      playSound: true,
+      showBadge: true,
+    );
+
+    final androidImpl = plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.createNotificationChannel(channel);
+
+    final payload = _payloadFromData(message.data);
+    final canActOnRecipe = _isRecipePayloadData(message.data);
+    final androidDetails = AndroidNotificationDetails(
+      'savora_channel',
+      'Savora Notifications',
+      channelDescription: 'Notifikasi dari aplikasi Savora',
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: true,
+      enableVibration: true,
+      playSound: true,
+      icon: '@mipmap/ic_launcher',
+      color: const Color(0xFFFF6B6B),
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'Savora',
+      ),
+      ticker: 'Savora Notification',
+      channelShowBadge: true,
+      autoCancel: true,
+      actions: canActOnRecipe
+          ? const <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                actionLikeRecipe,
+                'Like',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+              AndroidNotificationAction(
+                actionReplyRecipe,
+                'Balas',
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+            ]
+          : null,
+    );
+
+    await plugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title,
+      body,
+      NotificationDetails(android: androidDetails),
+      payload: payload,
+    );
+  }
+
+  static String? _payloadFromData(Map<String, dynamic> data) {
+    if (data.isEmpty) return null;
+    try {
+      return jsonEncode(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _isRecipePayloadData(Map<String, dynamic> data) {
+    final route = data['route']?.toString();
+    final id = data['id']?.toString();
+    return route == 'recipe' && id != null && id.isNotEmpty;
   }
 
   Future<void> _registerCurrentFcmToken() async {

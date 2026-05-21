@@ -1,6 +1,7 @@
+@php($isEnglish = session('user_language', 'en') === 'en')
 <!DOCTYPE html>
 
-<html lang="id">
+<html lang="{{ $isEnglish ? 'en' : 'id' }}">
 
 <head>
 
@@ -8,7 +9,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Buat Resep Baru — Savora</title>
+    <title>{{ $isEnglish ? 'Create New Recipe' : 'Buat Resep Baru' }} — Savora</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -102,9 +103,9 @@
 
                 <div>
 
-                    <h1 class="text-xl font-bold">Buat Resep Baru</h1>
+                    <h1 class="text-xl font-bold">{{ $isEnglish ? 'Create New Recipe' : 'Buat Resep Baru' }}</h1>
 
-                    <p class="text-white/80 text-xs">Bagikan resep lezatmu ke komunitas</p>
+                    <p class="text-white/80 text-xs">{{ $isEnglish ? 'Share your delicious recipe with the community' : 'Bagikan resep lezatmu ke komunitas' }}</p>
 
                 </div>
 
@@ -120,7 +121,7 @@
 
                     </svg>
 
-                    <span class="text-white/80 text-[10px]" x-text="'Tersimpan ' + lastSaved"></span>
+                    <span class="text-white/80 text-[10px]" x-text="'{{ $isEnglish ? 'Saved ' : 'Tersimpan ' }}' + lastSaved"></span>
 
                 </div>
 
@@ -170,7 +171,7 @@
 
                             </svg>
 
-                            <p class="text-sm font-semibold">Pilih Gambar Resep</p>
+                            <p class="text-sm font-semibold">{{ $isEnglish ? 'Choose Recipe Image' : 'Pilih Gambar Resep' }}</p>
 
                         </div>
 
@@ -220,7 +221,7 @@
 
                             </svg>
 
-                            <p class="text-sm font-semibold">Tambahkan Video (Opsional)</p>
+                            <p class="text-sm font-semibold">{{ $isEnglish ? 'Add Video (Optional)' : 'Tambahkan Video (Opsional)' }}</p>
 
                         </div>
 
@@ -252,7 +253,7 @@
 
                                 </svg>
 
-                                Pilih Video
+                                {{ $isEnglish ? 'Choose Video' : 'Pilih Video' }}
 
                             </span>
 
@@ -268,7 +269,7 @@
 
                             </svg>
 
-                            Hapus
+                            {{ $isEnglish ? 'Remove' : 'Hapus' }}
 
                         </button>
 
@@ -284,25 +285,25 @@
 
             <div class="card-savora p-5 mb-4 space-y-4">
 
-                <x-app-theme.section-header title="Informasi Dasar" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' />
+                <x-app-theme.section-header :title="$isEnglish ? 'Basic Information' : 'Informasi Dasar'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' />
 
                 <div>
 
-                    <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Judul Resep *</label>
+                    <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Recipe Title *' : 'Judul Resep *' }}</label>
 
                     <input type="text" name="title" x-model="draft.title" @input="scheduleSave()" required
 
-                           placeholder="Judul resep yang menarik" class="input-savora">
+                           placeholder="{{ $isEnglish ? 'An appealing recipe title' : 'Judul resep yang menarik' }}" class="input-savora">
 
                 </div>
 
                 <div>
 
-                    <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Deskripsi *</label>
+                    <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Description *' : 'Deskripsi *' }}</label>
 
                     <textarea name="description" rows="3" required x-model="draft.description" @input="scheduleSave()"
 
-                              placeholder="Ceritakan tentang resep Anda..."
+                              placeholder="{{ $isEnglish ? 'Tell people about your recipe...' : 'Ceritakan tentang resep Anda...' }}"
 
                               class="input-savora resize-none"></textarea>
 
@@ -312,11 +313,11 @@
 
                     <div>
 
-                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Kategori *</label>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Category *' : 'Kategori *' }}</label>
 
                         <select name="category_id" required class="input-savora" x-model="draft.category_id" @change="scheduleSave()">
 
-                            <option value="">Pilih...</option>
+                            <option value="">{{ $isEnglish ? 'Choose...' : 'Pilih...' }}</option>
 
                             @foreach($categories ?? [] as $cat)
 
@@ -330,15 +331,15 @@
 
                     <div>
 
-                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Kesulitan</label>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Difficulty' : 'Kesulitan' }}</label>
 
                         <select name="difficulty" class="input-savora" x-model="draft.difficulty" @change="scheduleSave()">
 
-                            <option value="mudah">Mudah</option>
+                            <option value="mudah">{{ $isEnglish ? 'Easy' : 'Mudah' }}</option>
 
-                            <option value="sedang">Sedang</option>
+                            <option value="sedang">{{ $isEnglish ? 'Medium' : 'Sedang' }}</option>
 
-                            <option value="sulit">Sulit</option>
+                            <option value="sulit">{{ $isEnglish ? 'Hard' : 'Sulit' }}</option>
 
                         </select>
 
@@ -350,7 +351,7 @@
 
                     <div>
 
-                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Waktu (mnt)</label>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Time (min)' : 'Waktu (mnt)' }}</label>
 
                         <input type="number" name="cooking_time" x-model="draft.cooking_time" @input="scheduleSave()" placeholder="30" class="input-savora">
 
@@ -358,7 +359,7 @@
 
                     <div>
 
-                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Porsi</label>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Servings' : 'Porsi' }}</label>
 
                         <input type="number" name="servings" x-model="draft.servings" @input="scheduleSave()" placeholder="4" class="input-savora">
 
@@ -366,7 +367,7 @@
 
                     <div>
 
-                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">Kalori</label>
+                        <label class="block text-xs font-bold uppercase tracking-wide mb-1.5" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Calories' : 'Kalori' }}</label>
 
                         <input type="number" name="calories" x-model="draft.calories" @input="scheduleSave()" placeholder="500" class="input-savora">
 
@@ -384,13 +385,13 @@
 
                 <div class="mb-3">
 
-                    <x-app-theme.section-header title="Bahan-bahan" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>' />
+                    <x-app-theme.section-header :title="$isEnglish ? 'Ingredients' : 'Bahan-bahan'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>' />
 
                 </div>
 
                 <div class="flex gap-2 mb-3">
 
-                    <input type="text" x-model="newIngredient" placeholder="Tambahkan bahan..."
+                    <input type="text" x-model="newIngredient" placeholder="{{ $isEnglish ? 'Add ingredient...' : 'Tambahkan bahan...' }}"
 
                            @keydown.enter.prevent="addIngredient()" class="input-savora flex-1 min-w-0">
 
@@ -420,7 +421,7 @@
 
                     </template>
 
-                    <p x-show="draft.ingredients.length===0" class="text-center py-1 text-xs" style="color: var(--color-text-secondary);">Belum ada bahan</p>
+                    <p x-show="draft.ingredients.length===0" class="text-center py-1 text-xs" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'No ingredients yet' : 'Belum ada bahan' }}</p>
 
                 </div>
 
@@ -434,13 +435,13 @@
 
                 <div class="mb-3">
 
-                    <x-app-theme.section-header title="Langkah-langkah" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h8M3 6h.01M3 12h.01M3 18h.01"/></svg>' />
+                    <x-app-theme.section-header :title="$isEnglish ? 'Steps' : 'Langkah-langkah'" icon='<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h8M3 6h.01M3 12h.01M3 18h.01"/></svg>' />
 
                 </div>
 
                 <div class="flex gap-2 mb-3">
 
-                    <input type="text" x-model="newStep" placeholder="Tambahkan langkah..."
+                    <input type="text" x-model="newStep" placeholder="{{ $isEnglish ? 'Add step...' : 'Tambahkan langkah...' }}"
 
                            @keydown.enter.prevent="addStep()" class="input-savora flex-1 min-w-0">
 
@@ -470,7 +471,7 @@
 
                     </template>
 
-                    <p x-show="draft.steps.length===0" class="text-center py-1 text-xs" style="color: var(--color-text-secondary);">Belum ada langkah</p>
+                    <p x-show="draft.steps.length===0" class="text-center py-1 text-xs" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'No steps yet' : 'Belum ada langkah' }}</p>
 
                 </div>
 
@@ -618,13 +619,13 @@
 
             <button type="submit" :disabled="isSubmitting" class="btn-primary-savora w-full py-4 rounded-2xl">
 
-                <span x-show="!isSubmitting">Buat Resep</span>
+                <span x-show="!isSubmitting">{{ $isEnglish ? 'Create Recipe' : 'Buat Resep' }}</span>
 
                 <span x-show="isSubmitting" class="flex items-center justify-center gap-2">
 
                     <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
 
-                    Membuat...
+                    {{ $isEnglish ? 'Creating...' : 'Membuat...' }}
 
                 </span>
 
@@ -674,9 +675,9 @@
 
                         <div>
 
-                            <h3 class="font-bold text-sm" style="color: var(--color-text-primary);">Kelola Tag</h3>
+                            <h3 class="font-bold text-sm" style="color: var(--color-text-primary);">{{ $isEnglish ? 'Manage Tags' : 'Kelola Tag' }}</h3>
 
-                            <p class="text-xs" style="color: var(--color-text-secondary);">Pilih atau buat tag baru <span class="font-bold" :class="draft.selectedTags.length>=3 ? 'text-orange-500' : ''" x-text="'(' + draft.selectedTags.length + '/3)'"></span></p>
+                            <p class="text-xs" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Select or create new tags' : 'Pilih atau buat tag baru' }} <span class="font-bold" :class="draft.selectedTags.length>=3 ? 'text-orange-500' : ''" x-text="'(' + draft.selectedTags.length + '/3)'"></span></p>
 
                         </div>
 
@@ -702,7 +703,7 @@
 
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
 
-                        <input type="text" x-model="tagSearch" @input="searchTags()" placeholder="Cari tag..."
+                        <input type="text" x-model="tagSearch" @input="searchTags()" placeholder="{{ $isEnglish ? 'Search tags...' : 'Cari tag...' }}"
 
                                class="input-savora pl-9 pr-4 py-2.5 text-sm">
 
@@ -730,11 +731,11 @@
 
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
 
-                        <span>Buat tag "<span x-text="tagSearch.trim()"></span>"</span>
+                        <span>{{ $isEnglish ? 'Create tag' : 'Buat tag' }} "<span x-text="tagSearch.trim()"></span>"</span>
 
                     </button>
 
-                    <p class="text-[10px] mt-1 ml-3" style="color: var(--color-text-secondary);">Tag baru akan menunggu persetujuan admin</p>
+                    <p class="text-[10px] mt-1 ml-3" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'New tags will wait for admin approval' : 'Tag baru akan menunggu persetujuan admin' }}</p>
 
                 </div>
 
@@ -804,7 +805,7 @@
 
                        class="text-center py-4 text-sm" style="color: var(--color-text-secondary);">
 
-                        Tag tidak ditemukan. Buat tag baru di atas.
+                        {{ $isEnglish ? 'Tag not found. Create a new tag above.' : 'Tag tidak ditemukan. Buat tag baru di atas.' }}
 
                     </p>
 
@@ -820,7 +821,7 @@
 
                             class="btn-primary-savora w-full py-3 rounded-2xl">
 
-                        Selesai
+                        {{ $isEnglish ? 'Done' : 'Selesai' }}
 
                     </button>
 
@@ -920,6 +921,12 @@
 
             initDraft() {
 
+                if (!window.SavoraSettings?.autoSaveDrafts) {
+                    localStorage.removeItem(DRAFT_KEY);
+                    this.modalTagList = POPULAR_TAGS.map(t => ({ ...t }));
+                    return;
+                }
+
                 try {
 
                     const saved = localStorage.getItem(DRAFT_KEY);
@@ -960,6 +967,8 @@
 
             scheduleSave() {
 
+                if (!window.SavoraSettings?.autoSaveDrafts) return;
+
                 if (this.saveTimer) clearTimeout(this.saveTimer);
 
                 this.saveTimer = setTimeout(() => this.saveDraft(), 1500);
@@ -969,6 +978,8 @@
 
 
             saveDraft() {
+
+                if (!window.SavoraSettings?.autoSaveDrafts) return;
 
                 try {
 
@@ -986,7 +997,7 @@
 
             clearDraft() {
 
-                if (!confirm('Hapus draft tersimpan?')) return;
+                if (!confirm('{{ $isEnglish ? 'Delete saved draft?' : 'Hapus draft tersimpan?' }}')) return;
 
                 localStorage.removeItem(DRAFT_KEY);
 
@@ -1288,7 +1299,7 @@
 
                     } else {
 
-                        alert(json.message ?? 'Gagal membuat tag');
+                        alert(json.message ?? '{{ $isEnglish ? 'Failed to create tag' : 'Gagal membuat tag' }}');
 
                     }
 
@@ -1316,7 +1327,7 @@
 
                 if (!this.imagePreview) {
 
-                    alert('Pilih gambar resep terlebih dahulu');
+                    alert('{{ $isEnglish ? 'Choose a recipe image first' : 'Pilih gambar resep terlebih dahulu' }}');
 
                     e.preventDefault(); return;
 
@@ -1324,7 +1335,7 @@
 
                 if (this.draft.ingredients.length === 0) {
 
-                    alert('Tambahkan minimal 1 bahan');
+                    alert('{{ $isEnglish ? 'Add at least 1 ingredient' : 'Tambahkan minimal 1 bahan' }}');
 
                     e.preventDefault(); return;
 
@@ -1332,7 +1343,7 @@
 
                 if (this.draft.steps.length === 0) {
 
-                    alert('Tambahkan minimal 1 langkah');
+                    alert('{{ $isEnglish ? 'Add at least 1 step' : 'Tambahkan minimal 1 langkah' }}');
 
                     e.preventDefault(); return;
 
