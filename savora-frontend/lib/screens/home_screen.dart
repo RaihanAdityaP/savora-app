@@ -215,17 +215,43 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<_FeedPage> _fetchPage(int offset) async {
-    final response = await ApiService.get(
-      '/feed?limit=$_pageSize&offset=$offset',
-    );
+    Map<String, dynamic> response;
+
+    try {
+      response = await ApiService.get(
+        '/feed?limit=$_pageSize&offset=$offset',
+      );
+    } catch (_) {
+      response = await ApiService.get(
+        '/recipes?limit=$_pageSize&offset=$offset',
+      );
+    }
+
+    if (response['success'] != true) {
+      response = await ApiService.get(
+        '/recipes?limit=$_pageSize&offset=$offset',
+      );
+    }
 
     if (response['success'] != true) {
       throw Exception(response['message'] ?? _t('Failed to load feed', 'Gagal memuat feed'));
     }
 
-    final list = (response['data'] as List? ?? [])
+    var list = (response['data'] as List? ?? [])
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
+
+    if (list.isEmpty) {
+      final fallback = await ApiService.get(
+        '/recipes?limit=$_pageSize&offset=$offset',
+      );
+      if (fallback['success'] == true) {
+        response = fallback;
+        list = (fallback['data'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    }
 
     final Map<String, double> ratings = {};
     for (final r in list) {

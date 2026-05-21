@@ -31,19 +31,14 @@ class FeedController extends Controller
             $pageIds  = array_slice(array_keys($scored), $offset, $limit);
 
             if (empty($pageIds)) {
-                return response()->json([
-                    'success'    => true,
-                    'data'       => [],
-                    'pagination' => [
-                        'limit'    => $limit,
-                        'offset'   => $offset,
-                        'total'    => $total,
-                        'has_more' => false,
-                    ],
-                ]);
+                return $this->fallbackFeed($limit, $offset);
             }
 
             $recipes = $this->fetchRecipesByIds($pageIds);
+
+            if (empty($recipes)) {
+                return $this->fallbackFeed($limit, $offset);
+            }
 
             return response()->json([
                 'success'    => true,
@@ -399,33 +394,42 @@ class FeedController extends Controller
                 ['id' => ['operator' => 'in', 'values' => $ids]],
                 ['limit' => count($ids)]
             );
-
-            // Reorder sesuai urutan scoring
-            $map     = array_column($recipes, null, 'id');
-            $ordered = [];
-            foreach ($ids as $id) {
-                if (isset($map[$id])) {
-                    $recipe = $map[$id];
-                    // Rating info
-                    try {
-                        $ratings = $this->supabase->select(
-                            'recipe_ratings', ['rating'], ['recipe_id' => $id]
-                        );
-                        $total   = count($ratings);
-                        $avg     = $total > 0
-                            ? round(array_sum(array_column($ratings, 'rating')) / $total, 1)
-                            : 0;
-                        $recipe['rating_info'] = ['average' => $avg, 'total' => $total];
-                    } catch (Exception $e) {
-                        $recipe['rating_info'] = ['average' => 0, 'total' => 0];
-                    }
-                    $ordered[] = $recipe;
-                }
-            }
-            return $this->attachLikes($ordered);
         } catch (Exception $e) {
-            return [];
+            try {
+                $recipes = $this->supabase->select(
+                    'recipes',
+                    ['*'],
+                    ['id' => ['operator' => 'in', 'values' => $ids]],
+                    ['limit' => count($ids)]
+                );
+            } catch (Exception $e) {
+                return [];
+            }
         }
+
+        // Reorder sesuai urutan scoring
+        $map     = array_column($recipes, null, 'id');
+        $ordered = [];
+        foreach ($ids as $id) {
+            if (isset($map[$id])) {
+                $recipe = $map[$id];
+                // Rating info
+                try {
+                    $ratings = $this->supabase->select(
+                        'recipe_ratings', ['rating'], ['recipe_id' => $id]
+                    );
+                    $total   = count($ratings);
+                    $avg     = $total > 0
+                        ? round(array_sum(array_column($ratings, 'rating')) / $total, 1)
+                        : 0;
+                    $recipe['rating_info'] = ['average' => $avg, 'total' => $total];
+                } catch (Exception $e) {
+                    $recipe['rating_info'] = ['average' => 0, 'total' => 0];
+                }
+                $ordered[] = $recipe;
+            }
+        }
+        return $this->attachLikes($ordered);
     }
 
     private function attachLikes(array $recipes): array

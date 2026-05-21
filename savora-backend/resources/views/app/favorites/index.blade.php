@@ -1,4 +1,6 @@
-@php($isEnglish = session('user_language', 'en') === 'en')
+@php
+    $isEnglish = session('user_language', 'en') === 'en';
+@endphp
 <!DOCTYPE html>
 <html lang="{{ $isEnglish ? 'en' : 'id' }}">
 <head>

@@ -4,7 +4,9 @@
     'savedBoardIds' => [],
 ])
 
-@php($isEnglish = session('user_language', 'en') === 'en')
+@php
+    $isEnglish = session('user_language', 'en') === 'en';
+@endphp
 
 <template x-teleport="body">
     <div
