@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_service.dart';
+import 'notification_service.dart';
 import 'auth_storage.dart';   // ← NEW
 
 /// AuthClient - Handle Supabase Auth + Sanctum Token Exchange
@@ -109,6 +110,7 @@ class AuthClient {
 
       // ── PERSIST ke disk ──
       await AuthStorage.save(token: sanctumToken, userId: userId);
+      await NotificationService().syncDeviceTokenForCurrentUser();
 
       debugPrint('AuthClient: Login successful');
 
@@ -208,6 +210,7 @@ class AuthClient {
 
     // ── PERSIST ke disk ──
     await AuthStorage.save(token: sanctumToken, userId: userId);
+    await NotificationService().syncDeviceTokenForCurrentUser();
 
     return {
       'success': true,

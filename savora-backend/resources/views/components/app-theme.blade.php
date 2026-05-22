@@ -48,6 +48,7 @@
         --color-text-primary:     #264653;
         --color-text-secondary:   #6B7280;
         --color-text-muted:       #9CA3AF;
+        --color-on-accent:        #ffffff;
 
         /* Extended — Modal / Tag / Badge */
         --color-privacy-green:    #2A9D8F;

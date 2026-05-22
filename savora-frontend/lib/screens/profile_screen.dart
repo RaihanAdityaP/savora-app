@@ -385,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           const SizedBox(height: 24),
           Text(_t('Loading profile...', 'Memuat profil...'),
               style: TextStyle(
-                  color: Colors.grey.shade700,
+                  color: AppTheme.textSecondary,
                   fontSize: 16,
                   fontWeight: FontWeight.w600)),
         ],
@@ -615,9 +615,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: AppTheme.subtleSurfaceColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppTheme.borderColor),
                   ),
                   child: Text(
                     _bioController.text,
@@ -635,8 +635,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.surfaceColor,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.borderColor),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.06),
@@ -689,11 +690,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     gradient: _isFollowing
                         ? null
                         : LinearGradient(colors: _primaryGradient),
-                    color: _isFollowing ? Colors.grey.shade100 : null,
+                    color: _isFollowing ? AppTheme.subtleSurfaceColor : null,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                         color: _isFollowing
-                            ? Colors.grey.shade300
+                            ? AppTheme.borderColor
                             : Colors.transparent,
                         width: 1.5),
                     boxShadow: _isFollowing

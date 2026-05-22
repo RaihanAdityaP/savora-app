@@ -32,6 +32,7 @@ $menus = [
   [route('admin.recipes'),'linear-gradient(135deg,#FF9800,#FFB74D)', 'rgba(255,152,0,.25)',  'Recipe Moderation', $stats['pending_recipes'].' awaiting approval', '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>'],
   [route('admin.tags'),   'linear-gradient(135deg,#FFD700,#FFA500)', 'rgba(255,215,0,.25)',  'Tag Moderation',    ($stats['pending_tags'] ?? 0).' awaiting approval', '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'],
   [route('admin.logs'),   'linear-gradient(135deg,#2196F3,#64B5F6)', 'rgba(33,150,243,.25)', 'Activity Logs',     'Monitor all activities',                     '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
+  [route('admin.broadcast'),'linear-gradient(135deg,#E91E63,#F06292)', 'rgba(233,30,99,.25)', 'Broadcast Notification', 'Send manual notifications to users',      '<path d="M18 8a6 6 0 0 1 0 8"/><path d="M21 5a10 10 0 0 1 0 14"/><path d="M8 8l-5 4 5 4V8z"/><path d="M10 8v8l5 4V4l-5 4z"/>'],
 ];
 @endphp
 @foreach($menus as [$href,$grad,$glow,$title,$sub,$ico])
@@ -49,4 +50,37 @@ $menus = [
 </a>
 @endforeach
 </div>
+
+<style>
+/* ── Responsive fixes for mobile ── */
+@media(max-width:768px){
+  /* Stat grid: 2 columns on mobile */
+  .sg{grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+
+  /* Stat card: compact on mobile */
+  .sc{padding:16px 14px;border-radius:16px}
+  .sc-ico{width:40px;height:40px;border-radius:12px;margin-bottom:12px}
+  .sc-ico svg{width:20px;height:20px}
+  .sc-val{font-size:28px;margin-bottom:6px}
+  .sc-lbl{font-size:11px}
+
+  /* Management grid: 1 col on mobile */
+  .mg{grid-template-columns:1fr;gap:10px}
+
+  /* Management card: compact */
+  .mc{padding:16px;border-radius:16px;gap:14px}
+  .mc-ico{width:46px;height:46px;border-radius:14px;flex-shrink:0}
+  .mc-ico svg{width:22px;height:22px}
+  .mc-title{font-size:14px;margin-bottom:2px}
+  .mc-sub{font-size:12px}
+  .mc-arr{width:26px;height:26px}
+}
+
+@media(max-width:480px){
+  /* Still 2-col stat grid on very small screens */
+  .sg{grid-template-columns:repeat(2,1fr);gap:10px}
+  .sc{padding:14px 12px}
+  .sc-val{font-size:24px}
+}
+</style>
 @endsection

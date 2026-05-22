@@ -779,6 +779,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               decoration: BoxDecoration(color: AppTheme.subtleSurfaceColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppTheme.borderColor, width: 1.5)),
               child: TextField(
                 controller: nameController,
+                style: AppTheme.fieldText,
                 decoration: InputDecoration(
                   hintText: _t('Collection Name', 'Nama Koleksi'), hintStyle: TextStyle(color: AppTheme.textMuted),
                   prefixIcon: const Icon(Icons.collections_bookmark_rounded, color: AppTheme.primaryCoral),
@@ -792,6 +793,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               child: TextField(
                 controller: descController,
                 maxLines: 3,
+                style: AppTheme.fieldText,
                 decoration: InputDecoration(
                   hintText: 'Deskripsi (opsional)', hintStyle: TextStyle(color: AppTheme.textMuted),
                   prefixIcon: const Padding(padding: EdgeInsets.only(bottom: 60), child: Icon(Icons.description_rounded, color: AppTheme.primaryOrange)),
@@ -1074,7 +1076,16 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(_t('Edit Review', 'Edit Ulasan')),
-        content: TextField(controller: controller, maxLines: 3, decoration: InputDecoration(hintText: _t('Edit your review', 'Edit ulasan Anda'), border: const OutlineInputBorder())),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          style: AppTheme.fieldText,
+          decoration: InputDecoration(
+            hintText: _t('Edit your review', 'Edit ulasan Anda'),
+            hintStyle: AppTheme.fieldHint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(_t('Cancel', 'Batal'))),
           ElevatedButton(
@@ -1455,7 +1466,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           const SizedBox(height: 8),
           Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color), textAlign: TextAlign.center),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -1922,9 +1933,10 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
               controller: _commentController,
               maxLines: 3,
               minLines: 1,
+              style: AppTheme.fieldText,
               decoration: InputDecoration(
                 hintText: _t('Write your review...', 'Tulis ulasan Anda...'),
-                hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                hintStyle: AppTheme.fieldHint,
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 suffixIcon: Container(

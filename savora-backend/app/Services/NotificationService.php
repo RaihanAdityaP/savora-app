@@ -94,10 +94,26 @@ class NotificationService
 
             $payload = [
                 'message' => [
-                    'token'   => $deviceToken,
-                    'data'    => $stringData,
-                    'android' => [
-                        'priority' => 'high',
+                    'token'        => $deviceToken,
+                    'notification' => [
+                        'title' => $title,
+                        'body'  => $body,
+                    ],
+                    'data'         => $stringData,
+                    'android'      => [
+                        'priority'     => 'high',
+                        'notification' => [
+                            'channel_id'   => 'savora_channel',
+                            'sound'        => 'default',
+                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        ],
+                    ],
+                    'apns'         => [
+                        'payload' => [
+                            'aps' => [
+                                'sound' => 'default',
+                            ],
+                        ],
                     ],
                 ],
             ];

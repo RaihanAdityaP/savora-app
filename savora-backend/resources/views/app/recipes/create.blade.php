@@ -159,13 +159,14 @@
 
             {{-- Image --}}
 
-            <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 mb-4">
+            <div class="rounded-3xl overflow-hidden shadow-sm border mb-4"
+                 style="background: var(--color-card-bg); border-color: var(--color-card-border);">
 
                 <div class="relative h-44" style="background: var(--gradient-accent);">
 
                     <div class="absolute inset-0 flex items-center justify-center">
 
-                        <div x-show="!imagePreview" class="text-center text-white">
+                        <div x-show="!imagePreview" class="text-center" style="color: var(--color-on-accent);">
 
                             <svg class="w-10 h-10 mx-auto mb-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -187,7 +188,8 @@
 
                         <input type="file" name="image" accept="image/*" @change="handleImage($event)" class="hidden" x-ref="imageInput">
 
-                        <span class="flex items-center gap-1.5 bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-all">
+                        <span class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border transition-all"
+                              style="background: color-mix(in srgb, var(--color-on-accent) 20%, transparent); color: var(--color-on-accent); border-color: color-mix(in srgb, var(--color-on-accent) 30%, transparent);">
 
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -209,13 +211,14 @@
 
             {{-- Video (optional) --}}
 
-            <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 mb-4">
+            <div class="rounded-3xl overflow-hidden shadow-sm border mb-4"
+                 style="background: var(--color-card-bg); border-color: var(--color-card-border);">
 
-                <div class="relative h-32" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="relative h-32" style="background: var(--gradient-category);">
 
                     <div class="absolute inset-0 flex items-center justify-center">
 
-                        <div x-show="!videoFileName" class="text-center text-white">
+                        <div x-show="!videoFileName" class="text-center" style="color: var(--color-on-accent);">
 
                             <svg class="w-8 h-8 mx-auto mb-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -227,7 +230,7 @@
 
                         </div>
 
-                        <div x-show="videoFileName" class="text-center text-white">
+                        <div x-show="videoFileName" class="text-center" style="color: var(--color-on-accent);">
 
                             <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -247,7 +250,8 @@
 
                             <input type="file" name="video" accept="video/*" @change="pickVideo($event)" class="hidden" x-ref="videoInput">
 
-                            <span class="flex items-center gap-1.5 bg-white/20 text-white text-xs font-bold px-3 py-2 rounded-full border border-white/30 hover:bg-white/30 transition-all">
+                            <span class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-full border transition-all"
+                                  style="background: color-mix(in srgb, var(--color-on-accent) 20%, transparent); color: var(--color-on-accent); border-color: color-mix(in srgb, var(--color-on-accent) 30%, transparent);">
 
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
@@ -653,7 +657,8 @@
 
 
 
-            <div class="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+            <div class="rounded-3xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+                 style="background: var(--color-card-bg); border: 1px solid var(--color-card-border);"
 
                  x-transition:enter="transition ease-out duration-200"
 
@@ -665,13 +670,13 @@
 
                 {{-- Modal header --}}
 
-                <div class="flex items-center justify-between p-5 border-b border-gray-100">
+                <div class="flex items-center justify-between p-5 border-b" style="border-color: var(--color-separator);">
 
                     <div class="flex items-center gap-3">
 
                         <div class="p-2 rounded-xl" style="background: var(--gradient-accent);">
 
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <svg class="w-4 h-4" style="color: var(--color-on-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/></svg>
 
                         </div>
 
@@ -687,9 +692,11 @@
 
                     <button type="button" @click="showTagModal = false"
 
-                            class="p-2 rounded-xl hover:bg-gray-100 transition-colors">
+                            class="p-2 rounded-xl transition-colors"
+                            onmouseover="this.style.background='var(--color-chip-bg)'"
+                            onmouseout="this.style.background='transparent'">
 
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <svg class="w-5 h-5" style="color: var(--color-text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
 
                     </button>
 
@@ -699,11 +706,11 @@
 
                 {{-- Search input --}}
 
-                <div class="p-4 border-b border-gray-100">
+                <div class="p-4 border-b" style="border-color: var(--color-separator);">
 
                     <div class="relative">
 
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color: var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
 
                         <input type="text" x-model="tagSearch" @input="searchTags()" placeholder="{{ $isEnglish ? 'Search tags...' : 'Cari tag...' }}"
 
@@ -717,7 +724,7 @@
 
                 {{-- Create new tag --}}
 
-                <div class="px-4 py-3 border-b border-gray-100" x-show="tagSearch.trim().length >= 2 && !tagSearchLoading">
+                <div class="px-4 py-3 border-b" style="border-color: var(--color-separator);" x-show="tagSearch.trim().length >= 2 && !tagSearchLoading">
 
                     <button type="button"
 
@@ -727,9 +734,11 @@
 
                             class="flex items-center gap-2 w-full text-sm font-semibold px-3 py-2.5 rounded-xl transition-all"
 
-                            :class="draft.selectedTags.length >= 3 ? 'text-gray-400 bg-gray-50 cursor-not-allowed' : 'hover:bg-orange-50'"
+                            :class="draft.selectedTags.length >= 3 ? 'cursor-not-allowed' : ''"
+                            :style="draft.selectedTags.length >= 3 ? 'color: var(--color-text-muted); background: var(--color-chip-bg);' : 'color: var(--color-primary-coral);'"
 
-                            style="color: var(--color-primary-coral);">
+                            @mouseenter="if (draft.selectedTags.length < 3) $el.style.background='var(--color-chip-bg)'"
+                            @mouseleave="if (draft.selectedTags.length < 3) $el.style.background='transparent'">
 
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
 
@@ -751,7 +760,7 @@
 
                     <div x-show="tagSearchLoading" class="flex justify-center py-6">
 
-                        <svg class="animate-spin w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
+                        <svg class="animate-spin w-5 h-5" style="color: var(--color-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
 
                     </div>
 
@@ -769,9 +778,11 @@
 
                                 class="flex items-center justify-between w-full px-4 py-3 rounded-2xl text-sm transition-all"
 
-                                :class="isTagSelected(tag.id) ? 'font-semibold' : (draft.selectedTags.length >= 3 ? 'opacity-40 cursor-not-allowed text-gray-600' : 'hover:bg-gray-50 text-gray-700')"
+                                :class="isTagSelected(tag.id) ? 'font-semibold' : (draft.selectedTags.length >= 3 ? 'opacity-40 cursor-not-allowed' : '')"
 
-                                :style="isTagSelected(tag.id) ? 'background: var(--color-primary-coral); color: white;' : ''">
+                                :style="isTagSelected(tag.id) ? 'background: var(--color-primary-coral); color: var(--color-on-accent);' : 'color: var(--color-text-primary);'"
+                                @mouseenter="if (!isTagSelected(tag.id) && draft.selectedTags.length < 3) $el.style.background='var(--color-chip-bg)'"
+                                @mouseleave="if (!isTagSelected(tag.id)) $el.style.background='transparent'">
 
                             <div class="flex items-center gap-2">
 
@@ -781,7 +792,7 @@
 
                                 <span x-show="!tag.is_approved" class="text-[10px] px-1.5 py-0.5 rounded-full"
 
-                                      :style="isTagSelected(tag.id) ? 'background:rgba(255,255,255,0.25); color:white' : 'background:#FEF3C7; color:#D97706'">pending</span>
+                                      :style="isTagSelected(tag.id) ? 'background: color-mix(in srgb, var(--color-on-accent) 25%, transparent); color: var(--color-on-accent)' : 'background: var(--color-chip-bg); color: var(--color-primary-coral)'">pending</span>
 
                             </div>
 
@@ -817,7 +828,7 @@
 
                 {{-- Modal footer --}}
 
-                <div class="p-4 border-t border-gray-100">
+                <div class="p-4 border-t" style="border-color: var(--color-separator);">
 
                     <button type="button" @click="showTagModal = false"
 

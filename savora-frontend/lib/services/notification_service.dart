@@ -215,6 +215,17 @@ class NotificationService {
     _triggerTapCallback(payload, actionId: response.actionId);
   }
 
+  Future<void> syncDeviceTokenForCurrentUser() async {
+    if (kIsWeb) return;
+
+    if (!_isInitialized) {
+      await initialize();
+      return;
+    }
+
+    await _registerCurrentFcmToken();
+  }
+
   void _triggerTapCallback(String? payload, {String? actionId}) {
     if (onNotificationTapped != null && payload != null) {
       onNotificationTapped!(payload, actionId: actionId);
@@ -325,6 +336,7 @@ class NotificationService {
 
   static Future<void> showBackgroundMessage(RemoteMessage message) async {
     if (kIsWeb) return;
+    if (message.notification != null) return;
 
     final title =
         message.notification?.title ?? message.data['title']?.toString();

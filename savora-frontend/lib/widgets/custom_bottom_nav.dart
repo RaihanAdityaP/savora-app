@@ -61,14 +61,16 @@
           color: AppTheme.surfaceColor,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryCoral.withValues(alpha: 0.08),
+              color: AppTheme.isDarkMode
+                  ? Colors.black.withValues(alpha: 0.35)
+                  : AppTheme.primaryCoral.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
           ],
           border: Border(
             top: BorderSide(
-              color: AppTheme.primaryCoral.withValues(alpha: 0.1),
+              color: AppTheme.borderColor,
               width: 1,
             ),
           ),
@@ -108,6 +110,8 @@
       required String label,
     }) {
       final isActive = widget.currentIndex == index;
+      final activeColor = AppTheme.primaryCoral;
+      final inactiveColor = AppTheme.textSecondary;
 
       return Expanded(
         child: GestureDetector(
@@ -129,8 +133,7 @@
                     child: Center(
                       child: Icon(
                         icon,
-                        color:
-                            isActive ? AppTheme.textPrimary : AppTheme.textSecondary,
+                        color: isActive ? activeColor : inactiveColor,
                         size: isActive ? 26 : 24,
                       ),
                     ),
@@ -140,7 +143,7 @@
                     height: 3,
                     width: isActive ? 20 : 0,
                     decoration: BoxDecoration(
-                      color: AppTheme.textPrimary,
+                      color: activeColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -148,7 +151,7 @@
                   Text(
                     label,
                     style: TextStyle(
-                      color: isActive ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      color: isActive ? activeColor : inactiveColor,
                       fontSize: 11,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     ),
@@ -176,17 +179,17 @@
             height: 56,
             margin: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: AppTheme.textPrimary,
+              gradient: AppTheme.accentGradient,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.textPrimary.withValues(alpha: 0.3),
+                  color: AppTheme.primaryCoral.withValues(alpha: 0.35),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Icon(
+            child: const Icon(
               Icons.add_rounded,
               color: Colors.white,
               size: 28,
@@ -198,6 +201,8 @@
 
     Widget _buildProfileButton() {
       final isActive = widget.currentIndex == 4;
+      final activeColor = AppTheme.primaryCoral;
+      final inactiveColor = AppTheme.textSecondary;
 
       return Expanded(
         child: GestureDetector(
@@ -221,8 +226,8 @@
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isActive 
-                            ? AppTheme.textPrimary
-                            : AppTheme.textSecondary.withValues(alpha: 0.3),
+                            ? activeColor
+                            : inactiveColor.withValues(alpha: 0.35),
                         width: isActive ? 2.2 : 1.8,
                       ),
                     ),
@@ -230,7 +235,7 @@
                       margin: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.grey.shade100,
+                        color: AppTheme.subtleSurfaceColor,
                       ),
                       child: ClipOval(
                         child: widget.avatarUrl != null
@@ -239,13 +244,13 @@
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) => Icon(
                                   Icons.person_rounded,
-                                  color: AppTheme.textSecondary,
+                                  color: inactiveColor,
                                   size: 14,
                                 ),
                               )
                             : Icon(
                                 Icons.person_rounded,
-                                color: AppTheme.textSecondary,
+                                color: inactiveColor,
                                 size: 14,
                               ),
                       ),
@@ -256,7 +261,7 @@
                     height: 3,
                     width: isActive ? 20 : 0,
                     decoration: BoxDecoration(
-                      color: AppTheme.textPrimary,
+                      color: activeColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -264,7 +269,7 @@
                   Text(
                   AppSettingsService.isEnglish ? 'Profile' : 'Profil',
                     style: TextStyle(
-                      color: isActive ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      color: isActive ? activeColor : inactiveColor,
                       fontSize: 11,
                       fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     ),

@@ -237,7 +237,7 @@ $isEnglish        = session('user_language', 'en') === 'en';
             <div class="flex flex-col items-center flex-1 pb-1">
                 <a href="{{ route('app.recipe.create') }}" class="relative -mt-5 active:scale-90 transition-transform">
                     <div class="w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-white ring-4"
-                         style="background: var(--gradient-accent); ring-color: var(--color-bg-light);">
+                         style="background: var(--gradient-accent); --tw-ring-color: var(--color-bg-light); color: var(--color-on-accent);">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                         </svg>

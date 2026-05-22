@@ -20,6 +20,10 @@ class AppTheme {
   static Color get borderColor =>
       isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.grey.shade200;
   static Color get cardBackground => surfaceColor;
+  static Color get lightPanelColor =>
+      isDarkMode ? subtleSurfaceColor : Colors.grey.shade50;
+  static Color get lightPanelAccentColor =>
+      isDarkMode ? surfaceColor : Colors.grey.shade100;
 
   // Text Colors
   static Color get textPrimary =>
@@ -296,6 +300,16 @@ class AppTheme {
         color: textSecondary,
       );
 
+  static TextStyle get fieldText => TextStyle(
+        color: textPrimary,
+        fontWeight: FontWeight.w500,
+      );
+
+  static TextStyle get fieldHint => TextStyle(
+        color: textMuted,
+        fontSize: 14,
+      );
+
   static const TextStyle buttonText = TextStyle(
     color: Colors.white,
     fontSize: 16,
@@ -322,6 +336,14 @@ class AppTheme {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );
   }
+
+  static BoxDecoration get subtlePanelDecoration => BoxDecoration(
+        gradient: LinearGradient(
+          colors: [lightPanelAccentColor, lightPanelColor],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      );
 
   // Role-based colors
   static List<Color> getRoleGradient(String role) {

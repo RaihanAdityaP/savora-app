@@ -825,7 +825,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           const SizedBox(height: 16),
           Text('Tap untuk mengganti gambar',
               style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: AppTheme.textSecondary,
                   fontSize: 15,
                   fontWeight: FontWeight.w600)),
         ],
@@ -847,11 +847,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   Container(
                     width: double.infinity,
                     height: 240,
-                    decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                          Colors.grey.shade100,
-                          Colors.grey.shade50,
-                        ])),
+                    decoration: AppTheme.subtlePanelDecoration,
                     child: imagePreview,
                   ),
                   Positioned(
@@ -1070,6 +1066,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       child: TextField(
           controller: controller,
           maxLines: maxLines,
+          style: AppTheme.fieldText,
           decoration: AppTheme.buildInputDecoration(
               hint: hint, icon: icon, maxLines: maxLines)),
     );
@@ -1084,12 +1081,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         isExpanded: true,
         underline: Container(),
         hint: Text('Kategori',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
         items: _categories
             .map((cat) => DropdownMenuItem<int>(
                 value: cat['id'],
                 child:
-                    Text(cat['name'], style: TextStyle(fontSize: 14))))
+                    Text(cat['name'], style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))))
             .toList(),
         onChanged: (value) {
           setState(() => _selectedCategoryId = value);
@@ -1107,16 +1104,16 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         value: _selectedDifficulty,
         isExpanded: true,
         underline: Container(),
-        items: const [
+        items: [
           DropdownMenuItem(
               value: 'mudah',
-              child: Text('Mudah', style: TextStyle(fontSize: 14))),
+              child: Text('Mudah', style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
           DropdownMenuItem(
               value: 'sedang',
-              child: Text('Sedang', style: TextStyle(fontSize: 14))),
+              child: Text('Sedang', style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
           DropdownMenuItem(
               value: 'sulit',
-              child: Text('Sulit', style: TextStyle(fontSize: 14))),
+              child: Text('Sulit', style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
         ],
         onChanged: (value) {
           if (value != null) {
@@ -1156,7 +1153,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                 Text(label,
                     style: TextStyle(
                         fontSize: 11,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.textSecondary,
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 TextField(
@@ -1187,9 +1184,10 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         Expanded(
           child: TextField(
             controller: _tempIngredientController,
+            style: AppTheme.fieldText,
             decoration: InputDecoration(
               hintText: 'Tambah bahan (contoh: 2 siung bawang putih)',
-              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+              hintStyle: AppTheme.fieldHint,
               border: InputBorder.none,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1268,9 +1266,10 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           child: TextField(
             controller: _tempStepController,
             maxLines: 2,
+            style: AppTheme.fieldText,
             decoration: InputDecoration(
               hintText: 'Tambah langkah (contoh: Panaskan minyak di wajan...)',
-              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+              hintStyle: AppTheme.fieldHint,
               border: InputBorder.none,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1362,6 +1361,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             Expanded(
               child: TextField(
                 controller: _tagInputController,
+                style: AppTheme.fieldText,
                 onChanged: (q) {
                   _debounce?.cancel();
                   _debounce = Timer(
@@ -1372,10 +1372,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Cari atau tambahkan tag (max 3)',
-                  hintStyle:
-                      TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                  hintStyle: AppTheme.fieldHint,
                   prefixIcon:
-                      Icon(Icons.tag_rounded, color: Colors.grey.shade600, size: 20),
+                      Icon(Icons.tag_rounded, color: AppTheme.textSecondary, size: 20),
                   suffixIcon: _tagInputController.text.isNotEmpty
                       ? IconButton(
                           onPressed: () => setState(() {
@@ -1383,7 +1382,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                             _userCreatedTags.clear();
                             _isSearchingTags = false;
                           }),
-                          icon: Icon(Icons.clear, size: 20))
+                          icon: Icon(Icons.clear, size: 20, color: AppTheme.textSecondary))
                       : null,
                   border: InputBorder.none,
                   contentPadding:
@@ -1459,16 +1458,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           Container(
             margin: const EdgeInsets.only(top: 12),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Colors.grey.shade100, Colors.grey.shade50]),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200)),
+            decoration: AppTheme.subtlePanelDecoration,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Hasil Pencarian:',
                   style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade700,
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ..._userCreatedTags.map((tag) => InkWell(
@@ -1477,11 +1472,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Row(children: [
                         Icon(Icons.tag_rounded,
-                            size: 16, color: Colors.grey.shade600),
+                            size: 16, color: AppTheme.textSecondary),
                         const SizedBox(width: 8),
                         Expanded(
                             child: Text(tag['name'],
-                                style: const TextStyle(fontSize: 13))),
+                                style: TextStyle(fontSize: 13, color: AppTheme.textPrimary))),
                         tag['is_approved'] == true
                             ? const Icon(Icons.check_circle,
                                 color: Colors.green, size: 16)
@@ -1500,16 +1495,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           Container(
             margin: const EdgeInsets.only(top: 12),
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Colors.grey.shade100, Colors.grey.shade50]),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200)),
+            decoration: AppTheme.subtlePanelDecoration,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Tag Populer:',
                   style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade700,
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Wrap(
@@ -1561,8 +1552,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                           color: isSelected
                               ? Colors.white
                               : isDisabled
-                                  ? Colors.grey.shade400
-                                  : Colors.grey.shade700,
+                                  ? AppTheme.textMuted
+                                  : AppTheme.textPrimary,
                           fontWeight: isSelected
                               ? FontWeight.w600
                               : FontWeight.normal,
@@ -1615,7 +1606,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                         color: AppTheme.textPrimary)),
                 const SizedBox(height: 4),
                 Text(_videoFileName ?? 'video.mp4',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
               ],
@@ -1658,7 +1649,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                     color: AppTheme.textPrimary)),
             SizedBox(height: 4),
             Text('Video tutorial saat ini',
-                style: TextStyle(fontSize: 12, color: Colors.black54)),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
           ])),
           Column(children: [
             ElevatedButton.icon(
@@ -1693,11 +1684,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
       onTap: _pickVideo,
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [Colors.grey.shade100, Colors.grey.shade50]),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300, width: 2)),
+        decoration: AppTheme.subtlePanelDecoration,
         child: Column(children: [
           Icon(Icons.video_library_rounded,
               size: 48, color: Colors.grey.shade400),
@@ -1705,11 +1692,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           Text('Tap untuk upload video tutorial',
               style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           Text('Format: MP4 | Max: 50MB | Max durasi: 5 menit',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
               textAlign: TextAlign.center),
         ]),
       ),

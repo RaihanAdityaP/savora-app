@@ -69,6 +69,8 @@ class _CustomAppBarState extends State<CustomAppBar>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceColor,
+        surfaceTintColor: Colors.transparent,
         shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title  : Row(children: [
           Container(
@@ -82,18 +84,26 @@ class _CustomAppBarState extends State<CustomAppBar>
           const SizedBox(width: 16),
           Expanded(
             child: Text(_t('Sign Out', 'Keluar dari Akun'),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                )),
           ),
         ]),
         content: Text(
           _t('Are you sure you want to sign out of Savora?',
               'Apakah Anda yakin ingin keluar dari akun Savora?'),
-          style: TextStyle(fontSize: 15, color: Colors.grey.shade700, height: 1.5),
+          style: TextStyle(
+            fontSize: 15,
+            color: AppTheme.textSecondary,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child    : Text(_t('Cancel', 'Batal'), style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+            child    : Text(_t('Cancel', 'Batal'), style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
           ),
           Container(
             decoration: BoxDecoration(
@@ -144,13 +154,13 @@ class _CustomAppBarState extends State<CustomAppBar>
             ? Padding(
                 padding: const EdgeInsets.all(8),
                 child  : Material(
-                  color        : Colors.grey.shade100,
+                  color        : AppTheme.subtleSurfaceColor,
                   borderRadius : BorderRadius.circular(12),
                   child        : InkWell(
                     onTap        : () => Navigator.pop(context),
                     borderRadius : BorderRadius.circular(12),
                     child        : Center(
-                      child: Icon(Icons.arrow_back_rounded, color: Colors.grey.shade800, size: 22),
+                      child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
                     ),
                   ),
                 ),
@@ -213,7 +223,7 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                     child: Icon(
                       Icons.menu_rounded,
-                      color: AppTheme.isDarkMode ? Colors.white : Colors.grey.shade800,
+                      color: AppTheme.textPrimary,
                       size: 22,
                     ),
                   ),
@@ -271,13 +281,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                       Container(
                         padding   : const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : Colors.grey.shade100,
+                          color       : AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.psychology_rounded, size: 18, color: Colors.black87),
+                        child: Icon(Icons.psychology_rounded, size: 18, color: AppTheme.textPrimary),
                       ),
                       const SizedBox(width: 12),
-                      Text(_t('Chef AI', 'Chef AI'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(_t('Chef AI', 'Chef AI'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                     ],
                   ),
                 ),
@@ -290,14 +300,14 @@ class _CustomAppBarState extends State<CustomAppBar>
                       Container(
                         padding   : const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : Colors.grey.shade100,
+                          color       : AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.notifications_rounded, size: 18, color: Colors.grey.shade800),
+                        child: Icon(Icons.notifications_rounded, size: 18, color: AppTheme.textPrimary),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(_t('Notifications', 'Notifikasi'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text(_t('Notifications', 'Notifikasi'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                       ),
                       if (_unreadCount > 0)
                         Container(
@@ -324,13 +334,13 @@ class _CustomAppBarState extends State<CustomAppBar>
                       Container(
                         padding   : const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : Colors.grey.shade100,
+                          color       : AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.settings_rounded, size: 18, color: Colors.grey.shade800),
+                        child: Icon(Icons.settings_rounded, size: 18, color: AppTheme.textPrimary),
                       ),
                       const SizedBox(width: 12),
-                      Text(_t('Settings', 'Pengaturan'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(_t('Settings', 'Pengaturan'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
                     ],
                   ),
                 ),
