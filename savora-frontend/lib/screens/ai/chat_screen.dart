@@ -229,7 +229,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               Padding(
                 padding: EdgeInsets.all(16),
                 child  : Text(_t('Choose Image Source', 'Pilih Sumber Gambar'),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
               ListTile(
                 leading: Icon(Icons.camera_alt, color: Colors.blue.shade700),
@@ -289,7 +289,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     IconButton(
-                      icon     : const Icon(Icons.close),
+                      icon     : Icon(Icons.close),
                       onPressed: () {
                         setState(() => _selectedImage = null);
                         Navigator.pop(context);
@@ -316,7 +316,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child  : Container(
                   decoration: BoxDecoration(
-                    color       : Colors.grey.shade100,
+                    color       : AppTheme.subtleSurfaceColor,
                     borderRadius: BorderRadius.circular(16),
                     border      : Border.all(
                       color: AppTheme.primaryCoral.withValues(alpha: 0.3),
@@ -330,7 +330,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     textInputAction: TextInputAction.done,
                     decoration    : InputDecoration(
                       hintText      : _t('Add a question or caption... (optional)', 'Tambah pertanyaan atau caption... (opsional)'),
-                      hintStyle     : TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      hintStyle     : TextStyle(color: AppTheme.textMuted, fontSize: 13),
                       border        : InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12,
@@ -550,7 +550,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       backgroundColor: AppTheme.surfaceColor,
       elevation      : 1,
       leading        : IconButton(
-        icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+        icon     : Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
         onPressed: () => Navigator.pop(context),
       ),
       title: GestureDetector(
@@ -563,7 +563,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 gradient     : AppTheme.accentGradient,
                 shape        : BoxShape.circle,
               ),
-              child: const Icon(Icons.psychology_rounded, color: Colors.white, size: 20),
+              child: Icon(Icons.psychology_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -572,7 +572,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 children          : [
                   Text(
                     _conversationTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize  : 16,
                       fontWeight: FontWeight.bold,
                       color     : AppTheme.textPrimary,
@@ -593,7 +593,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
       actions: [
         // History button
         IconButton(
-          icon     : const Icon(Icons.history_rounded, color: AppTheme.textPrimary),
+          icon     : Icon(Icons.history_rounded, color: AppTheme.textPrimary),
           tooltip  : _t('Chat History', 'Riwayat Chat'),
           onPressed: () => Navigator.push(
             context,
@@ -602,7 +602,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
         // Settings button
         IconButton(
-          icon     : const Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+          icon     : Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
           tooltip  : 'AI Settings',
           onPressed: () => Navigator.push(
             context,
@@ -611,7 +611,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
         // New chat button
         IconButton(
-          icon     : const Icon(Icons.add_comment_rounded, color: AppTheme.primaryCoral),
+          icon     : Icon(Icons.add_comment_rounded, color: AppTheme.primaryCoral),
           tooltip  : _t('New Chat', 'Chat Baru'),
           onPressed: () => Navigator.pushReplacement(
             context,
@@ -651,7 +651,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
               ? AppTheme.accentGradient
               : isError
                   ? LinearGradient(colors: [Colors.red.shade50, Colors.red.shade100])
-                  : LinearGradient(colors: [Colors.grey.shade100, Colors.grey.shade50]),
+                  : LinearGradient(colors: [
+                      AppTheme.subtleSurfaceColor,
+                      AppTheme.surfaceColor,
+                    ]),
           borderRadius: BorderRadius.only(
             topLeft    : const Radius.circular(16),
             topRight   : const Radius.circular(16),
@@ -726,7 +729,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           Container(
             padding   : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color       : Colors.grey.shade200,
+              color       : AppTheme.borderColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -741,7 +744,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(_t('Chef AI is typing...', 'Chef AI sedang mengetik...'),
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
               ],
             ),
           ),
@@ -754,7 +757,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return Container(
       padding   : const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color    : Colors.white,
+        color    : AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
             color     : Colors.black.withValues(alpha: 0.05),
@@ -769,7 +772,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             // Image picker
             Container(
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppTheme.subtleSurfaceColor,
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -784,7 +787,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color       : Colors.grey.shade100,
+                  color       : AppTheme.subtleSurfaceColor,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
@@ -795,7 +798,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   onSubmitted    : (_) => _sendMessage(),
                   decoration     : InputDecoration(
                     hintText       : _t('Ask about cooking...', 'Tanya tentang masak...'),
-                    hintStyle      : TextStyle(color: Colors.grey.shade500),
+                    hintStyle      : TextStyle(color: AppTheme.textMuted),
                     border         : InputBorder.none,
                     contentPadding : const EdgeInsets.symmetric(
                       horizontal: 18, vertical: 12,

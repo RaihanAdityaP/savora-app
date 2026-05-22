@@ -69,7 +69,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white),
+            Icon(Icons.error_outline_rounded, color: Colors.white),
             const SizedBox(width: 12),
             Text(_t('Failed to create tag.', 'Gagal membuat tag.')),
           ]),
@@ -178,7 +178,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                           const SizedBox(height: 4),
                           Text(
                             _t('Create & find community tags', 'Buat & cari tag komunitas'),
-                            style: const TextStyle(fontSize: 14, color: Colors.white70),
+                            style: TextStyle(fontSize: 14, color: Colors.white70),
                           ),
                         ],
                       ),
@@ -313,7 +313,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
@@ -328,7 +328,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
               ),
               child: Text(
                 '${_tags.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -369,7 +369,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                             gradient: AppTheme.accentGradient,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.tag_rounded, color: Colors.white, size: 16),
+                          child: Icon(Icons.tag_rounded, color: Colors.white, size: 16),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -378,7 +378,7 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                             children: [
                               Text(
                                 tagName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.textPrimary,

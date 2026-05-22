@@ -13,11 +13,8 @@ class AIChatHistoryScreen extends StatefulWidget {
 }
 
 class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
-  final _searchController = TextEditingController();
-
   List<Map<String, dynamic>> _conversations = [];
   bool   _isLoading    = true;
-  String _searchQuery  = '';
 
   String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
@@ -27,12 +24,6 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
     _loadConversations();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   // ─────────────────────────────────────────────
   // LOAD
   // ─────────────────────────────────────────────
@@ -40,7 +31,6 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
   Future<void> _loadConversations() async {
     setState(() => _isLoading = true);
     final list = await AIChatClient.listConversations(
-      search: _searchQuery,
       limit : 50,
     );
     if (mounted) {
@@ -62,7 +52,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
       builder: (_) => AlertDialog(
         shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title  : Row(children: [
-          const Icon(Icons.delete_sweep_rounded, color: Colors.red),
+          Icon(Icons.delete_sweep_rounded, color: Colors.red),
           const SizedBox(width: 8),
           Text(_t('Delete All', 'Hapus Semua')),
         ]),
@@ -138,19 +128,9 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
       appBar         : _buildAppBar(),
       body           : Column(
         children: [
-          _buildSearchBar(),
+          _buildNewChatButton(),
           Expanded(child: _buildBody()),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed        : () => Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AIChatScreen()),
-        ),
-        icon             : const Icon(Icons.add_comment_rounded),
-        label            : Text(_t('New Chat', 'Chat Baru')),
-        backgroundColor  : AppTheme.primaryCoral,
-        foregroundColor  : Colors.white,
       ),
     );
   }
@@ -160,12 +140,12 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
       backgroundColor: AppTheme.surfaceColor,
       elevation      : 1,
       leading        : IconButton(
-        icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+        icon     : Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
-        _t('Chat History', 'Riwayat Chat'),
-        style: const TextStyle(
+        'Chef AI',
+        style: TextStyle(
           color     : AppTheme.textPrimary,
           fontWeight: FontWeight.bold,
           fontSize  : 18,
@@ -173,7 +153,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
       ),
       actions: [
         IconButton(
-          icon     : const Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+          icon     : Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
           tooltip  : 'AI Settings',
           onPressed: () => Navigator.push(
             context,
@@ -182,7 +162,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
         ),
         if (_conversations.isNotEmpty)
           IconButton(
-            icon     : const Icon(Icons.delete_sweep_rounded, color: Colors.red),
+            icon     : Icon(Icons.delete_sweep_rounded, color: Colors.red),
             tooltip  : _t('Delete All', 'Hapus Semua'),
             onPressed: _deleteAll,
           ),
@@ -190,46 +170,49 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      margin   : const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color       : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border      : Border.all(color: AppTheme.primaryCoral.withValues(alpha: 0.3)),
-        boxShadow   : [
-          BoxShadow(
-            color     : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset    : const Offset(0, 2),
+  Widget _buildNewChatButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppTheme.accentGradient,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryCoral.withValues(alpha: 0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: TextField(
-        controller : _searchController,
-        onChanged  : (v) {
-          setState(() => _searchQuery = v);
-          // Debounce search
-          Future.delayed(const Duration(milliseconds: 400), () {
-            if (_searchController.text == v) _loadConversations();
-          });
-        },
-        decoration: InputDecoration(
-          hintText      : _t('Search chat history...', 'Cari riwayat chat...'),
-          hintStyle     : TextStyle(color: Colors.grey.shade400),
-          prefixIcon    : const Icon(Icons.search_rounded, color: AppTheme.primaryCoral),
-          suffixIcon    : _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon     : const Icon(Icons.clear_rounded),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                    _loadConversations();
-                  },
-                )
-              : null,
-          border        : InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const AIChatScreen()),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.add_rounded, color: Colors.white, size: 26),
+                  const SizedBox(width: 10),
+                  Text(
+                    _t('New Chat with Chef AI', 'Chat Baru dengan Chef AI'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -251,8 +234,23 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
       color     : AppTheme.primaryCoral,
       child     : ListView.builder(
         padding    : const EdgeInsets.fromLTRB(16, 0, 16, 100),
-        itemCount  : _conversations.length,
-        itemBuilder: (_, index) => _buildConversationCard(_conversations[index]),
+        itemCount  : _conversations.length + 1,
+        itemBuilder: (_, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                _t('Chat History', 'Riwayat Chat'),
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            );
+          }
+          return _buildConversationCard(_conversations[index - 1]);
+        },
       ),
     );
   }
@@ -298,7 +296,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
           children         : [
             const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
             const SizedBox(height: 4),
-            Text(_t('Delete', 'Hapus'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text(_t('Delete', 'Hapus'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -316,9 +314,9 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
           margin    : const EdgeInsets.only(bottom: 12),
           padding   : const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color       : Colors.white,
+            color       : AppTheme.surfaceColor,
             borderRadius: BorderRadius.circular(16),
-            border      : Border.all(color: Colors.grey.shade200),
+            border      : Border.all(color: AppTheme.borderColor),
             boxShadow   : [
               BoxShadow(
                 color     : Colors.black.withValues(alpha: 0.05),
@@ -351,7 +349,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
                         Expanded(
                           child: Text(
                             title,
-                            style  : const TextStyle(
+                            style  : TextStyle(
                               fontSize  : 15,
                               fontWeight: FontWeight.bold,
                               color     : AppTheme.textPrimary,
@@ -362,14 +360,14 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
                         ),
                         Text(
                           _formatTime(updatedAt),
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       lastMessage,
-                      style  : TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      style  : TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -395,11 +393,11 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
                         const SizedBox(width: 6),
                         // Message count
                         Icon(Icons.chat_bubble_outline_rounded,
-                            size: 12, color: Colors.grey.shade400),
+                            size: 12, color: AppTheme.textMuted),
                         const SizedBox(width: 3),
                         Text(
                           _t('$msgCount messages', '$msgCount pesan'),
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                          style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                         ),
                       ],
                     ),
@@ -407,7 +405,7 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400),
+              Icon(Icons.chevron_right_rounded, color: AppTheme.textMuted),
             ],
           ),
         ),
@@ -431,8 +429,8 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            _searchQuery.isNotEmpty ? _t('No results found', 'Tidak ditemukan') : _t('No Chat History Yet', 'Belum Ada Riwayat Chat'),
-            style: const TextStyle(
+            _t('No Chat History Yet', 'Belum Ada Riwayat Chat'),
+            style: TextStyle(
               fontSize  : 20,
               fontWeight: FontWeight.bold,
               color     : AppTheme.textPrimary,
@@ -440,10 +438,8 @@ class _AIChatHistoryScreenState extends State<AIChatHistoryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty
-                ? _t('Try another keyword', 'Coba kata kunci lain')
-                : _t('Start chatting with Savora Chef AI!', 'Mulai chat dengan Chef AI Savora!'),
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            _t('Start chatting with Savora Chef AI!', 'Mulai chat dengan Chef AI Savora!'),
+            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
           ),
         ],
       ),

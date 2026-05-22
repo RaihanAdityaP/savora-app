@@ -459,12 +459,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.admin_panel_settings_rounded,
+                      Icon(Icons.admin_panel_settings_rounded,
                           color: Colors.white, size: 16),
                       const SizedBox(width: 8),
                       Text(
                         AppTheme.getRoleLabel(_userRole),
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -762,8 +762,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       side: BorderSide(color: _primaryColor.withValues(alpha: 0.35), width: 1.5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    icon: const Icon(Icons.edit_rounded),
-                    label: Text(_t('Edit Profile', 'Edit Profil'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                    icon: Icon(Icons.edit_rounded),
+                    label: Text(_t('Edit Profile', 'Edit Profil'), style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

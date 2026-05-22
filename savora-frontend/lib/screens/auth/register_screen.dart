@@ -170,7 +170,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 gradient: AppTheme.accentGradient,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.email_rounded,
+              child: Icon(Icons.email_rounded,
                   color: Colors.white, size: 24),
             ),
             const SizedBox(width: 14),
@@ -186,7 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           children: [
             Text(
                 'Email ${_emailController.text} is already registered.',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 16),
             const Text(
@@ -278,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 Expanded(
                     child: Text(
                         'A verification email has been sent to ${_emailController.text}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13,
                             color: AppTheme.textPrimary,
                             height: 1.4))),

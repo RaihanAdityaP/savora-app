@@ -186,7 +186,7 @@
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.add_rounded,
               color: Colors.white,
               size: 28,

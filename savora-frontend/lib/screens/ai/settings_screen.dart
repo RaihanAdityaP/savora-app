@@ -215,12 +215,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         backgroundColor: AppTheme.surfaceColor,
         elevation      : 1,
         leading        : IconButton(
-          icon     : const Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+          icon     : Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _t('AI Settings', 'Pengaturan AI'),
-          style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton(
@@ -299,6 +299,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     required Color    color,
   }) {
     final isSelected = _activeProvider == value;
+    final selectedBg = color.withValues(alpha: AppTheme.isDarkMode ? 0.14 : 0.10);
     return GestureDetector(
       onTap: () => setState(() { _activeProvider = value; _testResult = ''; }),
       child: AnimatedContainer(
@@ -306,13 +307,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         width    : double.infinity,
         padding  : const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         decoration: BoxDecoration(
-          gradient    : isSelected
-              ? LinearGradient(colors: [color, color.withValues(alpha: 0.75)])
-              : null,
-          color       : isSelected ? null : Colors.grey.shade100,
+          color       : isSelected ? selectedBg : AppTheme.subtleSurfaceColor,
           borderRadius: BorderRadius.circular(14),
           border      : Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
+            color: isSelected ? color : AppTheme.borderColor,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -325,7 +323,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               padding   : const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color       : isSelected
-                    ? Colors.white.withValues(alpha: 0.2)
+                    ? color
                     : color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -339,7 +337,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   Text(
                     label,
                     style: TextStyle(
-                      color     : isSelected ? Colors.white : AppTheme.textPrimary,
+                      color     : AppTheme.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize  : 15,
                     ),
@@ -348,9 +346,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color  : isSelected
-                          ? Colors.white.withValues(alpha: 0.8)
-                          : Colors.grey.shade500,
+                      color  : AppTheme.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -358,7 +354,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              Icon(Icons.check_circle_rounded, color: color, size: 20),
           ],
         ),
       ),
@@ -434,9 +430,9 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     return Container(
       padding   : const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color       : Colors.grey.shade50,
+        color       : AppTheme.subtleSurfaceColor,
         borderRadius: BorderRadius.circular(10),
-        border      : Border.all(color: Colors.grey.shade200),
+        border      : Border.all(color: AppTheme.borderColor),
       ),
       child: Row(
         children: [
@@ -455,12 +451,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               children          : [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
                 ),
               ],
             ),

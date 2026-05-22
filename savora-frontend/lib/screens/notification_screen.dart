@@ -95,7 +95,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Row(children: [
-            const Icon(Icons.check_circle, color: Colors.white),
+            Icon(Icons.check_circle, color: Colors.white),
             const SizedBox(width: 8),
             Text(_t('All notifications marked as read',
                 'Semua notifikasi ditandai sudah dibaca'))
@@ -328,7 +328,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                     shape: BoxShape.circle,
                     boxShadow: AppTheme.cardShadow),
                 child: IconButton(
-                    icon: const Icon(Icons.arrow_back,
+                    icon: Icon(Icons.arrow_back,
                         color: AppTheme.textPrimary),
                     onPressed: () => Navigator.pop(context)),
               ),
@@ -343,7 +343,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                         shape: BoxShape.circle,
                         boxShadow: AppTheme.cardShadow),
                     child: IconButton(
-                        icon: const Icon(Icons.done_all_rounded,
+                        icon: Icon(Icons.done_all_rounded,
                             color: AppTheme.primaryTeal),
                         onPressed: _markAllAsRead,
                         tooltip: _t('Mark all as read',
@@ -358,7 +358,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       shape: BoxShape.circle,
                       boxShadow: AppTheme.cardShadow),
                   child: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded,
+                    icon: Icon(Icons.more_vert_rounded,
                         color: AppTheme.textPrimary),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -369,7 +369,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                       PopupMenuItem(
                           value: 'delete_all',
                           child: Row(children: [
-                            const Icon(Icons.delete_sweep_rounded,
+                            Icon(Icons.delete_sweep_rounded,
                                 color: Colors.red, size: 20),
                             const SizedBox(width: 8),
                             Text(_t('Delete All', 'Hapus Semua'))
@@ -428,7 +428,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                                     child: Text(
                                         _t('$_unreadCount new',
                                             '$_unreadCount baru'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.primaryOrange)),
@@ -525,7 +525,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(children: [
-            const Icon(Icons.delete_rounded, color: Colors.red, size: 24),
+            Icon(Icons.delete_rounded, color: Colors.red, size: 24),
             const SizedBox(width: 8),
             Text(_t('Delete Notification', 'Hapus Notifikasi'))
           ]),

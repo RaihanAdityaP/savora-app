@@ -179,7 +179,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       child: Text(
                           _t('All recipes in this collection will be removed from the collection.',
                               'Semua resep dalam koleksi ini akan dihapus dari koleksi.'),
-                          style: const TextStyle(fontSize: 12))),
+                          style: TextStyle(fontSize: 12))),
                 ],
               ),
             ),
@@ -234,7 +234,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               decoration: BoxDecoration(
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.edit_rounded, color: Colors.white, size: 24),
+              child: Icon(Icons.edit_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             Text(_t('Edit Collection', 'Edit Koleksi'), style: AppTheme.headingMedium),
@@ -395,7 +395,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               decoration: BoxDecoration(
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+              child: Icon(Icons.add_rounded, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             Text(_t('New Collection', 'Koleksi Baru'), style: AppTheme.headingMedium),
@@ -497,38 +497,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           }
         },
       ),
-      floatingActionButton: _selectedCollection == null
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: AppTheme.accentGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: AppTheme.buttonShadow,
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _showCreateCollectionDialog,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add_rounded, color: Colors.white, size: 24),
-                        const SizedBox(width: 8),
-                        Text(_t('New Collection', 'Koleksi Baru'),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : null,
     );
   }
 
@@ -623,12 +591,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.folder_special_rounded,
+                            Icon(Icons.folder_special_rounded,
                                 color: AppTheme.primaryCoral, size: 16),
                             const SizedBox(width: 6),
                             Text(
                               '${_collections.length} ${_t('Collections', 'Koleksi')}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 13,
                                   color: AppTheme.primaryCoral,
                                   fontWeight: FontWeight.w600),
@@ -642,8 +610,9 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ),
             ),
           ),
+          SliverToBoxAdapter(child: _buildCreateCollectionCard()),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) => Padding(
@@ -656,6 +625,56 @@ class _FavoritesScreenState extends State<FavoritesScreen>
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCreateCollectionCard() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _showCreateCollectionDialog,
+          borderRadius: BorderRadius.circular(20),
+          child: Ink(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppTheme.primaryCoral.withValues(alpha: 0.18),
+                width: 2,
+              ),
+              boxShadow: AppTheme.cardShadow,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.accentGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.add_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    _t('Create New Collection', 'Buat Koleksi Baru'),
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                Icon(Icons.expand_more_rounded, color: AppTheme.textSecondary),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -674,11 +693,12 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       onLongPress: () => _showCollectionOptions(collection),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.borderColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withValues(alpha: AppTheme.isDarkMode ? 0.28 : 0.08),
               blurRadius: 16,
               offset: const Offset(0, 6),
             ),
@@ -703,7 +723,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   children: [
                     Text(
                       collection['name'] ?? '',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
@@ -729,7 +749,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                         _t('Special recipe collection', 'Koleksi resep spesial'),
                         style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade400,
+                            color: AppTheme.textMuted,
                             fontStyle: FontStyle.italic),
                       ),
                     const SizedBox(height: 10),
@@ -761,7 +781,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
               ),
               IconButton(
                 onPressed: () => _showCollectionOptions(collection),
-                icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
+                icon: Icon(Icons.more_vert_rounded, color: AppTheme.textMuted),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -840,7 +860,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   decoration: BoxDecoration(
                       gradient: AppTheme.accentGradient,
                       borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.collections_bookmark_rounded,
+                  child: Icon(Icons.collections_bookmark_rounded,
                       color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 12),
@@ -932,7 +952,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                         _collectionRecipes = [];
                       }),
                       icon: const Icon(Icons.arrow_back_rounded,
-                          color: AppTheme.textPrimary),
+                          color: AppTheme.primaryCoral),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -955,8 +975,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     IconButton(
                       onPressed: () =>
                           _showCollectionOptions(_selectedCollection!),
-                      icon: const Icon(Icons.more_vert_rounded,
-                          color: AppTheme.textPrimary),
+                      icon: Icon(Icons.more_vert_rounded,
+                          color: AppTheme.primaryCoral),
                     ),
                   ],
                 ),
@@ -1002,7 +1022,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                                 color: Colors.white, size: 28),
                             const SizedBox(height: 4),
                             Text(_t('Delete', 'Hapus'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold)),
                           ],
@@ -1149,6 +1169,22 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                     .copyWith(color: AppTheme.textSecondary, height: 1.5),
                 textAlign: TextAlign.center),
             const SizedBox(height: 32),
+            Container(
+              decoration: AppTheme.primaryButtonDecoration,
+              child: TextButton.icon(
+                onPressed: _showCreateCollectionDialog,
+                icon: const Icon(Icons.add_rounded, color: Colors.white),
+                label: Text(
+                  _t('Create First Collection', 'Buat Koleksi Pertama'),
+                  style: AppTheme.buttonText,
+                ),
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

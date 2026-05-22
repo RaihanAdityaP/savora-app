@@ -141,7 +141,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               gradient: AppTheme.accentGradient,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.restore_page_rounded, color: Colors.white),
+            child: Icon(Icons.restore_page_rounded, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Text(_t('Draft Found', 'Draft Ditemukan')),
@@ -162,7 +162,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 ),
                 child: Text(
                   '"${draft['title']}"',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryCoral),
                 ),
@@ -1287,7 +1287,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             const SizedBox(width: 12),
             Expanded(
                 child: Text(ingredient,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w500))),
@@ -1334,7 +1334,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               borderRadius: BorderRadius.circular(10)),
           child: IconButton(
               onPressed: _addStep,
-              icon: const Icon(Icons.add, color: Colors.white, size: 20),
+              icon: Icon(Icons.add, color: Colors.white, size: 20),
               padding: EdgeInsets.zero),
         ),
       ]),
@@ -1373,7 +1373,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                   borderRadius: BorderRadius.circular(10)),
               child: Center(
                   child: Text('${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white))),
@@ -1381,7 +1381,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             const SizedBox(width: 14),
             Expanded(
                 child: Text(step,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.textPrimary,
                         height: 1.5))),
@@ -1434,7 +1434,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                             _userCreatedTags.clear();
                             _isSearchingTags = false;
                           }),
-                          icon: const Icon(Icons.clear, size: 20))
+                          icon: Icon(Icons.clear, size: 20))
                       : null,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -1491,7 +1491,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                       size: 14, color: Colors.white),
                   const SizedBox(width: 6),
                   Text(tag,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w600)),

@@ -52,11 +52,11 @@ class _LikedRecipesScreenState extends State<LikedRecipesScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_t('Liked Recipes', 'Resep Disukai'), style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(_t('Liked Recipes', 'Resep Disukai'), style: TextStyle(fontWeight: FontWeight.bold)),
             if (widget.username != null)
               Text(
                 widget.username!,
-                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
           ],
         ),

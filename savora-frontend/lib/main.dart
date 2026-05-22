@@ -378,13 +378,13 @@ class _MyAppState extends State<MyApp> {
             brightness:
                 appSettings.isDarkMode ? Brightness.dark : Brightness.light,
             scaffoldBackgroundColor: appSettings.isDarkMode
-                ? const Color(0xFF101418)
+                ? const Color(0xFF0F1318)
                 : const Color(0xFFF5F7FA),
             cardColor:
-                appSettings.isDarkMode ? const Color(0xFF182027) : Colors.white,
+                appSettings.isDarkMode ? const Color(0xFF1A2330) : Colors.white,
             appBarTheme: AppBarTheme(
               backgroundColor: appSettings.isDarkMode
-                  ? const Color(0xFF182027)
+                  ? const Color(0xFF1A2330)
                   : Colors.white,
               foregroundColor: appSettings.isDarkMode
                   ? Colors.white

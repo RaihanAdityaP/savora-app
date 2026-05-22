@@ -553,13 +553,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 2),
-                    Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey.shade400),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textMuted),
             ],
           ),
         ),
@@ -574,8 +574,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: DraggableScrollableSheet(
@@ -590,7 +590,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 child: Center(
                   child: Container(
                     width: 40, height: 4,
-                    decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(color: AppTheme.textMuted, borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
               ),
@@ -599,8 +599,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(_t('Share Recipe', 'Bagikan Resep'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                    IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: Colors.grey.shade600)),
+                    Text(_t('Share Recipe', 'Bagikan Resep'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: AppTheme.textSecondary)),
                   ],
                 ),
               ),
@@ -661,9 +661,9 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           const SizedBox(height: 20),
           Row(
             children: [
-              Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 24)),
+              Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.collections_bookmark_rounded, color: Colors.white, size: 24)),
               const SizedBox(width: 12),
-              Expanded(child: Text(_t('Save to Collection', 'Simpan ke Koleksi'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
+              Expanded(child: Text(_t('Save to Collection', 'Simpan ke Koleksi'), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textPrimary))),
             ],
           ),
           const SizedBox(height: 20),
@@ -678,9 +678,9 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.add_rounded, color: Colors.white, size: 20)),
+                      Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)), child: Icon(Icons.add_rounded, color: Colors.white, size: 20)),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(_t('Create New Collection', 'Buat Koleksi Baru'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))),
+                      Expanded(child: Text(_t('Create New Collection', 'Buat Koleksi Baru'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))),
                       const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
                     ],
                   ),
@@ -692,13 +692,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           if (boards.isEmpty)
             Container(
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: AppTheme.subtleSurfaceColor, borderRadius: BorderRadius.circular(16)),
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.collections_bookmark_outlined, size: 48, color: Colors.grey.shade400),
+                    Icon(Icons.collections_bookmark_outlined, size: 48, color: AppTheme.textMuted),
                     const SizedBox(height: 12),
-                    Text(_t('No collections yet', 'Belum ada koleksi'), style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                    Text(_t('No collections yet', 'Belum ada koleksi'), style: TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -713,7 +713,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppTheme.primaryCoral.withValues(alpha: 0.2), width: 1.5),
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
@@ -737,13 +737,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(board['name'] ?? '', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                                    Text(board['name'] ?? '', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                                     if (board['description'] != null && board['description'].toString().isNotEmpty)
-                                      Text(board['description'], style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(board['description'], style: TextStyle(fontSize: 12, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.primaryCoral),
+                              Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.primaryCoral),
                             ],
                           ),
                         ),
@@ -769,18 +769,18 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           children: [
             Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.add_rounded, color: Colors.white, size: 24)),
             const SizedBox(width: 12),
-            Text(_t('New Collection', 'Koleksi Baru'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(_t('New Collection', 'Koleksi Baru'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200, width: 1.5)),
+              decoration: BoxDecoration(color: AppTheme.subtleSurfaceColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppTheme.borderColor, width: 1.5)),
               child: TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  hintText: _t('Collection Name', 'Nama Koleksi'), hintStyle: TextStyle(color: Colors.grey.shade400),
+                  hintText: _t('Collection Name', 'Nama Koleksi'), hintStyle: TextStyle(color: AppTheme.textMuted),
                   prefixIcon: const Icon(Icons.collections_bookmark_rounded, color: AppTheme.primaryCoral),
                   border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -788,12 +788,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
             ),
             const SizedBox(height: 16),
             Container(
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200, width: 1.5)),
+              decoration: BoxDecoration(color: AppTheme.subtleSurfaceColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppTheme.borderColor, width: 1.5)),
               child: TextField(
                 controller: descController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Deskripsi (opsional)', hintStyle: TextStyle(color: Colors.grey.shade400),
+                  hintText: 'Deskripsi (opsional)', hintStyle: TextStyle(color: AppTheme.textMuted),
                   prefixIcon: const Padding(padding: EdgeInsets.only(bottom: 60), child: Icon(Icons.description_rounded, color: AppTheme.primaryOrange)),
                   border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 ),
@@ -802,7 +802,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600), child: Text(_t('Cancel', 'Batal'), style: const TextStyle(fontWeight: FontWeight.w600))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary), child: Text(_t('Cancel', 'Batal'), style: const TextStyle(fontWeight: FontWeight.w600))),
           Container(
             decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(12)),
             child: TextButton(
@@ -1196,7 +1196,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         children: [
           Icon(icon, size: 14, color: AppTheme.primaryCoral),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+          Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
         ],
       ),
     );
@@ -1294,7 +1294,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
+                        child: Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
                       ),
                     ),
                   ),
@@ -1340,7 +1340,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_recipe!['title'] ?? 'Untitled', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textPrimary, height: 1.2)),
+                Text(_recipe!['title'] ?? 'Untitled', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppTheme.textPrimary, height: 1.2)),
                 if (_shouldShowTranslate) ...[
                   const SizedBox(height: 10),
                   _buildTranslateChip(
@@ -1370,9 +1370,9 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 if (_recipe!['description'] != null && _recipe!['description'].toString().isNotEmpty) ...[
                   AppTheme.buildSectionHeader(_t('Description', 'Deskripsi'), Icons.description_rounded),
                   const SizedBox(height: 12),
-                  Text(_recipe!['description'], style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.6)),
+                  Text(_recipe!['description'], style: TextStyle(fontSize: 14, color: AppTheme.textSecondary, height: 1.6)),
                   const SizedBox(height: 20),
-                  Divider(color: Colors.grey.shade200),
+                  Divider(color: AppTheme.borderColor),
                   const SizedBox(height: 20),
                 ],
                 GestureDetector(
@@ -1389,14 +1389,14 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         Container(
                           width: 54, height: 54,
                           decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: AppTheme.getRoleGradient(role)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))]),
-                          child: ClipOval(child: avatarUrl != null ? Image.network(avatarUrl, fit: BoxFit.cover) : const Icon(Icons.person, color: Colors.white, size: 28)),
+                          child: ClipOval(child: avatarUrl != null ? Image.network(avatarUrl, fit: BoxFit.cover) : Icon(Icons.person, color: Colors.white, size: 28)),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(username, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                              Text(username, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1404,13 +1404,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                                   color: isPremium ? const Color(0xFF6C63FF) : Colors.grey.shade400,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(isPremium ? 'SAVORA CHEF' : _t('USER', 'PENGGUNA'), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
+                                child: Text(isPremium ? 'SAVORA CHEF' : _t('USER', 'PENGGUNA'), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5)),
                               ),
                             ],
                           ),
                         ),
                         if (oderId != null)
-                          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.7), shape: BoxShape.circle), child: Icon(Icons.chevron_right_rounded, color: Colors.grey.shade700, size: 20)),
+                          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: AppTheme.surfaceColor.withValues(alpha: 0.7), shape: BoxShape.circle), child: Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 20)),
                       ],
                     ),
                   ),
@@ -1462,7 +1462,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   }
 
   Widget _buildPlaceholderImage() {
-    return Container(width: double.infinity, height: 280, decoration: const BoxDecoration(gradient: AppTheme.primaryGradient), child: const Icon(Icons.restaurant_rounded, size: 80, color: Colors.white));
+    return Container(width: double.infinity, height: 280, decoration: const BoxDecoration(gradient: AppTheme.primaryGradient), child: Icon(Icons.restaurant_rounded, size: 80, color: Colors.white));
   }
 
   Widget _buildTranslateChip({
@@ -1671,7 +1671,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         children: [
                           Icon(_isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: Colors.white),
                           const SizedBox(width: 10),
-                          Text(_isFavorite ? _t('Saved', 'Tersimpan') : _t('Save Recipe', 'Simpan Resep'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                          Text(_isFavorite ? _t('Saved', 'Tersimpan') : _t('Save Recipe', 'Simpan Resep'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                         ],
                       ),
                     ),
@@ -1698,7 +1698,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                       child: InkWell(
                         onTap: _showShareBottomSheet,
                         borderRadius: BorderRadius.circular(14),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.share_rounded, color: Colors.white, size: 22), const SizedBox(width: 10), Text(_t('Share', 'Bagikan'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white))]),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.share_rounded, color: Colors.white, size: 22), const SizedBox(width: 10), Text(_t('Share', 'Bagikan'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white))]),
                       ),
                     ),
                   ),
@@ -1792,12 +1792,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
             children: [
               Container(width: 32, height: 32, decoration: const BoxDecoration(gradient: AppTheme.accentGradient, shape: BoxShape.circle), child: Center(child: Text('${index + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)))),
               const SizedBox(width: 12),
-              Expanded(child: Text(name, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, fontWeight: FontWeight.w500))),
+              Expanded(child: Text(name, style: TextStyle(fontSize: 14, color: AppTheme.textPrimary, fontWeight: FontWeight.w500))),
               if (quantity != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(gradient: LinearGradient(colors: [AppTheme.primaryOrange.withValues(alpha: 0.3), AppTheme.primaryYellow.withValues(alpha: 0.2)]), borderRadius: BorderRadius.circular(8)),
-                  child: Text(quantity, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryCoral)),
+                  child: Text(quantity, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryCoral)),
                 ),
             ],
           ),
@@ -1823,7 +1823,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           children: [
             Container(width: 36, height: 36, decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(10)), child: Center(child: Text('${index + 1}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)))),
             const SizedBox(width: 14),
-            Expanded(child: Text(_buildStepText(steps[index]), style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.5))),
+            Expanded(child: Text(_buildStepText(steps[index]), style: TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.5))),
           ],
         ),
       )),
@@ -1852,9 +1852,9 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.tag_rounded, size: 14, color: Colors.white),
+              Icon(Icons.tag_rounded, size: 14, color: Colors.white),
               const SizedBox(width: 6),
-              Text(tag, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text(tag, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
             ],
           ),
         ),
@@ -1886,8 +1886,8 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_averageRating!.toStringAsFixed(1), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                      Text(_t('from $_ratingCount ratings', 'dari $_ratingCount rating'), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text(_averageRating!.toStringAsFixed(1), style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                      Text(_t('from $_ratingCount ratings', 'dari $_ratingCount rating'), style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                     ],
                   ),
                 ],
@@ -1896,11 +1896,11 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           else
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.grey.shade100, Colors.grey.shade50]), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200)),
-              child: Row(children: [Icon(Icons.star_outline_rounded, color: Colors.grey.shade400, size: 28), const SizedBox(width: 12), Text(_t('No rating yet', 'Belum ada rating'), style: TextStyle(color: Colors.grey.shade500))]),
+              decoration: BoxDecoration(gradient: LinearGradient(colors: [AppTheme.subtleSurfaceColor, AppTheme.surfaceColor]), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppTheme.borderColor)),
+              child: Row(children: [Icon(Icons.star_outline_rounded, color: AppTheme.textMuted, size: 28), const SizedBox(width: 12), Text(_t('No rating yet', 'Belum ada rating'), style: TextStyle(color: AppTheme.textSecondary))]),
             ),
           const SizedBox(height: 20),
-          Text(_t('Give Your Rating', 'Beri Rating Anda'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+          Text(_t('Give Your Rating', 'Beri Rating Anda'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
           const SizedBox(height: 10),
           Row(
             children: List.generate(5, (index) {
@@ -1914,7 +1914,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           const SizedBox(height: 24),
           const Divider(height: 1),
           const SizedBox(height: 20),
-          Text(_t('Reviews (${_comments.length})', 'Ulasan (${_comments.length})'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+          Text(_t('Reviews (${_comments.length})', 'Ulasan (${_comments.length})'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
           Container(
             decoration: AppTheme.inputDecoration(AppTheme.primaryYellow),
@@ -1930,7 +1930,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 suffixIcon: Container(
                   margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(8)),
-                  child: IconButton(onPressed: _postComment, icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18)),
+                  child: IconButton(onPressed: _postComment, icon: Icon(Icons.send_rounded, color: Colors.white, size: 18)),
                 ),
               ),
               textInputAction: TextInputAction.done,
@@ -1976,7 +1976,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                                   child: ClipOval(child: avatarUrl != null ? Image.network(avatarUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.person, size: 18, color: Colors.white)) : const Icon(Icons.person, size: 18, color: Colors.white)),
                                 ),
                                 const SizedBox(width: 10),
-                                Text(username, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                                Text(username, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
                               ],
                             ),
                           ),
@@ -1992,13 +1992,13 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                               },
                               itemBuilder: (_) => [
                                 if (isCommentOwner)
-                                  PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit_rounded, size: 16), const SizedBox(width: 8), Text(_t('Edit', 'Edit'))])),
+                                  PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_rounded, size: 16), const SizedBox(width: 8), Text(_t('Edit', 'Edit'))])),
                                 PopupMenuItem(
                                   value: 'delete',
                                   child: Row(children: [
                                     Icon(isAdmin && !isCommentOwner ? Icons.admin_panel_settings : Icons.delete_rounded, size: 16, color: Colors.red),
                                     const SizedBox(width: 8),
-                                    Text(isAdmin && !isCommentOwner ? _t('Delete (Admin)', 'Hapus (Admin)') : _t('Delete', 'Hapus'), style: const TextStyle(color: Colors.red)),
+                                    Text(isAdmin && !isCommentOwner ? _t('Delete (Admin)', 'Hapus (Admin)') : _t('Delete', 'Hapus'), style: TextStyle(color: Colors.red)),
                                   ]),
                                 ),
                               ],
@@ -2007,7 +2007,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Text(comment['content'] ?? '', style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4)),
+                      Text(comment['content'] ?? '', style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4)),
                       const SizedBox(height: 8),
                       Row(
                         children: [

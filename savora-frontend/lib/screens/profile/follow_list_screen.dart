@@ -56,9 +56,9 @@ class _FollowListScreenState extends State<FollowListScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
             if (widget.username != null)
-              Text(widget.username!, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              Text(widget.username!, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
           ],
         ),
       ),

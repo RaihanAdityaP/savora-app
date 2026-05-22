@@ -385,9 +385,10 @@ class _SearchingScreenState extends State<SearchingScreen>
 
           return Container(
             decoration: BoxDecoration(
-              color: AppTheme.backgroundLight,
+              color: AppTheme.surfaceColor,
               borderRadius:
                   BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border.all(color: AppTheme.borderColor),
             ),
             child: DraggableScrollableSheet(
               initialChildSize: 0.85,
@@ -418,13 +419,13 @@ class _SearchingScreenState extends State<SearchingScreen>
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: AppTheme.buttonShadow,
                           ),
-                          child: const Icon(Icons.tune,
+                          child: Icon(Icons.tune,
                               color: Colors.white, size: 26),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Text(_t('Filter & Sort', 'Filter & Urutkan'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.textPrimary)),
@@ -455,10 +456,10 @@ class _SearchingScreenState extends State<SearchingScreen>
                                 tempFollowedOnly = false;
                               });
                             },
-                            icon: const Icon(Icons.refresh_rounded,
+                            icon: Icon(Icons.refresh_rounded,
                                 size: 18, color: AppTheme.primaryCoral),
                             label: Text(_t('Reset', 'Reset'),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: AppTheme.primaryCoral)),
                             style: TextButton.styleFrom(
@@ -506,7 +507,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     ),
                                     const SizedBox(width: 10),
                                     Text(_t('Sort By', 'Urutkan Berdasarkan'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -555,14 +556,14 @@ class _SearchingScreenState extends State<SearchingScreen>
                                               .withValues(alpha: 0.2),
                                           borderRadius:
                                               BorderRadius.circular(10)),
-                                      child: const Icon(
+                                      child: Icon(
                                           Icons.local_fire_department_rounded,
                                           color: AppTheme.primaryTeal,
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(_t('Calories (kcal)', 'Kalori (kkal)'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -627,13 +628,13 @@ class _SearchingScreenState extends State<SearchingScreen>
                                               .withValues(alpha: 0.2),
                                           borderRadius:
                                               BorderRadius.circular(10)),
-                                      child: const Icon(Icons.egg_alt_rounded,
+                                      child: Icon(Icons.egg_alt_rounded,
                                           color: AppTheme.primaryCoral,
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(_t('Ingredients', 'Bahan-Bahan'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -645,11 +646,11 @@ class _SearchingScreenState extends State<SearchingScreen>
                                         'Pisahkan dengan koma, cth: ayam, bawang'),
                                     style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey.shade500)),
+                                        color: AppTheme.textSecondary)),
                                 const SizedBox(height: 12),
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: AppTheme.subtleSurfaceColor,
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
                                         color: AppTheme.primaryCoral
@@ -662,7 +663,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                       hintText: _t('ex: chicken, onion, tomato',
                                           'cth: ayam, bawang, tomat'),
                                       hintStyle: TextStyle(
-                                          color: Colors.grey.shade400,
+                                          color: AppTheme.textMuted,
                                           fontSize: 14),
                                       border: InputBorder.none,
                                       prefixIcon: const Padding(
@@ -675,7 +676,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           const EdgeInsets.symmetric(
                                               horizontal: 16, vertical: 14),
                                     ),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: AppTheme.textPrimary,
                                         fontSize: 14),
                                   ),
@@ -710,7 +711,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                           .withValues(alpha: 0.2),
                                       borderRadius:
                                           BorderRadius.circular(12)),
-                                  child: const Icon(Icons.people_rounded,
+                                  child: Icon(Icons.people_rounded,
                                       color: AppTheme.primaryOrange,
                                       size: 24),
                                 ),
@@ -721,7 +722,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(_t('From Following', 'Dari yang Diikuti'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                               color: AppTheme.textPrimary)),
@@ -729,7 +730,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                       Text(
                                           _t('Only show recipes from users you follow',
                                               'Hanya tampilkan resep dari pengguna yang Anda ikuti'),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontSize: 12,
                                               color: AppTheme.textSecondary)),
                                     ],
@@ -778,14 +779,14 @@ class _SearchingScreenState extends State<SearchingScreen>
                                               .withValues(alpha: 0.2),
                                           borderRadius:
                                               BorderRadius.circular(10)),
-                                      child: const Icon(
+                                      child: Icon(
                                           Icons.category_rounded,
                                           color: AppTheme.primaryCoral,
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(_t('Category', 'Kategori'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -850,14 +851,14 @@ class _SearchingScreenState extends State<SearchingScreen>
                                               .withValues(alpha: 0.3),
                                           borderRadius:
                                               BorderRadius.circular(10)),
-                                      child: const Icon(
+                                      child: Icon(
                                           Icons.local_offer_rounded,
                                           color: AppTheme.primaryDark,
                                           size: 20),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(_t('Popular Tags', 'Tags Populer'),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.bold,
                                             color: AppTheme.textPrimary)),
@@ -947,10 +948,10 @@ class _SearchingScreenState extends State<SearchingScreen>
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16)),
                         ),
-                        icon: const Icon(Icons.search_rounded,
+                        icon: Icon(Icons.search_rounded,
                             color: Colors.white, size: 24),
                         label: Text(_t('Apply Filter', 'Terapkan Filter'),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white)),
@@ -978,11 +979,11 @@ class _SearchingScreenState extends State<SearchingScreen>
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600)),
+                color: AppTheme.textSecondary)),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.subtleSurfaceColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
                 color: AppTheme.primaryTeal.withValues(alpha: 0.3),
@@ -994,17 +995,17 @@ class _SearchingScreenState extends State<SearchingScreen>
             decoration: InputDecoration(
               hintText: hint,
               hintStyle:
-                  TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  TextStyle(color: AppTheme.textMuted, fontSize: 13),
               border: InputBorder.none,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               suffixText: 'kkal',
               suffixStyle: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade500,
+                  color: AppTheme.textSecondary,
                   fontWeight: FontWeight.w500),
             ),
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600),
@@ -1037,7 +1038,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
                           color:
@@ -1057,7 +1058,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         hintText: _t('Search delicious recipes...',
                             'Cari resep lezat...'),
                         hintStyle: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 15),
+                            color: AppTheme.textMuted, fontSize: 15),
                         border: InputBorder.none,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(14),
@@ -1067,7 +1068,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
                                 icon: Icon(Icons.clear_rounded,
-                                    color: Colors.grey.shade600),
+                                    color: AppTheme.textSecondary),
                                 onPressed: () {
                                   _searchController.clear();
                                   _searchRecipes('');
@@ -1078,7 +1079,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 16),
                       ),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppTheme.textPrimary, fontSize: 15),
                       onChanged: (value) {
                         setState(() {});
@@ -1105,7 +1106,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         child: InkWell(
                           onTap: _showFilterBottomSheet,
                           borderRadius: BorderRadius.circular(16),
-                          child: const Icon(Icons.tune_rounded,
+                          child: Icon(Icons.tune_rounded,
                               color: Colors.white, size: 26),
                         ),
                       ),
@@ -1132,7 +1133,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                           constraints: const BoxConstraints(
                               minWidth: 24, minHeight: 24),
                           child: Text('$activeFilters',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -1245,7 +1246,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                         ),
                         const SizedBox(height: 26),
                         Text(_t('Searching recipes...', 'Mencari resep...'),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textSecondary)),
@@ -1338,7 +1339,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                       color: color.withValues(alpha: 0.4), blurRadius: 4)
                 ],
               ),
-              child: const Icon(Icons.close_rounded,
+              child: Icon(Icons.close_rounded,
                   size: 14, color: Colors.white),
             ),
           ),
@@ -1384,7 +1385,7 @@ class _SearchingScreenState extends State<SearchingScreen>
               _lastSearchQuery.isNotEmpty || activeFilters > 0
                   ? _t('No Recipes Found', 'Tidak Ditemukan Resep')
                   : _t('Start Searching', 'Mulai Pencarian'),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 24,
                   color: AppTheme.textPrimary,
                   fontWeight: FontWeight.bold),

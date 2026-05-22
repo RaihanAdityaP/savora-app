@@ -124,10 +124,10 @@
         /* Welcome card overlay — light mode: subtle dark overlay for text contrast */
         --welcome-overlay: rgba(0,0,0,0.18);
         --welcome-text-shadow: 0 1px 4px rgba(0,0,0,0.30), 0 0 12px rgba(0,0,0,0.12);
-        --welcome-chip-bg: rgba(0,0,0,0.20);
-        --welcome-chip-border: rgba(255,255,255,0.35);
-        --welcome-quote-bg: rgba(0,0,0,0.18);
-        --welcome-quote-border: rgba(255,255,255,0.30);
+        --welcome-chip-bg: rgba(255,255,255,0.25);
+        --welcome-chip-border: rgba(255,255,255,0.40);
+        --welcome-quote-bg: rgba(255,255,255,0.20);
+        --welcome-quote-border: rgba(255,255,255,0.40);
     }
 
     @if($savoraTheme === 'dark')
@@ -149,10 +149,10 @@
         /* Welcome card — dark mode: lighter overlay since background already dark */
         --welcome-overlay: rgba(0,0,0,0.12);
         --welcome-text-shadow: 0 1px 4px rgba(0,0,0,0.50), 0 0 16px rgba(0,0,0,0.25);
-        --welcome-chip-bg: rgba(255,255,255,0.12);
-        --welcome-chip-border: rgba(255,255,255,0.25);
-        --welcome-quote-bg: rgba(0,0,0,0.25);
-        --welcome-quote-border: rgba(255,255,255,0.20);
+        --welcome-chip-bg: rgba(255,255,255,0.25);
+        --welcome-chip-border: rgba(255,255,255,0.40);
+        --welcome-quote-bg: rgba(255,255,255,0.20);
+        --welcome-quote-border: rgba(255,255,255,0.40);
     }
     @endif
 

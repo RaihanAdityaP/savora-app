@@ -198,7 +198,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             decoration: BoxDecoration(
                 gradient: AppTheme.accentGradient,
                 borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.restore_page_rounded, color: Colors.white),
+            child: Icon(Icons.restore_page_rounded, color: Colors.white),
           ),
           const SizedBox(width: 12),
           const Text('Draft Edit Ditemukan'),
@@ -1089,7 +1089,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             .map((cat) => DropdownMenuItem<int>(
                 value: cat['id'],
                 child:
-                    Text(cat['name'], style: const TextStyle(fontSize: 14))))
+                    Text(cat['name'], style: TextStyle(fontSize: 14))))
             .toList(),
         onChanged: (value) {
           setState(() => _selectedCategoryId = value);
@@ -1240,7 +1240,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             const SizedBox(width: 12),
             Expanded(
                 child: Text(ingredient,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w500))),
@@ -1285,7 +1285,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
               borderRadius: BorderRadius.circular(10)),
           child: IconButton(
               onPressed: _addStep,
-              icon: const Icon(Icons.add, color: Colors.white, size: 20),
+              icon: Icon(Icons.add, color: Colors.white, size: 20),
               padding: EdgeInsets.zero),
         ),
       ]),
@@ -1323,7 +1323,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   borderRadius: BorderRadius.circular(10)),
               child: Center(
                   child: Text('${index + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: Colors.white))),
@@ -1331,7 +1331,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             const SizedBox(width: 14),
             Expanded(
                 child: Text(step,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.textPrimary,
                         height: 1.5))),
@@ -1383,7 +1383,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                             _userCreatedTags.clear();
                             _isSearchingTags = false;
                           }),
-                          icon: const Icon(Icons.clear, size: 20))
+                          icon: Icon(Icons.clear, size: 20))
                       : null,
                   border: InputBorder.none,
                   contentPadding:
@@ -1439,7 +1439,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   const Icon(Icons.tag_rounded, size: 14, color: Colors.white),
                   const SizedBox(width: 6),
                   Text(tag,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w600)),
@@ -1608,7 +1608,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Video baru dipilih',
+                Text('Video baru dipilih',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -1647,9 +1647,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
                   ]),
                   borderRadius: BorderRadius.circular(10)),
               child:
-                  const Icon(Icons.videocam, color: Colors.white, size: 24)),
+                  Icon(Icons.videocam, color: Colors.white, size: 24)),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Video sudah ada',
                 style: TextStyle(

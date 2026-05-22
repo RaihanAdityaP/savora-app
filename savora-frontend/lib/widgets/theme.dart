@@ -12,9 +12,9 @@ class AppTheme {
   // Background Colors
   static bool get isDarkMode => AppSettingsService.current.isDarkMode;
   static Color get backgroundLight =>
-      isDarkMode ? const Color(0xFF101418) : const Color(0xFFF5F7FA);
+      isDarkMode ? const Color(0xFF0F1318) : const Color(0xFFF5F7FA);
   static Color get surfaceColor =>
-      isDarkMode ? const Color(0xFF182027) : Colors.white;
+      isDarkMode ? const Color(0xFF1A2330) : Colors.white;
   static Color get subtleSurfaceColor =>
       isDarkMode ? const Color(0xFF222C35) : Colors.grey.shade100;
   static Color get borderColor =>
@@ -22,8 +22,12 @@ class AppTheme {
   static Color get cardBackground => surfaceColor;
 
   // Text Colors
-  static const Color textPrimary = Color(0xFF264653);
-  static const Color textSecondary = Color(0xFF6B7280);
+  static Color get textPrimary =>
+      isDarkMode ? const Color(0xFFF0F4F8) : const Color(0xFF264653);
+  static Color get textSecondary =>
+      isDarkMode ? const Color(0xFFA8B8C8) : const Color(0xFF6B7280);
+  static Color get textMuted =>
+      isDarkMode ? const Color(0xFF6B7A8D) : const Color(0xFF9CA3AF);
 
   // Extended Colors (untuk modal, tag management, recipe card, app bar)
   static const Color privacyGreen   = Color(0xFF2A9D8F);
@@ -91,15 +95,20 @@ class AppTheme {
 
   static LinearGradient get cardGradient => LinearGradient(
         colors: [
-          primaryCoral.withValues(alpha: 0.05),
-          primaryOrange.withValues(alpha: 0.1),
+          primaryCoral.withValues(alpha: isDarkMode ? 0.08 : 0.05),
+          (isDarkMode ? primaryTeal : primaryOrange)
+              .withValues(alpha: isDarkMode ? 0.06 : 0.1),
         ],
       );
 
   static LinearGradient get inputGradient => LinearGradient(
         colors: [
-          primaryCoral.withValues(alpha: 0.05),
-          primaryOrange.withValues(alpha: 0.08),
+          isDarkMode
+              ? Colors.white.withValues(alpha: 0.05)
+              : primaryCoral.withValues(alpha: 0.05),
+          isDarkMode
+              ? Colors.white.withValues(alpha: 0.03)
+              : primaryOrange.withValues(alpha: 0.08),
         ],
       );
 
@@ -165,22 +174,25 @@ class AppTheme {
         color: cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: primaryCoral.withValues(alpha: 0.2),
+          color: primaryCoral.withValues(alpha: isDarkMode ? 0.2 : 0.18),
           width: 2,
         ),
         boxShadow: cardShadow,
       );
 
   static BoxDecoration inputDecoration(Color iconColor) => BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            iconColor.withValues(alpha: 0.05),
-            iconColor.withValues(alpha: 0.1),
-          ],
-        ),
+        color: isDarkMode ? subtleSurfaceColor : null,
+        gradient: isDarkMode
+            ? null
+            : LinearGradient(
+                colors: [
+                  iconColor.withValues(alpha: 0.05),
+                  iconColor.withValues(alpha: 0.1),
+                ],
+              ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: iconColor.withValues(alpha: 0.2),
+          color: iconColor.withValues(alpha: isDarkMode ? 0.35 : 0.2),
           width: 1.5,
         ),
       );
@@ -203,10 +215,10 @@ class AppTheme {
 
   // Tag chip decoration for tag management screen
   static BoxDecoration tagChipDecoration(Color color, {bool isSelected = false}) => BoxDecoration(
-        color: isSelected ? color.withValues(alpha: 0.15) : Colors.white,
+        color: isSelected ? color.withValues(alpha: 0.15) : surfaceColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isSelected ? color : Colors.grey.shade300,
+          color: isSelected ? color : borderColor,
           width: 1.5,
         ),
       );
@@ -239,7 +251,7 @@ class AppTheme {
         const SizedBox(width: 12),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: textPrimary,
@@ -256,33 +268,33 @@ class AppTheme {
     color: Colors.white,
   );
 
-  static const TextStyle headingMedium = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
-    color: textPrimary,
-  );
+  static TextStyle get headingMedium => TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+      );
 
-  static const TextStyle headingSmall = TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-    color: textPrimary,
-  );
+  static TextStyle get headingSmall => TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: textPrimary,
+      );
 
-  static const TextStyle bodyLarge = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
-    color: textPrimary,
-  );
+  static TextStyle get bodyLarge => TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: textPrimary,
+      );
 
-  static const TextStyle bodyMedium = TextStyle(
-    fontSize: 14,
-    color: textPrimary,
-  );
+  static TextStyle get bodyMedium => TextStyle(
+        fontSize: 14,
+        color: textPrimary,
+      );
 
-  static TextStyle bodySmall = TextStyle(
-    fontSize: 13,
-    color: Colors.grey.shade600,
-  );
+  static TextStyle get bodySmall => TextStyle(
+        fontSize: 13,
+        color: textSecondary,
+      );
 
   static const TextStyle buttonText = TextStyle(
     color: Colors.white,
@@ -300,10 +312,10 @@ class AppTheme {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+      hintStyle: TextStyle(color: textMuted, fontSize: 14),
       prefixIcon: Padding(
         padding: EdgeInsets.only(top: maxLines > 1 ? 12 : 0),
-        child: Icon(icon, color: iconColor ?? Colors.grey.shade600, size: 20),
+        child: Icon(icon, color: iconColor ?? textSecondary, size: 20),
       ),
       suffixIcon: suffixIcon,
       border: InputBorder.none,
@@ -341,9 +353,9 @@ class AppTheme {
       );
 
   static BoxDecoration get unselectedTagDecoration => BoxDecoration(
-        color: Colors.white,
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: borderColor),
       );
 
   // Empty State Widget
@@ -356,20 +368,22 @@ class AppTheme {
       padding: const EdgeInsets.all(48),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.grey.shade100, Colors.grey.shade50],
+          colors: isDarkMode
+              ? [surfaceColor, subtleSurfaceColor]
+              : [Colors.grey.shade100, Colors.grey.shade50],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
         child: Column(
           children: [
-            Icon(icon, size: 64, color: Colors.grey.shade300),
+            Icon(icon, size: 64, color: textMuted),
             const SizedBox(height: 16),
             Text(
               title,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: textSecondary,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -378,7 +392,7 @@ class AppTheme {
               const SizedBox(height: 8),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                style: TextStyle(fontSize: 13, color: textMuted),
                 textAlign: TextAlign.center,
               ),
             ],

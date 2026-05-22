@@ -26,7 +26,7 @@
 
         {{-- Welcome Card --}}
         <div class="relative rounded-3xl overflow-hidden mb-6 shadow-xl p-6"
-             style="background: var(--gradient-primary)">
+             style="background: linear-gradient(135deg, var(--color-primary-coral), var(--color-primary-orange), var(--color-primary-yellow));">
 
             {{-- Overlay for text contrast on light mode --}}
             <div class="welcome-overlay-layer"></div>

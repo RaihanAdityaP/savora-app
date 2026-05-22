@@ -460,12 +460,12 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.restaurant_rounded,
+                Icon(Icons.restaurant_rounded,
                     size: 12, color: AppTheme.primaryCoral),
                 const SizedBox(width: 4),
                 Text(
                   '${_feed.length}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.primaryCoral,
                     fontWeight: FontWeight.bold,

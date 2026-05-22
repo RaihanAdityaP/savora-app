@@ -157,14 +157,14 @@ class _RecipeCardState extends State<RecipeCard> {
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.collections_bookmark_rounded,
+                child: Icon(Icons.collections_bookmark_rounded,
                     color: Colors.white, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   _t('Save to Collection', 'Simpan ke Koleksi'),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textPrimary,
@@ -200,14 +200,14 @@ class _RecipeCardState extends State<RecipeCard> {
                           color: Colors.white.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.add_rounded,
+                        child: Icon(Icons.add_rounded,
                             color: Colors.white, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           _t('Create New Collection', 'Buat Koleksi Baru'),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -319,7 +319,7 @@ class _RecipeCardState extends State<RecipeCard> {
                                   children: [
                                     Text(
                                       board['name'] ?? '',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.textPrimary,
@@ -339,7 +339,7 @@ class _RecipeCardState extends State<RecipeCard> {
                                   ],
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 14,
                                 color: AppTheme.primaryCoral,
@@ -382,7 +382,7 @@ class _RecipeCardState extends State<RecipeCard> {
             ),
             const SizedBox(width: 12),
             Text(_t('New Collection', 'Koleksi Baru'),
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
         content: Column(
@@ -419,7 +419,7 @@ class _RecipeCardState extends State<RecipeCard> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            child: Text(_t('Cancel', 'Batal'), style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(_t('Cancel', 'Batal'), style: TextStyle(fontWeight: FontWeight.w600)),
           ),
           Container(
             decoration: BoxDecoration(
@@ -599,7 +599,7 @@ class _RecipeCardState extends State<RecipeCard> {
           height: 140,
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.surfaceColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: _isPressed
@@ -609,7 +609,8 @@ class _RecipeCardState extends State<RecipeCard> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: _isPressed ? 0.12 : 0.08),
+                color: Colors.black.withValues(
+                    alpha: AppTheme.isDarkMode ? 0.30 : (_isPressed ? 0.12 : 0.08)),
                 blurRadius: _isPressed ? 16 : 12,
                 offset: Offset(0, _isPressed ? 6 : 4),
               ),
@@ -628,7 +629,7 @@ class _RecipeCardState extends State<RecipeCard> {
                     child: Container(
                       width: 130,
                       height: double.infinity,
-                      color: Colors.grey.shade100,
+                      color: AppTheme.subtleSurfaceColor,
                       child: widget.recipe['image_url'] != null
                           ? Image.network(
                               widget.recipe['image_url'],
@@ -744,7 +745,7 @@ class _RecipeCardState extends State<RecipeCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded,
+                            Icon(Icons.star_rounded,
                                 color: Colors.white, size: 12),
                             const SizedBox(width: 3),
                             Text(
@@ -772,7 +773,7 @@ class _RecipeCardState extends State<RecipeCard> {
                       // Title
                       Text(
                         widget.recipe['title'] ?? _t('Untitled Recipe', 'Resep Tanpa Judul'),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,
@@ -811,7 +812,7 @@ class _RecipeCardState extends State<RecipeCard> {
                                         fit: BoxFit.cover,
                                         errorBuilder:
                                             (context, error, stackTrace) =>
-                                                const Icon(
+                                                Icon(
                                                     Icons.person_rounded,
                                                     size: 12,
                                                     color: Colors.white),
@@ -827,7 +828,7 @@ class _RecipeCardState extends State<RecipeCard> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey.shade700,
+                                  color: AppTheme.textSecondary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -870,9 +871,9 @@ class _RecipeCardState extends State<RecipeCard> {
 
   Widget _buildPlaceholder() {
     return Container(
-      color: Colors.grey.shade200,
+      color: AppTheme.subtleSurfaceColor,
       child: Center(
-        child: Icon(Icons.restaurant_rounded, size: 40, color: Colors.grey.shade400),
+        child: Icon(Icons.restaurant_rounded, size: 40, color: AppTheme.textMuted),
       ),
     );
   }
@@ -898,7 +899,7 @@ class _RecipeCardState extends State<RecipeCard> {
         ),
         child: Text(
           categoryName,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 9,
             fontWeight: FontWeight.bold,
@@ -933,7 +934,7 @@ class _RecipeCardState extends State<RecipeCard> {
         ),
         child: Text(
           '#$tagName',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 9,
             fontWeight: FontWeight.bold,

@@ -62,7 +62,7 @@
         </form>
 
         {{-- Conversations list --}}
-        @if(count($conversations) > 0)
+        <?php if (count($conversations) > 0): ?>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="font-bold" style="color: var(--color-text-primary)">{{ $isEnglish ? 'Chat History' : 'Riwayat Chat' }}</h2>
                 <form action="{{ route('app.ai.delete-all') }}" method="POST"
@@ -74,12 +74,12 @@
                 </form>
             </div>
 
-            @foreach($conversations as $conv)
-                @php
+            <?php foreach ($conversations as $conv): ?>
+                <?php
                     try { $timeAgo = \Carbon\Carbon::parse($conv['updated_at'])->diffForHumans(); } catch(\Exception $e) { $timeAgo = ''; }
                     $providerColor = ($conv['provider'] ?? 'groq') === 'openrouter' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700';
                     $providerLabel = ($conv['provider'] ?? 'groq') === 'openrouter' ? 'OpenRouter' : 'Groq';
-                @endphp
+                ?>
                 <div class="card-savora mb-3 overflow-hidden hover:shadow-md transition-all">
                     <a href="{{ route('app.ai.conversation', $conv['id']) }}" class="flex items-center gap-4 p-4">
                         <div class="w-12 h-12 bg-gradient-accent rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -110,14 +110,14 @@
                         </form>
                     </div>
                 </div>
-            @endforeach
+            <?php endforeach; ?>
 
-        @else
+        <?php else: ?>
             <x-app-theme.empty-state
             icon="bi bi-chat-dots"
             title="{{ $isEnglish ? 'No Chat History Yet' : 'Belum Ada Riwayat Chat' }}"
             subtitle="{{ $isEnglish ? 'Start chatting with Savora Chef AI!' : 'Mulai chat dengan Chef AI Savora!' }}" />
-        @endif
+        <?php endif; ?>
 
     </div>
 </body>

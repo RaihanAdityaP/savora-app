@@ -8,6 +8,46 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('components.app-theme')
+    <style>
+        .ai-option {
+            background: var(--color-bg-light);
+            border-color: var(--color-separator);
+        }
+        .ai-option-icon {
+            background: var(--color-card-bg);
+            color: var(--color-text-muted);
+        }
+        .ai-option.is-default {
+            background: rgba(42,157,143,0.12);
+            border-color: var(--color-primary-teal);
+        }
+        .ai-option.is-openrouter {
+            background: rgba(147,51,234,0.12);
+            border-color: var(--color-proxy-purple);
+        }
+        .ai-option.is-default .ai-option-icon {
+            background: var(--color-primary-teal);
+            color: #fff;
+        }
+        .ai-option.is-openrouter .ai-option-icon {
+            background: var(--color-proxy-purple);
+            color: #fff;
+        }
+        .ai-info-row {
+            background: var(--color-bg-light);
+            border-color: var(--color-separator);
+        }
+        .ai-teal-note {
+            background: rgba(42,157,143,0.12);
+            border-color: rgba(42,157,143,0.30);
+            color: var(--color-primary-teal);
+        }
+        .ai-key-saved {
+            background: rgba(42,157,143,0.12);
+            border-color: rgba(42,157,143,0.30);
+            color: var(--color-primary-teal);
+        }
+    </style>
 </head>
 <body class="bg-[#F5F7FA] text-gray-900">
 
@@ -17,17 +57,19 @@
         :username="session('user_username')"
     />
 
-    @php
-        $activeProvider   = ($settings['is_active_provider'] ?? 'groq') === 'groq' ? 'default' : ($settings['is_active_provider'] ?? 'default');
-        $hasOpenRouterKey = !empty($settings['openrouter_api_key']) && $settings['openrouter_api_key'] !== '***SAVED***' ? false : (!empty($settings['openrouter_api_key']));
-        $savedModel       = $settings['openrouter_model'] ?? '';
+    <?php
+        $settings = isset($settings) && is_array($settings) ? $settings : [];
+        $rawProvider = $settings['is_active_provider'] ?? 'groq';
+        $activeProvider = $rawProvider === 'groq' ? 'default' : $rawProvider;
+        $hasOpenRouterKey = !empty($settings['openrouter_api_key']);
+        $savedModel = $settings['openrouter_model'] ?? '';
         $defaultGroqModel = config('ai.groq_model');
         $openRouterExamples = array_filter([
             'deepseek/deepseek-chat:free',
             'google/gemma-3-27b-it:free',
             'mistralai/mistral-7b-instruct:free',
         ]);
-    @endphp
+    ?>
 
     <div class="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-10"
          x-data="{ provider: '{{ $activeProvider }}', showKey: false, hasKey: {{ $hasOpenRouterKey ? 'true' : 'false' }}, testResult: '', testOk: false, testing: false }">
@@ -68,13 +110,12 @@
 
                 {{-- Default (Groq) --}}
                 <label class="block mb-3 cursor-pointer">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl border-2 transition-all"
-                         :class="provider === 'default' ? 'border-[#2A9D8F] bg-teal-50' : 'border-gray-200 bg-gray-50'">
+                    <div class="ai-option flex items-center gap-4 p-4 rounded-2xl border-2 transition-all"
+                         :class="provider === 'default' ? 'is-default' : ''">
                         <input type="radio" name="is_active_provider" value="groq" class="hidden"
                                @change="provider = 'default'" :checked="provider === 'default'">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                             :class="provider === 'default' ? 'bg-[#2A9D8F]' : 'bg-gray-200'">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ai-option-icon w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                             </svg>
                         </div>
@@ -92,13 +133,12 @@
 
                 {{-- OpenRouter --}}
                 <label class="block cursor-pointer">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl border-2 transition-all"
-                         :class="provider === 'openrouter' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-gray-50'">
+                    <div class="ai-option flex items-center gap-4 p-4 rounded-2xl border-2 transition-all"
+                         :class="provider === 'openrouter' ? 'is-openrouter' : ''">
                         <input type="radio" name="is_active_provider" value="openrouter" class="hidden"
                                @change="provider = 'openrouter'">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                             :class="provider === 'openrouter' ? 'bg-purple-500' : 'bg-gray-200'">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ai-option-icon w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
                         </div>
@@ -122,9 +162,9 @@
                     {{ $isEnglish ? 'Default Configuration' : 'Konfigurasi Default' }}
                 </h2>
                 <div class="space-y-2">
-                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="ai-info-row flex items-center gap-3 p-3 rounded-xl border">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(42,157,143,0.16); color: var(--color-primary-teal);">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
                         </div>
@@ -133,7 +173,7 @@
                             <p class="text-sm font-medium" style="color: var(--color-text-primary)">Groq — {{ $defaultGroqModel }}</p>
                         </div>
                     </div>
-                    <div class="p-3 bg-teal-50 rounded-xl border border-teal-200 text-sm text-teal-800">
+                    <div class="ai-teal-note p-3 rounded-xl border text-sm">
                         {{ $isEnglish ? 'All API keys are managed by the server - no configuration needed.' : 'Semua API key dikelola server - tidak perlu konfigurasi apapun.' }}
                     </div>
                 </div>
@@ -151,12 +191,12 @@
                         API Key
                     </h2>
                     @if($hasOpenRouterKey)
-                        <div class="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200 mb-3">
-                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ai-key-saved flex items-center gap-3 p-3 rounded-xl border mb-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span class="text-sm font-semibold text-green-800 flex-1">{{ $isEnglish ? 'API key saved on server' : 'API key tersimpan di server' }}</span>
-                            <button type="button" @click="hasKey = false" class="text-xs text-green-700 font-bold hover:underline">{{ $isEnglish ? 'Change' : 'Ganti' }}</button>
+                            <span class="text-sm font-semibold flex-1">{{ $isEnglish ? 'API key saved on server' : 'API key tersimpan di server' }}</span>
+                            <button type="button" @click="hasKey = false" class="text-xs font-bold hover:underline">{{ $isEnglish ? 'Change' : 'Ganti' }}</button>
                         </div>
                     @endif
                     <div x-show="!hasKey">
