@@ -226,12 +226,14 @@ class AdminWebController extends Controller
     public function moderateRecipe(Request $request, string $id): RedirectResponse
     {
         $action = (string) $request->input('action', 'approved');
-        $reason = trim((string) $request->input('reason', 'Tidak memenuhi standar'));
+        $reason = trim((string) $request->input('reason', 'Does not meet the standards'));
 
         // Admin UUID from session — recipes.moderated_by is a UUID FK to profiles(id)
         $adminId = session('admin_id');
 
         try {
+            $recipeRows = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id], ['limit' => 1]);
+
             if ($action === 'approved') {
                 $this->supabase->update('recipes', [
                     'status'           => 'approved',
@@ -248,9 +250,45 @@ class AdminWebController extends Controller
                 ], ['id' => $id], true);
             }
 
-            return back()->with('status', $action === 'approved' ? 'Resep disetujui.' : 'Resep ditolak.');
+            if (! empty($recipeRows)) {
+                $ownerId = $recipeRows[0]['user_id'] ?? null;
+                $title = $recipeRows[0]['title'] ?? 'your recipe';
+
+                if ($ownerId) {
+                    $type = $action === 'approved' ? 'recipe_approved' : 'recipe_rejected';
+                    $notificationTitle = $action === 'approved' ? 'Recipe Approved' : 'Recipe Rejected';
+                    $message = $action === 'approved'
+                        ? "Your recipe '{$title}' was approved and published!"
+                        : "Your recipe '{$title}' was rejected. Reason: {$reason}";
+
+                    $this->supabase->insert('notifications', [
+                        'user_id'             => $ownerId,
+                        'type'                => $type,
+                        'title'               => $notificationTitle,
+                        'message'             => $message,
+                        'related_entity_type' => 'recipe',
+                        'related_entity_id'   => $id,
+                    ]);
+
+                    $tokens = $this->supabase->select('device_tokens', ['token'], [
+                        'user_id' => $ownerId,
+                        'is_active' => true,
+                    ]);
+
+                    if (! empty($tokens)) {
+                        $this->notification->sendToMultipleDevices(
+                            array_column($tokens, 'token'),
+                            $notificationTitle,
+                            $message,
+                            $this->notification->generatePayload($type, $id)
+                        );
+                    }
+                }
+            }
+
+            return back()->with('status', $action === 'approved' ? 'Recipe approved.' : 'Recipe rejected.');
         } catch (Exception $e) {
-            return back()->with('error', 'Moderasi resep gagal: ' . $e->getMessage());
+            return back()->with('error', 'Recipe moderation failed: ' . $e->getMessage());
         }
     }
 

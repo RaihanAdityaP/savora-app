@@ -368,28 +368,30 @@ class RecipeController extends Controller
             if (! empty($recipes)) {
                 $ownerId = $recipes[0]['user_id'] ?? null;
                 if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_comments')) {
+                    $actorName = session('user_username', 'Someone');
+                    $recipeTitle = $recipes[0]['title'] ?? 'your recipe';
                     $this->supabase->insert('notifications', [
                         'user_id'             => $ownerId,
                         'type'                => 'new_comment',
-                        'title'               => 'Komentar Baru',
-                        'message'             => session('user_username', 'Seseorang') . " berkomentar di resep '" . ($recipes[0]['title'] ?? 'Anda') . "'",
+                        'title'               => 'New Comment',
+                        'message'             => "{$actorName} commented on your recipe '{$recipeTitle}'",
                         'related_entity_type' => 'recipe',
                         'related_entity_id'   => $id,
                     ]);
 
                     $this->sendPushToUser(
                         $ownerId,
-                        'Komentar Baru',
-                        session('user_username', 'Seseorang') . ' berkomentar di resep Anda',
+                        'New Comment',
+                        "{$actorName} commented on your recipe",
                         'new_comment',
                         $id
                     );
                 }
             }
 
-            return back()->with('status', 'Komentar berhasil dikirim.');
+            return back()->with('status', $this->tr('Comment sent.', 'Komentar berhasil dikirim.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -403,9 +405,9 @@ class RecipeController extends Controller
             if ($existing[0]['user_id'] !== $userId && session('user_role') !== 'admin') abort(403);
 
             $this->supabase->delete('comments', ['id' => $commentId]);
-            return back()->with('status', 'Komentar dihapus.');
+            return back()->with('status', $this->tr('Comment deleted.', 'Komentar dihapus.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -424,9 +426,9 @@ class RecipeController extends Controller
                 $this->supabase->insert('recipe_ratings', ['user_id' => $userId, 'recipe_id' => $id, 'rating' => (int) $request->input('rating')]);
             }
 
-            return back()->with('status', 'Rating berhasil dikirim.');
+            return back()->with('status', $this->tr('Rating sent.', 'Rating berhasil dikirim.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -447,7 +449,7 @@ class RecipeController extends Controller
                     'recipe_id' => $id,
                     'user_id'   => $userId,
                 ]);
-                return back()->with('status', 'Like dibatalkan.');
+                return back()->with('status', $this->tr('Like removed.', 'Like dibatalkan.'));
             }
 
             $this->supabase->insert('recipe_likes', [
@@ -457,27 +459,29 @@ class RecipeController extends Controller
 
             $ownerId = $recipes[0]['user_id'] ?? null;
             if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_likes')) {
+                $actorName = session('user_username', 'Someone');
+                $recipeTitle = $recipes[0]['title'] ?? 'your recipe';
                 $this->supabase->insert('notifications', [
                     'user_id'             => $ownerId,
                     'type'                => 'new_like',
-                    'title'               => 'Like Baru',
-                    'message'             => session('user_username', 'Seseorang') . " menyukai resep '" . ($recipes[0]['title'] ?? 'Anda') . "'",
+                    'title'               => 'New Like',
+                    'message'             => "{$actorName} liked your recipe '{$recipeTitle}'",
                     'related_entity_type' => 'recipe',
                     'related_entity_id'   => $id,
                 ]);
 
                 $this->sendPushToUser(
                     $ownerId,
-                    'Like Baru',
-                    session('user_username', 'Seseorang') . ' menyukai resep Anda',
+                    'New Like',
+                    "{$actorName} liked your recipe",
                     'new_like',
                     $id
                 );
             }
 
-            return back()->with('status', 'Resep disukai.');
+            return back()->with('status', $this->tr('Recipe liked.', 'Resep disukai.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -500,5 +504,10 @@ class RecipeController extends Controller
         } catch (Exception $e) {
             \Log::warning('Failed to send push notification: ' . $e->getMessage());
         }
+    }
+
+    private function tr(string $english, string $indonesian): string
+    {
+        return session('user_language', 'en') === 'en' ? $english : $indonesian;
     }
 }

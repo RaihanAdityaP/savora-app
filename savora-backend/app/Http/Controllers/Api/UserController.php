@@ -77,11 +77,41 @@ class UserController extends Controller
             $user = $users[0];
             $viewerId = $this->resolveViewerId($request);
             if (! $this->canViewProfile($id, $viewerId)) {
+                $user['profile_public'] = false;
+                $user['can_view_profile'] = false;
+                $user['follow_request_status'] = $viewerId
+                    ? $this->resolveFollowRequestStatus($viewerId, $id)
+                    : null;
+
                 return response()->json([
-                    'success' => false,
+                    'success' => true,
                     'message' => 'Profile is private',
-                ], 403);
+                    'data' => [
+                        'id' => $user['id'] ?? $id,
+                        'username' => $user['username'] ?? null,
+                        'full_name' => $user['full_name'] ?? null,
+                        'avatar_url' => $user['avatar_url'] ?? null,
+                        'bio' => null,
+                        'role' => $user['role'] ?? 'user',
+                        'is_premium' => $user['is_premium'] ?? false,
+                        'profile_public' => false,
+                        'can_view_profile' => false,
+                        'follow_request_status' => $user['follow_request_status'],
+                        'followers_count' => 0,
+                        'total_followers' => 0,
+                        'following_count' => 0,
+                        'total_following' => 0,
+                        'recipes_count' => 0,
+                        'liked_recipes_count' => 0,
+                    ],
+                ]);
             }
+
+            $user['profile_public'] = $this->settingsService->enabled($id, 'profile_public');
+            $user['can_view_profile'] = true;
+            $user['follow_request_status'] = $viewerId
+                ? $this->resolveFollowRequestStatus($viewerId, $id)
+                : null;
 
             // Keep profile endpoint resilient even if supporting tables/views are unavailable.
             $user['followers_count'] = 0;
@@ -311,6 +341,72 @@ class UserController extends Controller
                 ], 400);
             }
 
+            if (! $this->settingsService->enabled($id, 'profile_public')) {
+                $pending = $this->supabase->select('follow_requests', ['*'], [
+                    'requester_id' => $followerId,
+                    'target_id' => $id,
+                    'status' => 'pending',
+                ]);
+
+                if (! empty($pending)) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Follow request is already pending',
+                        'data' => [
+                            'follow_status' => 'pending',
+                            'request' => $pending[0],
+                        ],
+                    ]);
+                }
+
+                $requestRows = $this->supabase->insert('follow_requests', [
+                    'requester_id' => $followerId,
+                    'target_id' => $id,
+                    'status' => 'pending',
+                ]);
+                $followRequest = $requestRows[0] ?? null;
+                $requestId = $followRequest['id'] ?? '';
+
+                $profiles = $this->supabase->select('profiles', ['username', 'full_name'], ['id' => $followerId]);
+                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Someone';
+
+                $existingNotification = $this->supabase->select('notifications', ['id'], [
+                    'user_id' => $id,
+                    'type' => 'follow_request',
+                    'related_entity_type' => 'follow_request',
+                    'related_entity_id' => $requestId,
+                    'is_read' => false,
+                ]);
+
+                if (empty($existingNotification) && $this->settingsService->enabled($id, 'notify_follows')) {
+                    $this->supabase->insert('notifications', [
+                        'user_id' => $id,
+                        'type' => 'follow_request',
+                        'title' => 'Follow Request',
+                        'message' => "{$actorName} wants to follow your private account.",
+                        'related_entity_type' => 'follow_request',
+                        'related_entity_id' => $requestId,
+                    ]);
+
+                    $this->sendPushToUser(
+                        $id,
+                        'Follow Request',
+                        "{$actorName} wants to follow your private account.",
+                        'follow_request',
+                        $requestId
+                    );
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Follow request sent',
+                    'data' => [
+                        'follow_status' => 'pending',
+                        'request' => $followRequest,
+                    ],
+                ], 201);
+            }
+
             $this->supabase->insert('follows', [
                 'follower_id' => $followerId,
                 'following_id' => $id,
@@ -326,21 +422,21 @@ class UserController extends Controller
 
             if (empty($existingNotification) && $this->settingsService->enabled($id, 'notify_follows')) {
                 $profiles = $this->supabase->select('profiles', ['username', 'full_name'], ['id' => $followerId]);
-                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Seseorang';
+                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Someone';
 
                 $this->supabase->insert('notifications', [
                     'user_id' => $id,
                     'type' => 'new_follower',
-                    'title' => 'Follower Baru',
-                    'message' => "{$actorName} mulai mengikuti Anda!",
+                    'title' => 'New Follower',
+                    'message' => "{$actorName} started following you!",
                     'related_entity_type' => 'profile',
                     'related_entity_id' => $followerId,
                 ]);
 
                 $this->sendPushToUser(
                     $id,
-                    'Follower Baru',
-                    "{$actorName} mulai mengikuti Anda!",
+                    'New Follower',
+                    "{$actorName} started following you!",
                     'new_follower',
                     $followerId
                 );
@@ -349,6 +445,9 @@ class UserController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully followed user',
+                'data' => [
+                    'follow_status' => 'following',
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -385,6 +484,15 @@ class UserController extends Controller
                 'following_id' => $id,
             ]);
 
+            $this->supabase->update('follow_requests', [
+                'status' => 'rejected',
+                'responded_at' => now()->toDateTimeString(),
+            ], [
+                'requester_id' => $followerId,
+                'target_id' => $id,
+                'status' => 'pending',
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully unfollowed user',
@@ -415,6 +523,171 @@ class UserController extends Controller
             );
         } catch (Exception $e) {
             Log::warning('Failed to send push notification: ' . $e->getMessage());
+        }
+    }
+
+    public function followRequestStatus(Request $request, string $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'requester_id' => 'required|uuid',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $requesterId = $request->input('requester_id');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'status' => $this->resolveFollowRequestStatus($requesterId, $id),
+            ],
+        ]);
+    }
+
+    public function pendingFollowRequests(Request $request, string $id)
+    {
+        try {
+            $viewerId = $this->resolveViewerId($request);
+            if ($viewerId !== $id && ! $this->isAdminUser((string) $viewerId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
+            $requests = $this->supabase->select('follow_requests', [
+                '*',
+                'profiles!follow_requests_requester_id_fkey(id,username,full_name,avatar_url)',
+            ], [
+                'target_id' => $id,
+                'status' => 'pending',
+            ], [
+                'order' => 'created_at.desc',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $requests,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function acceptFollowRequest(Request $request, string $id, string $requestId)
+    {
+        return $this->respondToFollowRequest($request, $id, $requestId, true);
+    }
+
+    public function rejectFollowRequest(Request $request, string $id, string $requestId)
+    {
+        return $this->respondToFollowRequest($request, $id, $requestId, false);
+    }
+
+    private function respondToFollowRequest(Request $request, string $targetId, string $requestId, bool $accepted)
+    {
+        try {
+            $viewerId = $this->resolveViewerId($request);
+            if ($viewerId !== $targetId && ! $this->isAdminUser((string) $viewerId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
+            $requests = $this->supabase->select('follow_requests', ['*'], [
+                'id' => $requestId,
+                'target_id' => $targetId,
+                'status' => 'pending',
+            ]);
+
+            if (empty($requests)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Follow request not found',
+                ], 404);
+            }
+
+            $followRequest = $requests[0];
+            $requesterId = $followRequest['requester_id'];
+            $newStatus = $accepted ? 'approved' : 'rejected';
+
+            $this->supabase->update('follow_requests', [
+                'status' => $newStatus,
+                'responded_at' => now()->toDateTimeString(),
+            ], [
+                'id' => $requestId,
+            ]);
+
+            if ($accepted) {
+                $existing = $this->supabase->select('follows', ['id'], [
+                    'follower_id' => $requesterId,
+                    'following_id' => $targetId,
+                ]);
+
+                if (empty($existing)) {
+                    $this->supabase->insert('follows', [
+                        'follower_id' => $requesterId,
+                        'following_id' => $targetId,
+                    ]);
+                }
+
+            }
+
+            $responseType = $accepted ? 'follow_request_approved' : 'follow_request_rejected';
+            $responseTitle = $accepted ? 'Follow Request Accepted' : 'Follow Request Rejected';
+            $responseMessage = $accepted
+                ? 'Your follow request was accepted.'
+                : 'Your follow request was rejected.';
+
+            $this->supabase->insert('notifications', [
+                'user_id' => $requesterId,
+                'type' => $responseType,
+                'title' => $responseTitle,
+                'message' => $responseMessage,
+                'related_entity_type' => 'profile',
+                'related_entity_id' => $targetId,
+            ]);
+
+            $this->sendPushToUser(
+                $requesterId,
+                $responseTitle,
+                $responseMessage,
+                $responseType,
+                $targetId
+            );
+
+            $this->supabase->update('notifications', [
+                'is_read' => true,
+            ], [
+                'user_id' => $targetId,
+                'type' => 'follow_request',
+                'related_entity_id' => $requestId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => $accepted ? 'Follow request accepted' : 'Follow request rejected',
+                'data' => [
+                    'status' => $newStatus,
+                    'requester_id' => $requesterId,
+                    'target_id' => $targetId,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -449,6 +722,31 @@ class UserController extends Controller
             ]));
         } catch (Exception $e) {
             return false;
+        }
+    }
+
+    private function resolveFollowRequestStatus(string $requesterId, string $targetId): ?string
+    {
+        if ($requesterId === $targetId) {
+            return null;
+        }
+
+        if ($this->isFollower($requesterId, $targetId)) {
+            return 'following';
+        }
+
+        try {
+            $requests = $this->supabase->select('follow_requests', ['status'], [
+                'requester_id' => $requesterId,
+                'target_id' => $targetId,
+            ], [
+                'order' => 'created_at.desc',
+                'limit' => 1,
+            ]);
+
+            return $requests[0]['status'] ?? null;
+        } catch (Exception $e) {
+            return null;
         }
     }
 

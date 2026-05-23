@@ -638,44 +638,37 @@ class _RegisterScreenState extends State<RegisterScreen>
   // ─────────────────────────────────────────────
 
   Widget _buildConsentSection() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Animated checkbox
-        GestureDetector(
-          onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      GestureDetector(
+        onTap: () => setState(() => _agreedToTerms = !_agreedToTerms),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 22,
             height: 22,
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
-              color: _agreedToTerms
-                  ? const Color(0xFFE76F51)
-                  : Colors.white,
+              color: _agreedToTerms ? const Color(0xFFE76F51) : Colors.white,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: _agreedToTerms
-                    ? const Color(0xFFE76F51)
-                    : Colors.grey.shade400,
+                color: _agreedToTerms ? const Color(0xFFE76F51) : Colors.grey.shade400,
                 width: 2,
               ),
               boxShadow: _agreedToTerms
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFE76F51).withValues(alpha: 0.35),
-                        blurRadius: 6,
-                      )
-                    ]
+                  ? [BoxShadow(color: const Color(0xFFE76F51).withValues(alpha: 0.35), blurRadius: 6)]
                   : [],
             ),
             child: _agreedToTerms
-                ? const Icon(Icons.check_rounded,
-                    color: Colors.white, size: 15)
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 15)
                 : null,
           ),
         ),
-        const SizedBox(width: 10),
+      ),
+      const SizedBox(width: 2),
 
         // Inline label with tappable links
         Expanded(

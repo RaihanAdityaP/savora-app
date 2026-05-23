@@ -80,19 +80,17 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::post('tags/{id}/delete',   [AdminTagController::class, 'destroy'])->name('tags.destroy');
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// PUBLIC WEB PAGES (tanpa login)
-//
-// /r/{id}       — share link dari Flutter app, diintercept Android App Links,
-//                 fallback ke browser jika app tidak terinstall.
-// /recipes/{id} — canonical web detail, hanya dibuka di browser (tidak ada
-//                 App Links intent-filter untuk path ini).
-// /profile/{id} — sama, dibuka di browser / App Links untuk profile.
-// ══════════════════════════════════════════════════════════════════════════════
-Route::get('/r/{id}',         [RecipeController::class, 'show'])->name('web.recipe.share');
-Route::get('/search',         [SearchController::class, 'index'])->name('web.search');
-Route::get('/recipes/{id}',   [RecipeController::class, 'show'])->name('web.recipe.show');
+// Public web pages (tanpa login)
+
+// App Links / share links: buka app kalau terinstall, fallback ke web.
+Route::get('/r/{id}',     [RecipeController::class, 'show'])->name('web.recipe.share');
+Route::get('/p/{userId}', [ProfileController::class, 'show'])->name('web.profile.share');
+Route::get('/s',          [SearchController::class, 'index'])->name('web.search.share');
+
+// Canonical web routes: hanya browser, tidak ada intent-filter Android.
+Route::get('/recipes/{id}',    [RecipeController::class, 'show'])->name('web.recipe.show');
 Route::get('/profile/{userId}',[ProfileController::class, 'show'])->name('web.profile.user');
+Route::get('/search',          [SearchController::class, 'index'])->name('web.search');
 
 // ── App auth (guest only) ──────────────────────────────────────
 Route::prefix('app')->name('app.')->group(function () {
@@ -146,6 +144,8 @@ Route::prefix('app')->name('app.')->middleware('user.auth')->group(function () {
     Route::get('notifications',              [NotificationController::class, 'index'])->name('notifications');
     Route::post('notifications/read-all',    [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('notifications/delete-all',  [NotificationController::class, 'destroyAll'])->name('notifications.delete-all');
+    Route::post('notifications/follow-requests/{requestId}/accept', [NotificationController::class, 'acceptFollowRequest'])->name('notifications.follow-request.accept');
+    Route::post('notifications/follow-requests/{requestId}/reject', [NotificationController::class, 'rejectFollowRequest'])->name('notifications.follow-request.reject');
     Route::post('notifications/{id}/read',   [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('notifications/{id}/delete', [NotificationController::class, 'destroy'])->name('notifications.delete');
 

@@ -33,40 +33,48 @@
                 @endif
             </div>
 
-            {{-- Actions --}}
-            <div class="flex items-center gap-2" x-data="{ open: false }">
-                @if(($unreadCount ?? 0) > 0)
-                    <form action="{{ route('app.notifications.read-all') }}" method="POST">
-                        @csrf
-                        <button type="submit"
-                                class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all"
-                                style="color: var(--color-primary-teal)"
-                                title="{{ $isEnglish ? 'Mark all as read' : 'Tandai semua dibaca' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                            </svg>
-                        </button>
-                    </form>
-                @endif
-                <div class="relative">
-                    <button @click="open = !open" class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all text-gray-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                        </svg>
-                    </button>
-                    <div x-show="open" @click.outside="open = false" x-transition
-                         class="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 z-10">
-                        <form action="{{ route('app.notifications.delete-all') }}" method="POST"
-                              onsubmit="return confirm('{{ $isEnglish ? 'Delete all notifications?' : 'Hapus semua notifikasi?' }}')">
+            {{-- Dropdown menu (titik tiga) --}}
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open"
+                        class="p-2.5 bg-white rounded-full shadow hover:shadow-md transition-all text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                    </svg>
+                </button>
+                <div x-show="open" @click.outside="open = false" x-transition
+                     class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 z-10">
+
+                    {{-- Mark all as read — hanya tampil kalau ada yang belum dibaca --}}
+                    @if(($unreadCount ?? 0) > 0)
+                        <form action="{{ route('app.notifications.read-all') }}" method="POST">
                             @csrf
-                            <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            <button type="submit"
+                                    class="w-full flex items-center gap-3 px-4 py-3 hover:bg-teal-50 transition-colors text-sm font-medium"
+                                    style="color: var(--color-primary-teal)">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                          d="M4.5 12.75l6 6 9-13.5"/>
                                 </svg>
-                                {{ $isEnglish ? 'Delete All' : 'Hapus Semua' }}
+                                {{ $isEnglish ? 'Mark All as Read' : 'Tandai Semua Dibaca' }}
                             </button>
                         </form>
-                    </div>
+                        <div class="mx-3 border-t border-gray-100"></div>
+                    @endif
+
+                    {{-- Delete all --}}
+                    <form action="{{ route('app.notifications.delete-all') }}" method="POST"
+                          onsubmit="return confirm('{{ $isEnglish ? 'Delete all notifications?' : 'Hapus semua notifikasi?' }}')">
+                        @csrf
+                        <button type="submit"
+                                class="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-sm font-medium">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            {{ $isEnglish ? 'Delete All' : 'Hapus Semua' }}
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -77,6 +85,11 @@
                 <x-app-theme.info-banner message="{{ session('status') }}" icon="bi bi-check-circle" />
             </div>
         @endif
+        @if(session('error'))
+            <div class="mb-4">
+                <x-app-theme.info-banner message="{{ session('error') }}" icon="bi bi-exclamation-circle" />
+            </div>
+        @endif
 
         {{-- Notifications list --}}
         @forelse($notifications as $notif)
@@ -84,12 +97,16 @@
                 $isRead = $notif['is_read'] ?? false;
                 $type   = $notif['type'] ?? 'system';
 
-                // Inline CSS colors — hindari dynamic Tailwind class generation
                 $colorMap = [
                     'recipe_approved'           => ['bg' => '#22c55e', 'light' => 'rgba(34,197,94,0.08)',   'border' => 'rgba(34,197,94,0.35)',   'text' => '#16a34a'],
                     'recipe_rejected'           => ['bg' => '#ef4444', 'light' => 'rgba(239,68,68,0.08)',   'border' => 'rgba(239,68,68,0.35)',   'text' => '#dc2626'],
                     'new_follower'              => ['bg' => '#2A9D8F', 'light' => 'rgba(42,157,143,0.08)',  'border' => 'rgba(42,157,143,0.35)',  'text' => '#2A9D8F'],
+                    'follow_request'            => ['bg' => '#2A9D8F', 'light' => 'rgba(42,157,143,0.08)',  'border' => 'rgba(42,157,143,0.35)',  'text' => '#2A9D8F'],
+                    'follow_request_approved'   => ['bg' => '#22c55e', 'light' => 'rgba(34,197,94,0.08)',   'border' => 'rgba(34,197,94,0.35)',   'text' => '#16a34a'],
+                    'follow_request_rejected'   => ['bg' => '#ef4444', 'light' => 'rgba(239,68,68,0.08)',    'border' => 'rgba(239,68,68,0.35)',    'text' => '#dc2626'],
                     'new_recipe_from_following' => ['bg' => '#F4A261', 'light' => 'rgba(244,162,97,0.08)',  'border' => 'rgba(244,162,97,0.35)',  'text' => '#d97706'],
+                    'new_like'                  => ['bg' => '#E76F51', 'light' => 'rgba(231,111,81,0.08)',  'border' => 'rgba(231,111,81,0.35)',  'text' => '#E76F51'],
+                    'new_comment'               => ['bg' => '#E9C46A', 'light' => 'rgba(233,196,106,0.10)', 'border' => 'rgba(233,196,106,0.35)', 'text' => '#b7791f'],
                     'admin'                     => ['bg' => '#E76F51', 'light' => 'rgba(231,111,81,0.08)',  'border' => 'rgba(231,111,81,0.35)',  'text' => '#E76F51'],
                 ];
                 $c = $colorMap[$type] ?? ['bg' => '#9ca3af', 'light' => 'rgba(156,163,175,0.08)', 'border' => 'rgba(156,163,175,0.30)', 'text' => '#6b7280'];
@@ -98,7 +115,12 @@
                     'recipe_approved'           => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
                     'recipe_rejected'           => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
                     'new_follower'              => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+                    'follow_request'            => 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+                    'follow_request_approved'   => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+                    'follow_request_rejected'   => 'M18.364 18.364A9 9 0 105.636 5.636a9 9 0 0012.728 12.728zM8.464 8.464l7.072 7.072',
                     'new_recipe_from_following' => 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+                    'new_like'                  => 'M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z',
+                    'new_comment'               => 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z',
                     'admin'                     => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
                 ];
                 $iconPath = $iconMap[$type] ?? 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9';
@@ -107,6 +129,72 @@
                     $diff = \Carbon\Carbon::parse($notif['created_at'])->diffForHumans();
                 } catch (\Exception $e) {
                     $diff = $notif['created_at'] ?? '';
+                }
+                $relatedId = trim((string) ($notif['related_entity_id'] ?? ''));
+                $showFollowRequestActions = $type === 'follow_request'
+                    && $relatedId !== ''
+                    && ($notif['follow_request_status'] ?? null) === 'pending';
+                $displayTitle = $notif['title'] ?? ($isEnglish ? 'Notification' : 'Notifikasi');
+                $displayMessage = $notif['message'] ?? '';
+                $quotedTitle = null;
+                if (preg_match("/'([^']+)'/", $displayMessage, $matches)) {
+                    $quotedTitle = $matches[1] ?? null;
+                }
+
+                if ($type === 'recipe_approved') {
+                    $displayTitle = $isEnglish ? 'Recipe Approved' : 'Resep Disetujui';
+                    $displayMessage = $quotedTitle
+                        ? ($isEnglish ? "Your recipe '{$quotedTitle}' was approved and published." : "Resep '{$quotedTitle}' Anda telah disetujui dan dipublikasikan.")
+                        : ($isEnglish ? 'Your recipe was approved and published.' : 'Resep Anda telah disetujui dan dipublikasikan.');
+                } elseif ($type === 'recipe_rejected') {
+                    $reason = '';
+                    foreach (['Reason:', 'Alasan:'] as $marker) {
+                        if (str_contains($displayMessage, $marker)) {
+                            $reason = trim(substr($displayMessage, strpos($displayMessage, $marker) + strlen($marker)));
+                            break;
+                        }
+                    }
+                    $suffix = $reason !== '' ? ($isEnglish ? " Reason: {$reason}" : " Alasan: {$reason}") : '';
+                    $displayTitle = $isEnglish ? 'Recipe Rejected' : 'Resep Ditolak';
+                    $displayMessage = $quotedTitle
+                        ? ($isEnglish ? "Your recipe '{$quotedTitle}' was rejected.{$suffix}" : "Resep '{$quotedTitle}' ditolak.{$suffix}")
+                        : ($isEnglish ? "Your recipe was rejected.{$suffix}" : "Resep Anda ditolak.{$suffix}");
+                } elseif ($type === 'new_follower') {
+                    $actor = trim(str_replace(['started following you!', 'started following you', 'mulai mengikuti Anda!', 'mulai mengikuti Anda'], '', $displayMessage));
+                    $actor = $actor !== '' ? $actor : ($isEnglish ? 'Someone' : 'Seseorang');
+                    $displayTitle = $isEnglish ? 'New Follower' : 'Follower Baru';
+                    $displayMessage = $isEnglish ? "{$actor} started following you!" : "{$actor} mulai mengikuti Anda!";
+                } elseif ($type === 'new_like') {
+                    $actor = trim(preg_split('/ liked your recipe| liked| menyukai resep| menyukai/', $displayMessage)[0] ?? '');
+                    $actor = $actor !== '' ? $actor : ($isEnglish ? 'Someone' : 'Seseorang');
+                    $displayTitle = $isEnglish ? 'New Like' : 'Like Baru';
+                    $displayMessage = $quotedTitle
+                        ? ($isEnglish ? "{$actor} liked your recipe '{$quotedTitle}'." : "{$actor} menyukai resep '{$quotedTitle}'.")
+                        : ($isEnglish ? "{$actor} liked your recipe." : "{$actor} menyukai resep Anda.");
+                } elseif ($type === 'new_comment') {
+                    $actor = trim(preg_split('/ commented on your recipe| commented| berkomentar di resep| berkomentar/', $displayMessage)[0] ?? '');
+                    $actor = $actor !== '' ? $actor : ($isEnglish ? 'Someone' : 'Seseorang');
+                    $displayTitle = $isEnglish ? 'New Comment' : 'Komentar Baru';
+                    $displayMessage = $quotedTitle
+                        ? ($isEnglish ? "{$actor} commented on your recipe '{$quotedTitle}'." : "{$actor} berkomentar di resep '{$quotedTitle}'.")
+                        : ($isEnglish ? "{$actor} commented on your recipe." : "{$actor} berkomentar di resep Anda.");
+                } elseif ($type === 'follow_request') {
+                    $requesterName = ($notif['follow_requester_name'] ?? null)
+                        ?: ($isEnglish ? 'Someone' : 'Seseorang');
+                    $displayTitle = $isEnglish ? 'Follow Request' : 'Permintaan Follow';
+                    $displayMessage = $isEnglish
+                        ? "{$requesterName} wants to follow your private account."
+                        : "{$requesterName} ingin mengikuti akun private Anda.";
+                } elseif ($type === 'follow_request_approved') {
+                    $displayTitle = $isEnglish ? 'Follow Request Accepted' : 'Permintaan Follow Diterima';
+                    $displayMessage = $isEnglish
+                        ? 'Your follow request was accepted.'
+                        : 'Permintaan follow Anda diterima.';
+                } elseif ($type === 'follow_request_rejected') {
+                    $displayTitle = $isEnglish ? 'Follow Request Rejected' : 'Permintaan Follow Ditolak';
+                    $displayMessage = $isEnglish
+                        ? 'Your follow request was rejected.'
+                        : 'Permintaan follow Anda ditolak.';
                 }
             @endphp
 
@@ -130,14 +218,43 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-start justify-between gap-2">
                             <p class="text-sm leading-snug" style="font-weight: {{ $isRead ? 600 : 700 }}; color: var(--color-text-primary)">
-                                {{ $notif['title'] ?? ($isEnglish ? 'Notification' : 'Notifikasi') }}
+                                {{ $displayTitle }}
                             </p>
                             @if(!$isRead)
                                 <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
                                      style="background: {{ $c['bg'] }}; box-shadow: 0 0 6px {{ $c['bg'] }}99"></div>
                             @endif
                         </div>
-                        <p class="text-sm mt-1 leading-relaxed" style="color: var(--color-text-secondary)">{{ $notif['message'] ?? '' }}</p>
+                        <p class="text-sm mt-1 leading-relaxed" style="color: var(--color-text-secondary)">{{ $displayMessage }}</p>
+
+                        {{-- Follow request actions --}}
+                        @if($showFollowRequestActions)
+                            <div class="grid grid-cols-2 gap-2 mt-4">
+                                <form action="{{ route('app.notifications.follow-request.reject', $relatedId) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            class="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-colors"
+                                            style="color:#dc2626; border: 1.5px solid rgba(220,38,38,.25); background: rgba(220,38,38,.05);">
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        {{ $isEnglish ? 'Reject' : 'Tolak' }}
+                                    </button>
+                                </form>
+                                <form action="{{ route('app.notifications.follow-request.accept', $relatedId) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            class="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl text-white transition-colors"
+                                            style="background: var(--color-primary-teal); border: 1.5px solid transparent;">
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        {{ $isEnglish ? 'Accept' : 'Terima' }}
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
+
                         <div class="flex items-center gap-1 mt-2">
                             <svg class="w-3.5 h-3.5" style="color: var(--color-text-secondary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -147,7 +264,7 @@
                     </div>
                 </div>
 
-                {{-- Actions --}}
+                {{-- Actions footer --}}
                 <div class="flex border-t border-gray-100">
                     @if(!$isRead)
                         <form action="{{ route('app.notifications.read', $notif['id']) }}" method="POST" class="flex-1">

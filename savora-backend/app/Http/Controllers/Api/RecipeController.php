@@ -536,11 +536,19 @@ class RecipeController extends Controller
                     $this->supabase->insert('notifications', [
                         'user_id'             => $userId,
                         'type'                => 'recipe_approved',
-                        'title'               => 'Resep Disetujui',
-                        'message'             => "Resep '{$title}' Anda telah disetujui dan dipublikasikan!",
+                        'title'               => 'Recipe Approved',
+                        'message'             => "Your recipe '{$title}' was approved and published!",
                         'related_entity_type' => 'recipe',
                         'related_entity_id'   => $id,
                     ]);
+
+                    $this->sendPushToUser(
+                        $userId,
+                        'Recipe Approved',
+                        "Your recipe '{$title}' was approved and published!",
+                        'recipe_approved',
+                        $id
+                    );
                 }
             }
 
@@ -561,7 +569,7 @@ class RecipeController extends Controller
     public function reject(Request $request, $id)
     {
         try {
-            $reason      = $request->input('reason', 'Tidak memenuhi standar');
+            $reason      = $request->input('reason', 'Does not meet the standards');
             $moderatorId = Auth::id();
 
             if (!$moderatorId) {
@@ -587,11 +595,19 @@ class RecipeController extends Controller
                 $this->supabase->insert('notifications', [
                     'user_id'             => $userId,
                     'type'                => 'recipe_rejected',
-                    'title'               => 'Resep Ditolak',
-                    'message'             => "Resep '{$title}' ditolak. Alasan: {$reason}",
+                    'title'               => 'Recipe Rejected',
+                    'message'             => "Your recipe '{$title}' was rejected. Reason: {$reason}",
                     'related_entity_type' => 'recipe',
                     'related_entity_id'   => $id,
                 ]);
+
+                $this->sendPushToUser(
+                    $userId,
+                    'Recipe Rejected',
+                    "Your recipe '{$title}' was rejected. Reason: {$reason}",
+                    'recipe_rejected',
+                    $id
+                );
             }
 
             return response()->json([
@@ -919,13 +935,13 @@ class RecipeController extends Controller
             $ownerId = $recipes[0]['user_id'] ?? null;
             if ($ownerId && $ownerId !== $userId && $this->settingsService->enabled($ownerId, 'notify_likes')) {
                 $profiles = $this->supabase->select('profiles', ['username', 'full_name'], ['id' => $userId]);
-                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Seseorang';
-                $title = $recipes[0]['title'] ?? 'resep Anda';
+                $actorName = $profiles[0]['username'] ?? $profiles[0]['full_name'] ?? 'Someone';
+                $title = $recipes[0]['title'] ?? 'your recipe';
 
                 $this->supabase->insert('notifications', [
                     'user_id' => $ownerId,
-                    'title' => 'Like Baru',
-                    'message' => "{$actorName} menyukai resep '{$title}'",
+                    'title' => 'New Like',
+                    'message' => "{$actorName} liked your recipe '{$title}'",
                     'type' => 'new_like',
                     'related_entity_type' => 'recipe',
                     'related_entity_id' => $id,
@@ -933,8 +949,8 @@ class RecipeController extends Controller
 
                 $this->sendPushToUser(
                     $ownerId,
-                    'Like Baru',
-                    "{$actorName} menyukai resep Anda",
+                    'New Like',
+                    "{$actorName} liked your recipe",
                     'new_like',
                     $id
                 );

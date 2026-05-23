@@ -80,6 +80,25 @@ class UserClient {
     }
   }
 
+  static Future<String?> followWithStatus({
+    required String targetUserId,
+    required String followerId,
+  }) async {
+    try {
+      final response = await ApiService.post(
+        '/users/$targetUserId/follow',
+        {'follower_id': followerId},
+      );
+      if (response['success'] == true) {
+        return response['data']?['follow_status']?.toString() ?? 'following';
+      }
+      return null;
+    } catch (e) {
+      debugPrint('UserClient.followWithStatus error: $e');
+      return null;
+    }
+  }
+
   /// Unfollow user
   static Future<bool> unfollow({
     required String targetUserId,
@@ -162,6 +181,42 @@ class UserClient {
     } catch (e) {
       debugPrint('UserClient.getUserRecipes error: $e');
       return [];
+    }
+  }
+
+  static Future<String?> followRequestStatus({
+    required String targetUserId,
+    required String requesterId,
+  }) async {
+    try {
+      final response = await ApiService.get(
+        '/users/$targetUserId/follow-request-status?requester_id=$requesterId',
+      );
+      if (response['success'] == true) {
+        return response['data']?['status']?.toString();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('UserClient.followRequestStatus error: $e');
+      return null;
+    }
+  }
+
+  static Future<bool> respondToFollowRequest({
+    required String targetUserId,
+    required String requestId,
+    required bool accept,
+  }) async {
+    try {
+      final action = accept ? 'accept' : 'reject';
+      final response = await ApiService.post(
+        '/users/$targetUserId/follow-requests/$requestId/$action',
+        {'user_id': ApiService.currentUserId},
+      );
+      return response['success'] == true;
+    } catch (e) {
+      debugPrint('UserClient.respondToFollowRequest error: $e');
+      return false;
     }
   }
 

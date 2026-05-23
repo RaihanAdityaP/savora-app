@@ -8,6 +8,7 @@ use App\Services\SupabaseService;
 use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Exception;
 
 class LoginController extends Controller
@@ -66,8 +67,22 @@ class LoginController extends Controller
             );
 
             if (empty($profiles)) {
-                return back()->withInput(['email' => $email])
-                    ->with('error', 'Profil user tidak ditemukan.');
+                $this->ensureProfileForAuthUser(
+                    $userId,
+                    $email,
+                    $authResp->json('user.user_metadata') ?? []
+                );
+
+                $profiles = $this->supabase->select(
+                    'profiles',
+                    ['id', 'username', 'full_name', 'role', 'is_banned', 'banned_reason', 'avatar_url'],
+                    ['id' => $userId]
+                );
+
+                if (empty($profiles)) {
+                    return back()->withInput(['email' => $email])
+                        ->with('error', 'Profil user tidak ditemukan.');
+                }
             }
 
             $profile = $profiles[0];
@@ -164,11 +179,52 @@ class LoginController extends Controller
                 return back()->withInput()->with('error', $msg);
             }
 
+            $userId = $signupResp->json('user.id');
+            if ($userId) {
+                $this->ensureProfileForAuthUser($userId, trim($request->input('email')), [
+                    'username' => trim($request->input('username')),
+                    'full_name' => trim($request->input('full_name')),
+                ]);
+            }
+
             return redirect()->route('app.login')
                 ->with('status', 'Registrasi berhasil! Cek email untuk verifikasi.');
 
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
+    }
+
+    private function ensureProfileForAuthUser(string $userId, string $email, array $metadata = []): void
+    {
+        $existing = $this->supabase->select('profiles', ['id'], ['id' => $userId]);
+        if (! empty($existing)) return;
+
+        $username = trim((string) ($metadata['username'] ?? ''));
+        if ($username === '') {
+            $username = Str::of($email)->before('@')->slug('_')->limit(30, '')->toString();
+        }
+        if ($username === '') {
+            $username = 'user_' . Str::lower(Str::random(8));
+        }
+
+        $this->supabase->insert('profiles', [
+            'id' => $userId,
+            'username' => $username,
+            'full_name' => trim((string) ($metadata['full_name'] ?? $username)),
+            'role' => 'user',
+            'is_premium' => false,
+            'is_banned' => false,
+            'social_links' => new \stdClass(),
+            'cooking_level' => 'pemula',
+            'total_followers' => 0,
+            'total_following' => 0,
+            'total_recipes' => 0,
+            'total_bookmarks' => 0,
+        ]);
+
+        $settings = $this->settingsService->defaults();
+        $settings['user_id'] = $userId;
+        $this->supabase->insert('user_settings', $settings);
     }
 }

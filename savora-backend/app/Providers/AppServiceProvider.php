@@ -41,11 +41,28 @@ class AppServiceProvider extends ServiceProvider
                 $userId = session('user_id');
                 if ($userId) {
                     $supabase       = app(SupabaseService::class);
-                    $appUnreadCount = count($supabase->select(
+                    $notifications = $supabase->select(
                         'notifications',
-                        ['id'],
-                        ['user_id' => $userId, 'is_read' => false]
-                    ));
+                        ['type', 'related_entity_type', 'related_entity_id', 'is_read'],
+                        ['user_id' => $userId],
+                        ['order' => 'created_at.desc', 'limit' => 50]
+                    );
+
+                    $seen = [];
+                    foreach ($notifications as $notification) {
+                        $key = implode('|', [
+                            $notification['type'] ?? '',
+                            $notification['related_entity_type'] ?? '',
+                            $notification['related_entity_id'] ?? '',
+                        ]);
+
+                        if (isset($seen[$key])) continue;
+                        $seen[$key] = true;
+
+                        if (! ($notification['is_read'] ?? false)) {
+                            $appUnreadCount++;
+                        }
+                    }
                 }
             } catch (\Exception) {}
 

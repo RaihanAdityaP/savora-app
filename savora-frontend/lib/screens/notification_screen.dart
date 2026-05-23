@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/app_settings_service.dart';
+import '../services/user_client.dart';
 import '../widgets/theme.dart';
 import 'profile_screen.dart';
 import 'recipes/detail_screen.dart';
@@ -95,7 +96,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Row(children: [
-            Icon(Icons.check_circle, color: Colors.white),
+            const Icon(Icons.check_circle, color: Colors.white),
             const SizedBox(width: 8),
             Text(_t('All notifications marked as read',
                 'Semua notifikasi ditandai sudah dibaca'))
@@ -215,6 +216,40 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
+  Future<void> _respondToFollowRequest(String requestId, bool accept) async {
+    final userId = ApiService.currentUserId;
+    if (userId == null || userId.isEmpty) return;
+
+    try {
+      final success = await UserClient.respondToFollowRequest(
+        targetUserId: userId,
+        requestId: requestId,
+        accept: accept,
+      );
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          success
+              ? accept
+                  ? _t('Follow request accepted', 'Permintaan follow diterima')
+                  : _t('Follow request rejected', 'Permintaan follow ditolak')
+              : _t('Failed to respond', 'Gagal memproses permintaan'),
+        ),
+        backgroundColor: success ? Colors.green.shade600 : Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+
+      if (success) _loadNotifications();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
   void _handleNotificationTap(Map<String, dynamic> notification) {
     if (!notification['is_read']) {
       _markAsRead(notification['id'].toString());
@@ -227,8 +262,12 @@ class _NotificationScreenState extends State<NotificationScreen>
 
     switch (type) {
       case 'new_follower':
+      case 'follow_request_approved':
+      case 'follow_request_rejected':
         Navigator.push(context,
             MaterialPageRoute(builder: (context) => ProfileScreen(userId: relatedId)));
+        break;
+      case 'follow_request':
         break;
       case 'new_recipe_from_following':
       case 'recipe_approved':
@@ -270,7 +309,12 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'recipe_rejected':
         return Colors.red.shade500;
       case 'new_follower':
+      case 'follow_request':
         return AppTheme.primaryTeal;
+      case 'follow_request_approved':
+        return Colors.green.shade500;
+      case 'follow_request_rejected':
+        return Colors.red.shade500;
       case 'new_recipe_from_following':
         return AppTheme.primaryOrange;
       case 'new_like':
@@ -292,6 +336,12 @@ class _NotificationScreenState extends State<NotificationScreen>
         return Icons.cancel_rounded;
       case 'new_follower':
         return Icons.person_add_rounded;
+      case 'follow_request':
+        return Icons.person_add_alt_1_rounded;
+      case 'follow_request_approved':
+        return Icons.verified_user_rounded;
+      case 'follow_request_rejected':
+        return Icons.person_remove_rounded;
       case 'new_recipe_from_following':
         return Icons.restaurant_rounded;
       case 'new_like':
@@ -305,13 +355,200 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
   }
 
+  /// Builds popup menu items. "Mark all as read" hanya muncul kalau ada unread.
+  List<PopupMenuEntry<String>> _buildMenuItems(BuildContext context) {
+    final items = <PopupMenuEntry<String>>[];
+
+    if (_unreadCount > 0) {
+      items.add(PopupMenuItem(
+        value: 'read_all',
+        child: Row(children: [
+          Icon(Icons.done_all_rounded, color: AppTheme.primaryTeal, size: 20),
+          const SizedBox(width: 10),
+          Text(
+            _t('Mark All as Read', 'Tandai Semua Dibaca'),
+            style: TextStyle(color: AppTheme.primaryTeal),
+          ),
+        ]),
+      ));
+      items.add(const PopupMenuDivider());
+    }
+
+    items.add(PopupMenuItem(
+      value: 'delete_all',
+      child: Row(children: [
+        const Icon(Icons.delete_sweep_rounded, color: Colors.red, size: 20),
+        const SizedBox(width: 10),
+        Text(_t('Delete All', 'Hapus Semua')),
+      ]),
+    ));
+
+    return items;
+  }
+
+  String _notificationTitle(Map<String, dynamic> notification) {
+    final type = notification['type']?.toString() ?? 'system';
+    switch (type) {
+      case 'recipe_approved':
+        return _t('Recipe Approved', 'Resep Disetujui');
+      case 'recipe_rejected':
+        return _t('Recipe Rejected', 'Resep Ditolak');
+      case 'new_follower':
+        return _t('New Follower', 'Follower Baru');
+      case 'follow_request':
+        return _t('Follow Request', 'Permintaan Follow');
+      case 'follow_request_approved':
+        return _t('Follow Request Accepted', 'Permintaan Follow Diterima');
+      case 'follow_request_rejected':
+        return _t('Follow Request Rejected', 'Permintaan Follow Ditolak');
+      case 'new_like':
+        return _t('New Like', 'Like Baru');
+      case 'new_comment':
+        return _t('New Comment', 'Komentar Baru');
+      case 'new_recipe_from_following':
+        return _t('New Recipe', 'Resep Baru');
+      default:
+        return notification['title']?.toString() ?? _t('Notification', 'Notifikasi');
+    }
+  }
+
+  String _notificationMessage(Map<String, dynamic> notification) {
+    final type = notification['type']?.toString() ?? 'system';
+    final raw = notification['message']?.toString() ?? '';
+
+    switch (type) {
+      case 'recipe_approved':
+        final title = _quotedValue(raw);
+        return title == null
+            ? _t(
+                'Your recipe was approved and published.',
+                'Resep Anda telah disetujui dan dipublikasikan.',
+              )
+            : _t(
+                "Your recipe '$title' was approved and published.",
+                "Resep '$title' Anda telah disetujui dan dipublikasikan.",
+              );
+      case 'recipe_rejected':
+        final title = _quotedValue(raw);
+        final reason = _reasonFromMessage(raw);
+        final reasonSuffix = reason == null ? '' : _t(' Reason: $reason', ' Alasan: $reason');
+        return title == null
+            ? _t(
+                'Your recipe was rejected.$reasonSuffix',
+                'Resep Anda ditolak.$reasonSuffix',
+              )
+            : _t(
+                "Your recipe '$title' was rejected.$reasonSuffix",
+                "Resep '$title' ditolak.$reasonSuffix",
+              );
+      case 'new_follower':
+        final actor = _actorFromMessage(
+          raw,
+          englishMarkers: [' started following you!', ' started following you'],
+          indonesianMarkers: [' mulai mengikuti Anda!', ' mulai mengikuti Anda'],
+        );
+        return _t('$actor started following you!', '$actor mulai mengikuti Anda!');
+      case 'follow_request':
+        final requesterName =
+            notification['follow_requester_name']?.toString().trim().isNotEmpty == true
+            ? notification['follow_requester_name'].toString().trim()
+            : _followRequesterName(raw);
+        return _t(
+          '$requesterName wants to follow your private account.',
+          '$requesterName ingin mengikuti akun private Anda.',
+        );
+      case 'follow_request_approved':
+        return _t(
+          'Your follow request was accepted.',
+          'Permintaan follow Anda diterima.',
+        );
+      case 'follow_request_rejected':
+        return _t(
+          'Your follow request was rejected.',
+          'Permintaan follow Anda ditolak.',
+        );
+      case 'new_like':
+        final actor = _actorFromMessage(
+          raw,
+          englishMarkers: [' liked your recipe', ' liked'],
+          indonesianMarkers: [' menyukai resep', ' menyukai'],
+        );
+        final title = _quotedValue(raw);
+        return title == null
+            ? _t('$actor liked your recipe.', '$actor menyukai resep Anda.')
+            : _t(
+                "$actor liked your recipe '$title'.",
+                "$actor menyukai resep '$title'.",
+              );
+      case 'new_comment':
+        final actor = _actorFromMessage(
+          raw,
+          englishMarkers: [' commented on your recipe', ' commented'],
+          indonesianMarkers: [' berkomentar di resep', ' berkomentar'],
+        );
+        final title = _quotedValue(raw);
+        return title == null
+            ? _t('$actor commented on your recipe.', '$actor berkomentar di resep Anda.')
+            : _t(
+                "$actor commented on your recipe '$title'.",
+                "$actor berkomentar di resep '$title'.",
+              );
+      default:
+        return raw;
+    }
+  }
+
+  String? _quotedValue(String message) {
+    final match = RegExp("'([^']+)'").firstMatch(message);
+    return match?.group(1);
+  }
+
+  String? _reasonFromMessage(String message) {
+    for (final marker in ['Reason:', 'Alasan:']) {
+      if (message.contains(marker)) {
+        final reason = message.split(marker).last.trim();
+        if (reason.isNotEmpty) return reason;
+      }
+    }
+    return null;
+  }
+
+  String _actorFromMessage(
+    String message, {
+    required List<String> englishMarkers,
+    required List<String> indonesianMarkers,
+  }) {
+    for (final marker in [...englishMarkers, ...indonesianMarkers]) {
+      if (message.contains(marker)) {
+        final actor = message.split(marker).first.trim();
+        if (actor.isNotEmpty) return actor;
+      }
+    }
+    return _t('Someone', 'Seseorang');
+  }
+
+  String _followRequesterName(String message) {
+    const idMarker = ' ingin mengikuti akun private Anda.';
+    const enMarker = ' wants to follow your private account.';
+
+    if (message.contains(idMarker)) {
+      final name = message.split(idMarker).first.trim();
+      if (name.isNotEmpty) return name;
+    }
+    if (message.contains(enMarker)) {
+      final name = message.split(enMarker).first.trim();
+      if (name.isNotEmpty) return name;
+    }
+    return _t('Someone', 'Seseorang');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       body: CustomScrollView(
         slivers: [
-          // ── TRANSPARENT SLIVER APP BAR ──
+          // ── SLIVER APP BAR ──
           SliverAppBar(
             expandedHeight: 140,
             floating: false,
@@ -334,22 +571,6 @@ class _NotificationScreenState extends State<NotificationScreen>
               ),
             ),
             actions: [
-              if (_unreadCount > 0)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: AppTheme.cardShadow),
-                    child: IconButton(
-                        icon: Icon(Icons.done_all_rounded,
-                            color: AppTheme.primaryTeal),
-                        onPressed: _markAllAsRead,
-                        tooltip: _t('Mark all as read',
-                            'Tandai semua sudah dibaca')),
-                  ),
-                ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
@@ -361,20 +582,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                     icon: Icon(Icons.more_vert_rounded,
                         color: AppTheme.textPrimary),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(14)),
                     onSelected: (value) {
+                      if (value == 'read_all') _markAllAsRead();
                       if (value == 'delete_all') _deleteAllNotifications();
                     },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                          value: 'delete_all',
-                          child: Row(children: [
-                            Icon(Icons.delete_sweep_rounded,
-                                color: Colors.red, size: 20),
-                            const SizedBox(width: 8),
-                            Text(_t('Delete All', 'Hapus Semua'))
-                          ])),
-                    ],
+                    itemBuilder: _buildMenuItems,
                   ),
                 ),
               ),
@@ -444,6 +657,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               ),
             ),
           ),
+
           _isLoading
               ? const SliverFillRemaining(
                   child: Center(
@@ -515,6 +729,15 @@ class _NotificationScreenState extends State<NotificationScreen>
     final type = notification['type'] ?? 'system';
     final color = _getNotificationColor(type);
     final icon = _getNotificationIcon(type);
+    final relatedId = _normalizeRelatedId(notification['related_entity_id']);
+
+    // Follow request: tampil tombol selama statusnya pending (belum di-accept/reject),
+    // tidak terikat is_read karena user mungkin sudah baca tapi belum merespons
+    final followRequestStatus =
+        notification['follow_request_status']?.toString() ?? '';
+    final showFollowRequestActions = type == 'follow_request' &&
+        relatedId.isNotEmpty &&
+        followRequestStatus == 'pending';
 
     return Dismissible(
       key: Key(notification['id'].toString()),
@@ -525,7 +748,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(children: [
-            Icon(Icons.delete_rounded, color: Colors.red, size: 24),
+            const Icon(Icons.delete_rounded, color: Colors.red, size: 24),
             const SizedBox(width: 8),
             Text(_t('Delete Notification', 'Hapus Notifikasi'))
           ]),
@@ -613,6 +836,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Icon box
                     Container(
                       width: 56,
                       height: 56,
@@ -632,11 +856,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Title row
                           Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  notification['title'] ?? 'Notifikasi',
+                                  _notificationTitle(notification),
                                   style: TextStyle(
                                       fontWeight: isRead
                                           ? FontWeight.w600
@@ -647,18 +872,15 @@ class _NotificationScreenState extends State<NotificationScreen>
                               ),
                               if (!isRead)
                                 Container(
-                                  width: 12,
-                                  height: 12,
+                                  width: 10,
+                                  height: 10,
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(colors: [
-                                      color,
-                                      color.withValues(alpha: 0.7)
-                                    ]),
+                                    color: color,
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                          color: color.withValues(alpha: 0.5),
-                                          blurRadius: 4,
+                                          color: color.withValues(alpha: 0.45),
+                                          blurRadius: 5,
                                           spreadRadius: 1)
                                     ],
                                   ),
@@ -666,10 +888,63 @@ class _NotificationScreenState extends State<NotificationScreen>
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(notification['message'] ?? '',
+                          // Message
+                          Text(_notificationMessage(notification),
                               style: AppTheme.bodyMedium.copyWith(
                                   color: AppTheme.textSecondary, height: 1.4)),
+
+                          // ── FOLLOW REQUEST ACTIONS ──
+                          if (showFollowRequestActions) ...[
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _respondToFollowRequest(
+                                        relatedId, false),
+                                    icon: Icon(Icons.close_rounded,
+                                        size: 15,
+                                        color: Colors.red.shade600),
+                                    label: Text(_t('Reject', 'Tolak')),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red.shade600,
+                                      side: BorderSide(
+                                          color: Colors.red.shade200,
+                                          width: 1.5),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _respondToFollowRequest(
+                                        relatedId, true),
+                                    icon: const Icon(Icons.check_rounded,
+                                        size: 15, color: Colors.white),
+                                    label: Text(_t('Accept', 'Terima')),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryTeal,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+
                           const SizedBox(height: 10),
+                          // Timestamp
                           Row(
                             children: [
                               Icon(Icons.access_time_rounded,

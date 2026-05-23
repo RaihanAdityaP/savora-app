@@ -215,6 +215,9 @@ class NotificationService
             'recipe_approved'           => ['route' => 'recipe',  'id' => $entityId],
             'recipe_rejected'           => ['route' => 'recipe',  'id' => $entityId],
             'new_follower'              => ['route' => 'profile', 'id' => $entityId],
+            'follow_request'            => ['route' => 'notifications', 'id' => $entityId],
+            'follow_request_approved'   => ['route' => 'profile', 'id' => $entityId],
+            'follow_request_rejected'   => ['route' => 'profile', 'id' => $entityId],
             'new_comment'               => ['route' => 'recipe',  'id' => $entityId],
             'new_like'                  => ['route' => 'recipe',  'id' => $entityId],
         ];

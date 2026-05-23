@@ -4,16 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseAuthService;
+use App\Services\SupabaseService;
+use App\Services\UserSettingsService;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
     private $supabaseAuth;
 
-    public function __construct(SupabaseAuthService $supabaseAuth)
-    {
+    public function __construct(
+        SupabaseAuthService $supabaseAuth,
+        private SupabaseService $supabase,
+        private UserSettingsService $settingsService,
+    ) {
         $this->supabaseAuth = $supabaseAuth;
     }
 
@@ -44,6 +50,12 @@ class AuthController extends Controller
                 'message' => 'Invalid or expired token',
             ], 401);
         }
+
+        $this->ensureProfileForAuthUser(
+            $userData['user_id'],
+            (string) ($userData['email'] ?? ''),
+            $userData['metadata'] ?? []
+        );
 
         // Get or create Laravel user
         $user = User::firstOrCreate(
@@ -101,5 +113,39 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Logged out successfully',
         ]);
+    }
+
+    private function ensureProfileForAuthUser(string $userId, string $email, array $metadata = []): void
+    {
+        $existing = $this->supabase->select('profiles', ['id'], ['id' => $userId]);
+        if (! empty($existing)) return;
+
+        $username = trim((string) ($metadata['username'] ?? ''));
+        if ($username === '') {
+            $username = Str::of($email)->before('@')->slug('_')->limit(30, '')->toString();
+        }
+        if ($username === '') {
+            $username = 'user_' . Str::lower(Str::random(8));
+        }
+
+        $this->supabase->insert('profiles', [
+            'id' => $userId,
+            'username' => $username,
+            'full_name' => trim((string) ($metadata['full_name'] ?? $username)),
+            'avatar_url' => $metadata['avatar_url'] ?? $metadata['picture'] ?? null,
+            'role' => 'user',
+            'is_premium' => false,
+            'is_banned' => false,
+            'social_links' => new \stdClass(),
+            'cooking_level' => 'pemula',
+            'total_followers' => 0,
+            'total_following' => 0,
+            'total_recipes' => 0,
+            'total_bookmarks' => 0,
+        ]);
+
+        $settings = $this->settingsService->defaults();
+        $settings['user_id'] = $userId;
+        $this->supabase->insert('user_settings', $settings);
     }
 }

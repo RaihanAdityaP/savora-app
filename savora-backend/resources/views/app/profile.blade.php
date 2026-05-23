@@ -74,15 +74,18 @@
 <body>
 
     <x-unified-navigation
-        :avatar-url="$profile['avatar_url'] ?? null"
-        :unread-count="0"
-        :username="$profile['username'] ?? null"
+        :avatar-url="session('user_avatar') ?? null"
+        :unread-count="$appUnreadCount ?? 0"
+        :username="session('user_username') ?? null"
     />
 
     @php
         $isAdmin     = ($profile['role'] ?? 'user') === 'admin';
         $useGradient = $isOwnProfile && $isAdmin;
         $headerBg    = $useGradient ? 'var(--gradient-admin)' : 'var(--gradient-accent)';
+        $canViewProfile = $canViewProfile ?? true;
+        $followRequestStatus = $followRequestStatus ?? null;
+        $isFollowPending = $followRequestStatus === 'pending';
     @endphp
 
     <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
@@ -143,7 +146,7 @@
                 </div>
 
                 {{-- Bio --}}
-                @if(!empty($profile['bio']))
+                @if($canViewProfile && !empty($profile['bio']))
                     <div class="w-full rounded-2xl p-4 border mb-4 text-left"
                          style="background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.30)">
                         <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.95)">{{ $profile['bio'] }}</p>
@@ -156,15 +159,15 @@
                         <p class="text-xl font-bold leading-none text-white">{{ $recipesCount }}</p>
                         <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Recipes' : 'Resep' }}</p>
                     </div>
-                    <a href="{{ route('app.profile.followers', $profile['id']) }}" class="stat-card">
+                    <a href="{{ $canViewProfile ? route('app.profile.followers', $profile['id']) : '#' }}" class="stat-card">
                         <p class="text-xl font-bold leading-none text-white">{{ $followersCount }}</p>
                         <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Followers' : 'Pengikut' }}</p>
                     </a>
-                    <a href="{{ route('app.profile.following', $profile['id']) }}" class="stat-card">
+                    <a href="{{ $canViewProfile ? route('app.profile.following', $profile['id']) : '#' }}" class="stat-card">
                         <p class="text-xl font-bold leading-none text-white">{{ $followingCount }}</p>
                         <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Following' : 'Mengikuti' }}</p>
                     </a>
-                    <a href="{{ route('app.profile.likes', $profile['id']) }}" class="stat-card">
+                    <a href="{{ $canViewProfile ? route('app.profile.likes', $profile['id']) : '#' }}" class="stat-card">
                         <p class="text-xl font-bold leading-none text-white">{{ $likedCount ?? 0 }}</p>
                         <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">Like</p>
                     </a>
@@ -190,13 +193,19 @@
                                 <button type="submit" class="btn-outlined-savora w-full py-3 text-sm">
                                     {{ $isEnglish ? 'Unfollow' : 'Berhenti Mengikuti' }}
                                 </button>
+                            @elseif($isFollowPending)
+                                <button type="button" disabled
+                                        class="w-full py-3 font-bold rounded-2xl text-sm opacity-80 cursor-not-allowed"
+                                        style="background: rgba(255,255,255,0.85); color: var(--color-text-secondary);">
+                                    {{ $isEnglish ? 'Requested' : 'Diminta' }}
+                                </button>
                             @else
                                 <button type="submit"
                                         class="w-full py-3 font-bold rounded-2xl text-sm transition-all"
                                         style="background: #ffffff; color: var(--color-primary-coral);"
                                         onmouseover="this.style.opacity='0.90'"
                                         onmouseout="this.style.opacity='1'">
-                                    {{ $isEnglish ? 'Follow' : 'Ikuti' }}
+                                    {{ $canViewProfile ? ($isEnglish ? 'Follow' : 'Ikuti') : ($isEnglish ? 'Request Follow' : 'Minta Follow') }}
                                 </button>
                             @endif
                         </form>
@@ -218,6 +227,24 @@
             </div>
         @endif
 
+        @if(!$canViewProfile && !$isOwnProfile)
+            <div class="card-savora p-8 text-center">
+                <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                     style="background: var(--color-chip-bg); color: var(--color-primary-coral);">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2h-1V7a5 5 0 00-10 0v4H6a2 2 0 00-2 2v6a2 2 0 002 2zm3-10V7a3 3 0 116 0v4H9z"/>
+                    </svg>
+                </div>
+                <h2 class="text-lg font-bold mb-2" style="color: var(--color-text-primary)">
+                    {{ $isEnglish ? 'Private Profile' : 'Profil Private' }}
+                </h2>
+                <p class="text-sm" style="color: var(--color-text-secondary)">
+                    {{ $isFollowPending
+                        ? ($isEnglish ? 'Your follow request is waiting for approval.' : 'Permintaan follow Anda menunggu persetujuan.')
+                        : ($isEnglish ? 'Send a follow request to view this profile.' : 'Kirim permintaan follow untuk melihat profil ini.') }}
+                </p>
+            </div>
+        @else
         {{-- ===================== Recipes Section ===================== --}}
         <div class="card-savora p-6">
             <div class="flex items-center gap-3 mb-5">
@@ -284,6 +311,7 @@
                 </x-app-theme.empty-state>
             @endforelse
         </div>
+        @endif
 
     </div>
 </body>

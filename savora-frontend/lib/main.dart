@@ -138,14 +138,14 @@ class _DeepLinkParser {
         if (id.isNotEmpty) return _DeepLinkTarget.recipe(id);
       }
 
-      // /profile/{id}
-      if (segments.length >= 2 && segments[0] == 'profile') {
+      // /p/{id} adalah share link profile; /profile/{id} tetap diterima sebagai fallback lama.
+      if (segments.length >= 2 && (segments[0] == 'p' || segments[0] == 'profile')) {
         final id = segments[1];
         if (id.isNotEmpty) return _DeepLinkTarget.profile(id);
       }
 
-      // /search
-      if (segments.isNotEmpty && segments[0] == 'search') {
+      // /s adalah app-link search; /search tetap diterima sebagai fallback lama.
+      if (segments.isNotEmpty && (segments[0] == 's' || segments[0] == 'search')) {
         return _DeepLinkTarget.search();
       }
     }

@@ -170,14 +170,14 @@ class CommentController extends Controller
 
                     $commenterName = !empty($commenterData) 
                         ? ($commenterData[0]['full_name'] ?? $commenterData[0]['username'])
-                        : 'Seseorang';
+                        : 'Someone';
 
                     // Insert notification
                     $this->supabase->insert('notifications', [
                         'user_id' => $recipeOwnerId,
                         'type' => 'new_comment',
-                        'title' => 'Komentar Baru',
-                        'message' => "{$commenterName} berkomentar di resep '{$recipeTitle}'",
+                        'title' => 'New Comment',
+                        'message' => "{$commenterName} commented on your recipe '{$recipeTitle}'",
                         'related_entity_type' => 'recipe',
                         'related_entity_id' => $request->input('recipe_id'),
                     ]);
@@ -198,8 +198,8 @@ class CommentController extends Controller
                         try {
                             $this->notification->sendToMultipleDevices(
                                 $tokens,
-                                'Komentar Baru',
-                                "{$commenterName} berkomentar di resep Anda",
+                                'New Comment',
+                                "{$commenterName} commented on your recipe",
                                 $payload
                             );
                         } catch (Exception $e) {

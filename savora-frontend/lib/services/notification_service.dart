@@ -110,7 +110,7 @@ class NotificationService {
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'savora_channel',
         'Savora Notifications',
-        description: 'Notifikasi dari aplikasi Savora',
+        description: 'Notifications from Savora',
         importance: Importance.max,
         enableVibration: true,
         playSound: true,
@@ -260,7 +260,7 @@ class NotificationService {
           AndroidNotificationDetails(
         'savora_channel',
         'Savora Notifications',
-        channelDescription: 'Notifikasi dari aplikasi Savora',
+        channelDescription: 'Notifications from Savora',
         importance: Importance.max,
         priority: Priority.high,
         showWhen: true,
@@ -291,7 +291,7 @@ class NotificationService {
                 ),
                 AndroidNotificationAction(
                   actionReplyRecipe,
-                  'Balas',
+                  'Reply',
                   showsUserInterface: true,
                   cancelNotification: true,
                 ),
@@ -358,7 +358,7 @@ class NotificationService {
     const channel = AndroidNotificationChannel(
       'savora_channel',
       'Savora Notifications',
-      description: 'Notifikasi dari aplikasi Savora',
+      description: 'Notifications from Savora',
       importance: Importance.max,
       enableVibration: true,
       playSound: true,
@@ -374,7 +374,7 @@ class NotificationService {
     final androidDetails = AndroidNotificationDetails(
       'savora_channel',
       'Savora Notifications',
-      channelDescription: 'Notifikasi dari aplikasi Savora',
+      channelDescription: 'Notifications from Savora',
       importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
@@ -401,7 +401,7 @@ class NotificationService {
               ),
               AndroidNotificationAction(
                 actionReplyRecipe,
-                'Balas',
+                'Reply',
                 showsUserInterface: true,
                 cancelNotification: true,
               ),

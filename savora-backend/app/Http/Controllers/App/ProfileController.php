@@ -36,10 +36,10 @@ class ProfileController extends Controller
 
             $profile = $profiles[0];
             $targetSettings = $this->settingsService->get($targetId);
-
-            if (! $this->canViewProfile($targetId, $currentUserId, $targetSettings)) {
-                abort(403, 'Profil ini tidak publik.');
-            }
+            $canViewProfile = $this->canViewProfile($targetId, $currentUserId, $targetSettings);
+            $followRequestStatus = $currentUserId
+                ? $this->resolveFollowRequestStatus($currentUserId, $targetId)
+                : null;
 
             // Stats
             $recipesCount  = 0;
@@ -47,28 +47,30 @@ class ProfileController extends Controller
             $followingCount = 0;
             $likedCount = 0;
 
-            try { $recipesCount  = count($this->supabase->select('recipes', ['id'], ['user_id' => $targetId, 'status' => 'approved'])); } catch (Exception) {}
-            try { $likedCount = $this->supabase->count('recipe_likes', ['user_id' => $targetId]); } catch (Exception) {}
-            try {
-                $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $targetId]);
-                $followersCount = collect($followers)
-                    ->pluck('follower_id')
-                    ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $targetId)
-                    ->unique()
-                    ->count();
-            } catch (Exception) {}
-            try {
-                $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $targetId]);
-                $followingCount = collect($following)
-                    ->pluck('following_id')
-                    ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $targetId)
-                    ->unique()
-                    ->count();
-            } catch (Exception) {}
+            if ($canViewProfile) {
+                try { $recipesCount  = count($this->supabase->select('recipes', ['id'], ['user_id' => $targetId, 'status' => 'approved'])); } catch (Exception) {}
+                try { $likedCount = $this->supabase->count('recipe_likes', ['user_id' => $targetId]); } catch (Exception) {}
+                try {
+                    $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $targetId]);
+                    $followersCount = collect($followers)
+                        ->pluck('follower_id')
+                        ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $targetId)
+                        ->unique()
+                        ->count();
+                } catch (Exception) {}
+                try {
+                    $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $targetId]);
+                    $followingCount = collect($following)
+                        ->pluck('following_id')
+                        ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $targetId)
+                        ->unique()
+                        ->count();
+                } catch (Exception) {}
+            }
 
             // Resep user
             $recipes = [];
-            try {
+            if ($canViewProfile) try {
                 $recipes = $this->supabase->select(
                     'recipes',
                     ['*', 'categories(name)', 'recipe_tags(tags(id, name))'],
@@ -76,10 +78,10 @@ class ProfileController extends Controller
                     ['order' => 'created_at.desc', 'limit' => 20]
                 );
             } catch (Exception) {}
-            $likedRecipes = $this->likedRecipesForUser($targetId, 20);
+            $likedRecipes = $canViewProfile ? $this->likedRecipesForUser($targetId, 20) : [];
 
             // Follow status
-            $isFollowing = false;
+            $isFollowing = $followRequestStatus === 'following';
             if (! $isOwnProfile && $currentUserId) {
                 try {
                     $check = $this->supabase->select('follows', ['id'], [
@@ -93,7 +95,7 @@ class ProfileController extends Controller
             return view('app.profile', compact(
                 'profile', 'recipes', 'isOwnProfile',
                 'recipesCount', 'followersCount', 'followingCount', 'likedCount', 'likedRecipes',
-                'isFollowing', 'currentUserId'
+                'isFollowing', 'currentUserId', 'canViewProfile', 'followRequestStatus'
             ));
 
         } catch (Exception $e) {
@@ -190,7 +192,9 @@ class ProfileController extends Controller
     {
         try {
             $currentUserId = session('user_id');
-            if ($currentUserId === $userId) return back()->with('error', 'Tidak bisa follow diri sendiri.');
+            if ($currentUserId === $userId) {
+                return back()->with('error', $this->tr('You cannot follow yourself.', 'Tidak bisa follow diri sendiri.'));
+            }
 
             $existing = $this->supabase->select('follows', ['id'], [
                 'follower_id'  => $currentUserId,
@@ -198,29 +202,62 @@ class ProfileController extends Controller
             ]);
 
             if (empty($existing)) {
+                if (! $this->settingsService->enabled($userId, 'profile_public')) {
+                    $pending = $this->supabase->select('follow_requests', ['id'], [
+                        'requester_id' => $currentUserId,
+                        'target_id' => $userId,
+                        'status' => 'pending',
+                    ]);
+
+                    if (empty($pending)) {
+                        $requestRows = $this->supabase->insert('follow_requests', [
+                            'requester_id' => $currentUserId,
+                            'target_id' => $userId,
+                            'status' => 'pending',
+                        ]);
+                        $requestId = $requestRows[0]['id'] ?? '';
+
+                        if ($this->settingsService->enabled($userId, 'notify_follows')) {
+                            $actorName = session('user_username', 'Someone');
+                            $this->supabase->insert('notifications', [
+                                'user_id'             => $userId,
+                                'type'                => 'follow_request',
+                                'title'               => 'Follow Request',
+                                'message'             => "{$actorName} wants to follow your private account.",
+                                'related_entity_type' => 'follow_request',
+                                'related_entity_id'   => $requestId,
+                            ]);
+
+                            $this->sendPushToUser($userId, 'Follow Request', "{$actorName} wants to follow your private account.", 'follow_request', $requestId);
+                        }
+                    }
+
+                    return back()->with('status', $this->tr('Follow request sent.', 'Permintaan follow dikirim.'));
+                }
+
                 $this->supabase->insert('follows', [
                     'follower_id'  => $currentUserId,
                     'following_id' => $userId,
                 ]);
 
                 if ($this->settingsService->enabled($userId, 'notify_follows')) {
-                    $actorName = session('user_username', 'Seseorang');
+                    $actorName = session('user_username', 'Someone');
                     $this->supabase->insert('notifications', [
                         'user_id'             => $userId,
                         'type'                => 'new_follower',
-                        'title'               => 'Follower Baru',
-                        'message'             => "{$actorName} mulai mengikuti Anda!",
+                        'title'               => 'New Follower',
+                        'message'             => "{$actorName} started following you!",
                         'related_entity_type' => 'profile',
                         'related_entity_id'   => $currentUserId,
                     ]);
 
-                    $this->sendPushToUser($userId, 'Follower Baru', "{$actorName} mulai mengikuti Anda!", 'new_follower', $currentUserId);
+                    $this->sendPushToUser($userId, 'New Follower', "{$actorName} started following you!", 'new_follower', $currentUserId);
                 }
             }
 
-            return back()->with('status', 'Berhasil mengikuti.');
+            return back()->with('status', $this->tr('Followed successfully.', 'Berhasil mengikuti.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -233,10 +270,18 @@ class ProfileController extends Controller
                 'follower_id'  => $currentUserId,
                 'following_id' => $userId,
             ]);
+            $this->supabase->update('follow_requests', [
+                'status' => 'rejected',
+                'responded_at' => now()->toDateTimeString(),
+            ], [
+                'requester_id' => $currentUserId,
+                'target_id' => $userId,
+                'status' => 'pending',
+            ]);
 
-            return back()->with('status', 'Berhenti mengikuti.');
+            return back()->with('status', $this->tr('Unfollowed.', 'Berhenti mengikuti.'));
         } catch (Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }
     }
 
@@ -344,6 +389,26 @@ class ProfileController extends Controller
         }
     }
 
+    private function resolveFollowRequestStatus(string $requesterId, string $targetId): ?string
+    {
+        if ($requesterId === $targetId) return null;
+        if ($this->isFollower($requesterId, $targetId)) return 'following';
+
+        try {
+            $requests = $this->supabase->select('follow_requests', ['status'], [
+                'requester_id' => $requesterId,
+                'target_id' => $targetId,
+            ], [
+                'order' => 'created_at.desc',
+                'limit' => 1,
+            ]);
+
+            return $requests[0]['status'] ?? null;
+        } catch (Exception) {
+            return null;
+        }
+    }
+
     private function sendPushToUser(string $userId, string $title, string $message, string $type, string $entityId): void
     {
         try {
@@ -363,5 +428,10 @@ class ProfileController extends Controller
         } catch (Exception $e) {
             \Log::warning('Failed to send push notification: ' . $e->getMessage());
         }
+    }
+
+    private function tr(string $english, string $indonesian): string
+    {
+        return session('user_language', 'en') === 'en' ? $english : $indonesian;
     }
 }

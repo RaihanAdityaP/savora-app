@@ -138,9 +138,13 @@ Route::prefix('users')->group(function () {
     // Protected read/write
     Route::middleware(['auth:sanctum', 'throttle:20,1'])->group(function () {
         Route::get('{id}/is-following', [UserController::class, 'isFollowing']);
+        Route::get('{id}/follow-request-status', [UserController::class, 'followRequestStatus']);
+        Route::get('{id}/follow-requests', [UserController::class, 'pendingFollowRequests']);
         Route::put('{id}', [UserController::class, 'update']);
         Route::post('{id}/follow', [UserController::class, 'follow']);
         Route::post('{id}/unfollow', [UserController::class, 'unfollow']);
+        Route::post('{id}/follow-requests/{requestId}/accept', [UserController::class, 'acceptFollowRequest']);
+        Route::post('{id}/follow-requests/{requestId}/reject', [UserController::class, 'rejectFollowRequest']);
     });
 
     // Admin only

@@ -37,6 +37,34 @@ class NotificationController extends Controller
                 ['order' => 'created_at.desc', 'limit' => 50]
             );
 
+            foreach ($notifications as $index => $notification) {
+                if (
+                    ($notification['type'] ?? '') !== 'follow_request' ||
+                    empty($notification['related_entity_id'])
+                ) {
+                    continue;
+                }
+
+                try {
+                    $requests = $this->supabase->select('follow_requests', [
+                        'status',
+                        'profiles!follow_requests_requester_id_fkey(username, full_name)',
+                    ], [
+                        'id' => $notification['related_entity_id'],
+                        'target_id' => $userId,
+                    ], ['limit' => 1]);
+
+                    $requester = $requests[0]['profiles'] ?? null;
+                    $notifications[$index]['follow_request_status'] = $requests[0]['status'] ?? null;
+                    $notifications[$index]['follow_requester_name'] = $requester['username']
+                        ?? $requester['full_name']
+                        ?? null;
+                } catch (Exception) {
+                    $notifications[$index]['follow_request_status'] = null;
+                    $notifications[$index]['follow_requester_name'] = null;
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $notifications,
@@ -56,10 +84,28 @@ class NotificationController extends Controller
     public function markAsRead($id)
     {
         try {
-            $this->supabase->update('notifications', 
-                ['is_read' => true],
-                ['id' => $id]
-            );
+            $userId = $this->getSupabaseUserIdFromRequest(request());
+            $notifications = $this->supabase->select('notifications', ['*'], [
+                'id' => $id,
+                'user_id' => $userId,
+            ], ['limit' => 1]);
+
+            if (! empty($notifications)) {
+                $notification = $notifications[0];
+                $filters = [
+                    'user_id' => $userId,
+                    'type' => $notification['type'] ?? 'system',
+                    'is_read' => false,
+                ];
+                $filters['related_entity_type'] = ($notification['related_entity_type'] ?? null) === null
+                    ? ['operator' => 'is', 'value' => null]
+                    : $notification['related_entity_type'];
+                $filters['related_entity_id'] = ($notification['related_entity_id'] ?? null) === null
+                    ? ['operator' => 'is', 'value' => null]
+                    : $notification['related_entity_id'];
+
+                $this->supabase->update('notifications', ['is_read' => true], $filters);
+            }
 
             return response()->json([
                 'success' => true,

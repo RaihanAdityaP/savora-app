@@ -50,6 +50,7 @@ class SupabaseAuthService
                 'email'   => $decoded->email ?? null,
                 'role'    => $decoded->role ?? 'authenticated',
                 'exp'     => $decoded->exp,
+                'metadata' => (array) ($decoded->user_metadata ?? []),
             ];
         } catch (Exception $e) {
             Log::error('HS256 JWT Validation Failed: ' . $e->getMessage());
@@ -79,6 +80,7 @@ class SupabaseAuthService
                 'email'   => $decoded->email ?? null,
                 'role'    => $decoded->role ?? 'authenticated',
                 'exp'     => $decoded->exp,
+                'metadata' => (array) ($decoded->user_metadata ?? []),
             ];
         } catch (Exception $e) {
             Log::error('RS256 JWT Validation Failed: ' . $e->getMessage());

@@ -189,7 +189,28 @@ class HomeController extends Controller
         // Get unread notifications count
         $unreadCount = 0;
         try {
-            $unreadCount = $this->supabase->count('notifications', ['user_id' => $userId, 'is_read' => false]);
+            $notifications = $this->supabase->select(
+                'notifications',
+                ['type', 'related_entity_type', 'related_entity_id', 'is_read'],
+                ['user_id' => $userId],
+                ['order' => 'created_at.desc', 'limit' => 50]
+            );
+
+            $seenNotifications = [];
+            foreach ($notifications as $notification) {
+                $key = implode('|', [
+                    $notification['type'] ?? '',
+                    $notification['related_entity_type'] ?? '',
+                    $notification['related_entity_id'] ?? '',
+                ]);
+
+                if (isset($seenNotifications[$key])) continue;
+                $seenNotifications[$key] = true;
+
+                if (! ($notification['is_read'] ?? false)) {
+                    $unreadCount++;
+                }
+            }
         } catch (Exception) {}
 
         return view('app.home', compact(

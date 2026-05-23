@@ -16,7 +16,7 @@
 <body class="min-h-screen" style="background: var(--color-bg-light);">
     <x-unified-navigation
         :avatar-url="session('user_avatar')"
-        :unread-count="0"
+        :unread-count="$appUnreadCount ?? 0"
         :username="session('user_username')"
     />
 

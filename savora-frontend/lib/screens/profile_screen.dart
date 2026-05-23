@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../services/app_settings_service.dart';
 import '../services/user_client.dart';
@@ -29,10 +30,13 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isLoading = true;
   bool _isUploadingImage = false;
   String? _avatarUrl;
+  String? _currentUserAvatarUrl;
   String _userRole = 'user';
   bool _isPremium = false;
   String? _currentUserId;
   bool _isOwnProfile = false;
+  bool _canViewProfile = true;
+  String? _followRequestStatus;
 
   bool _isFollowing = false;
   bool _isFollowLoading = false;
@@ -52,6 +56,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   bool get _useGradientHeader => false;
 
+  bool get _isFollowPending => _followRequestStatus == 'pending';
+
   List<Color> get _primaryGradient {
     if (_useGradientHeader) return AppTheme.getRoleGradient('admin');
     return [AppTheme.primaryCoral, AppTheme.primaryOrange];
@@ -65,6 +71,37 @@ class _ProfileScreenState extends State<ProfileScreen>
   Color get _secondaryColor {
     if (_useGradientHeader) return const Color(0xFFFFA500);
     return AppTheme.primaryOrange;
+  }
+
+  static const String _webBase = 'https://savora-app.up.railway.app';
+
+  String? _getProfileWebUrl() {
+    final targetUserId = widget.userId ?? _currentUserId;
+    if (targetUserId == null || targetUserId.isEmpty) return null;
+    return '$_webBase/p/$targetUserId';
+  }
+
+  Future<void> _shareProfile() async {
+    final url = _getProfileWebUrl();
+    if (url == null) {
+      _showSnackBar(
+        _t('Profile is not ready to share', 'Profil belum siap dibagikan'),
+        isError: true,
+      );
+      return;
+    }
+
+    final username = _usernameController.text.trim().isEmpty
+        ? _t('this profile', 'profil ini')
+        : '@${_usernameController.text.trim()}';
+
+    await SharePlus.instance.share(ShareParams(
+      text: _t(
+        'View $username on Savora: $url',
+        'Lihat $username di Savora: $url',
+      ),
+      subject: _t('Savora Profile', 'Profil Savora'),
+    ));
   }
 
   // ignore: unused_element
@@ -96,6 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         parent: _animationController, curve: Curves.easeOutCubic));
 
     _loadProfile();
+    _loadCurrentUserAvatar();
     _loadUserRecipes();
     if (!_isOwnProfile) _checkIfFollowing();
   }
@@ -123,8 +161,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           _fullNameController.text = profile['full_name'] ?? '';
           _bioController.text = profile['bio'] ?? '';
           _avatarUrl = profile['avatar_url'];
+          if (targetUserId == _currentUserId) {
+            _currentUserAvatarUrl = _avatarUrl;
+          }
           _userRole = 'user';
           _isPremium = profile['is_premium'] ?? false;
+          _canViewProfile = profile['can_view_profile'] != false;
+          _followRequestStatus = profile['follow_request_status']?.toString();
+          _isFollowing = _followRequestStatus == 'following';
           _followerCount =
               ((profile['followers_count'] ?? profile['total_followers'])
                           as num?)
@@ -148,6 +192,21 @@ class _ProfileScreenState extends State<ProfileScreen>
         _showSnackBar('${_t('Failed to load profile', 'Gagal memuat profil')}: $e', isError: true);
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _loadCurrentUserAvatar() async {
+    final userId = _currentUserId;
+    if (userId == null) return;
+
+    try {
+      final profile = await UserClient.getProfile(userId);
+      if (!mounted || profile == null) return;
+      setState(() {
+        _currentUserAvatarUrl = profile['avatar_url'];
+      });
+    } catch (e) {
+      debugPrint('Error loading current user avatar: $e');
     }
   }
 
@@ -179,7 +238,16 @@ class _ProfileScreenState extends State<ProfileScreen>
         targetUserId: widget.userId!,
         myUserId: _currentUserId!,
       );
-      if (mounted) setState(() => _isFollowing = isFollowing);
+      final requestStatus = await UserClient.followRequestStatus(
+        targetUserId: widget.userId!,
+        requesterId: _currentUserId!,
+      );
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing || requestStatus == 'following';
+          _followRequestStatus = requestStatus;
+        });
+      }
     } catch (e) {
       debugPrint('Error checking follow status: $e');
     }
@@ -196,17 +264,29 @@ class _ProfileScreenState extends State<ProfileScreen>
           followerId: _currentUserId!,
         );
         if (mounted && success) {
-          setState(() => _isFollowing = false);
+          setState(() {
+            _isFollowing = false;
+            _followRequestStatus = null;
+          });
           _showSnackBar(_t('Unfollowed', 'Berhenti mengikuti'), isError: false);
         }
       } else {
-        success = await UserClient.follow(
+        final status = await UserClient.followWithStatus(
           targetUserId: widget.userId!,
           followerId: _currentUserId!,
         );
+        success = status != null;
         if (mounted && success) {
-          setState(() => _isFollowing = true);
-          _showSnackBar(_t('Followed successfully', 'Berhasil mengikuti'), isError: false);
+          setState(() {
+            _followRequestStatus = status;
+            _isFollowing = status == 'following';
+          });
+          _showSnackBar(
+            status == 'pending'
+                ? _t('Follow request sent', 'Permintaan follow dikirim')
+                : _t('Followed successfully', 'Berhasil mengikuti'),
+            isError: false,
+          );
         }
       }
       await _loadProfile();
@@ -296,6 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         setState(() {
           _avatarUrl = updated?['avatar_url'] ?? _avatarUrl;
+          _currentUserAvatarUrl = _avatarUrl;
           _isUploadingImage = false;
         });
         if (updated != null) {
@@ -337,7 +418,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar: CustomAppBar(showBackButton: !_isOwnProfile),
+      appBar: CustomAppBar(
+        showBackButton: !_isOwnProfile,
+        userId: _currentUserId,
+      ),
       body: _isLoading
           ? _buildLoadingState()
           : FadeTransition(
@@ -355,7 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _isOwnProfile ? 4 : 0,
-        avatarUrl: _avatarUrl,
+        avatarUrl: _currentUserAvatarUrl ?? (_isOwnProfile ? _avatarUrl : null),
         onRefresh: _loadProfile,
       ),
     );
@@ -687,13 +771,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                   width: double.infinity,
                   height: 52,
                   decoration: BoxDecoration(
-                    gradient: _isFollowing
+                    gradient: (_isFollowing || _isFollowPending)
                         ? null
                         : LinearGradient(colors: _primaryGradient),
-                    color: _isFollowing ? AppTheme.subtleSurfaceColor : null,
+                    color: (_isFollowing || _isFollowPending)
+                        ? AppTheme.subtleSurfaceColor
+                        : null,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: _isFollowing
+                        color: (_isFollowing || _isFollowPending)
                             ? AppTheme.borderColor
                             : Colors.transparent,
                         width: 1.5),
@@ -709,7 +795,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: _isFollowLoading ? null : _toggleFollow,
+                      onTap: (_isFollowLoading || _isFollowPending)
+                          ? null
+                          : _toggleFollow,
                       borderRadius: BorderRadius.circular(16),
                       child: Center(
                         child: _isFollowLoading
@@ -718,7 +806,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 height: 24,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: _isFollowing
+                                    color: (_isFollowing || _isFollowPending)
                                         ? _primaryColor
                                         : Colors.white))
                             : Row(
@@ -727,8 +815,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   Icon(
                                     _isFollowing
                                         ? Icons.person_remove_rounded
-                                        : Icons.person_add_rounded,
-                                    color: _isFollowing
+                                        : _isFollowPending
+                                            ? Icons.hourglass_top_rounded
+                                            : Icons.person_add_rounded,
+                                    color: (_isFollowing || _isFollowPending)
                                         ? AppTheme.textSecondary
                                         : Colors.white,
                                     size: 20,
@@ -737,8 +827,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   Text(
                                     _isFollowing
                                         ? _t('Unfollow', 'Berhenti Mengikuti')
-                                        : _t('Follow', 'Ikuti'),
-                                    style: _isFollowing
+                                        : _isFollowPending
+                                            ? _t('Requested', 'Diminta')
+                                            : _canViewProfile
+                                                ? _t('Follow', 'Ikuti')
+                                                : _t('Request Follow', 'Minta Follow'),
+                                    style: (_isFollowing || _isFollowPending)
                                         ? TextStyle(
                                             color: AppTheme.textSecondary,
                                             fontSize: 15,
@@ -748,6 +842,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ],
                               ),
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _shareProfile,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _primaryColor,
+                      side: BorderSide(
+                        color: _primaryColor.withValues(alpha: 0.35),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.share_rounded),
+                    label: Text(
+                      _t('Share Profile', 'Bagikan Profil'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -767,6 +884,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                     label: Text(_t('Edit Profile', 'Edit Profil'), style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _shareProfile,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _primaryColor,
+                      side: BorderSide(
+                        color: _primaryColor.withValues(alpha: 0.35),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(Icons.share_rounded),
+                    label: Text(
+                      _t('Share Profile', 'Bagikan Profil'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
@@ -776,6 +916,30 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildProfileContent() {
+    if (!_canViewProfile && !_isOwnProfile) {
+      return SliverPadding(
+        padding: EdgeInsets.fromLTRB(20, _useGradientHeader ? 20 : 0, 20, 0),
+        sliver: SliverList(
+          delegate: SliverChildListDelegate([
+            AppTheme.buildEmptyState(
+              icon: Icons.lock_rounded,
+              title: _t('Private Profile', 'Profil Private'),
+              subtitle: _isFollowPending
+                  ? _t(
+                      'Your follow request is waiting for approval.',
+                      'Permintaan follow Anda menunggu persetujuan.',
+                    )
+                  : _t(
+                      'Send a follow request to view this profile.',
+                      'Kirim permintaan follow untuk melihat profil ini.',
+                    ),
+            ),
+            const SizedBox(height: 100),
+          ]),
+        ),
+      );
+    }
+
     return SliverPadding(
       padding: EdgeInsets.fromLTRB(20, _useGradientHeader ? 20 : 0, 20, 0),
       sliver: SliverList(
