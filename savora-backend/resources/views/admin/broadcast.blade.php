@@ -6,16 +6,10 @@
 @section('content')
 
 {{-- ── Alerts ── --}}
-@if(session('status'))
-<div class="al al-ok">
-  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-  {{ session('status') }}
-</div>
-@endif
-@if(session('error') || ($error ?? null))
+@if(($error ?? null) && !session('error'))
 <div class="al al-err">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-  {{ session('error') ?? $error }}
+  {{ $error }}
 </div>
 @endif
 

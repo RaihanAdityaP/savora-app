@@ -808,60 +808,13 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 20),
 
                     // Register link
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 22, vertical: 18),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            width: 2),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Do not have an account?',
-                              style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.95),
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500)),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (_) => const RegisterScreen())),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 18, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: AppTheme.primaryCoral
-                                          .withValues(alpha: 0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4))
-                                ],
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Register',
-                                      style: TextStyle(
-                                          color: AppTheme.primaryCoral,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold)),
-                                  SizedBox(width: 6),
-                                  Icon(Icons.arrow_forward_rounded,
-                                      color: AppTheme.primaryCoral,
-                                      size: 18),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                    _buildAuthSwitchCard(
+                      text: 'Do not have an account?',
+                      actionText: 'Register',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RegisterScreen(),
+                        ),
                       ),
                     ),
                   ],
@@ -952,6 +905,8 @@ class _LoginScreenState extends State<LoginScreen>
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.grey.shade50,
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade400),
           prefixIcon: Icon(icon, color: color, size: 22),
@@ -968,11 +923,85 @@ class _LoginScreenState extends State<LoginScreen>
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: color, width: 2)),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuthSwitchCard({
+    required String text,
+    required String actionText,
+    required VoidCallback onTap,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 460),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.4),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.95),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionText,
+                        style: const TextStyle(
+                          color: AppTheme.primaryCoral,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppTheme.primaryCoral,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -171,11 +171,18 @@ class AdminWebController extends Controller
             $route = $validated['route'] ?? 'home';
             $entityId = $validated['related_entity_id'] ?? '';
             $result = $this->sendManualNotification($targetIds, $validated['title'], $validated['message'], $route, $entityId);
+            $activeTokens = max(0, ($result['device_tokens'] ?? 0) - ($result['inactive_tokens'] ?? 0));
+            $message = "Broadcast dibuat untuk {$result['users']} user. Push terkirim {$result['push_success']} device, gagal {$result['push_failure']}, token aktif {$activeTokens}.";
 
-            return back()->with(
-                'status',
-                "Broadcast dibuat untuk {$result['users']} user. Push terkirim {$result['push_success']} device, gagal {$result['push_failure']}, token aktif {$result['device_tokens']}."
-            );
+            if (($result['inactive_tokens'] ?? 0) > 0) {
+                $message .= " {$result['inactive_tokens']} token invalid dinonaktifkan.";
+            }
+
+            if (($result['push_success'] ?? 0) === 0 && ($result['push_failure'] ?? 0) > 0) {
+                $message .= ' Notifikasi tersimpan di inbox, tapi push FCM gagal. Cek konfigurasi FCM/log server.';
+            }
+
+            return back()->with('status', $message);
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Broadcast gagal: ' . $e->getMessage());
         }
@@ -328,6 +335,8 @@ class AdminWebController extends Controller
         $deviceTokens = 0;
         $pushSuccess = 0;
         $pushFailure = 0;
+        $inactiveTokens = [];
+        $lastError = null;
         $payload = ['route' => $route, 'id' => $entityId];
 
         foreach (array_unique($userIds) as $userId) {
@@ -355,13 +364,28 @@ class AdminWebController extends Controller
                     $result = $this->notification->sendToMultipleDevices($tokenList, $title, $message, $payload);
                     $pushSuccess += $result['success'] ?? 0;
                     $pushFailure += $result['failure'] ?? 0;
+                    $inactiveTokens = array_merge($inactiveTokens, $result['inactive_tokens'] ?? []);
+                    $lastError = $result['last_error'] ?? $lastError;
                 }
             } catch (Exception $e) {
                 Log::warning('Manual broadcast push failed for user ' . $userId . ': ' . $e->getMessage());
                 $pushFailure++;
+                $lastError = $e->getMessage();
             }
 
             $sent++;
+        }
+
+        foreach (array_unique($inactiveTokens) as $inactiveToken) {
+            try {
+                $this->supabase->update('device_tokens', ['is_active' => false], ['token' => $inactiveToken]);
+            } catch (Exception $e) {
+                Log::warning('Failed to deactivate invalid FCM token: ' . $e->getMessage());
+            }
+        }
+
+        if ($lastError) {
+            Log::warning('Manual broadcast last push error: ' . $lastError);
         }
 
         return [
@@ -369,6 +393,7 @@ class AdminWebController extends Controller
             'device_tokens' => $deviceTokens,
             'push_success' => $pushSuccess,
             'push_failure' => $pushFailure,
+            'inactive_tokens' => count(array_unique($inactiveTokens)),
         ];
     }
 

@@ -72,6 +72,11 @@
         $canViewProfile = $canViewProfile ?? true;
         $followRequestStatus = $followRequestStatus ?? null;
         $isFollowPending = $followRequestStatus === 'pending';
+        $shareUrl = !empty($profile['id']) ? route('web.profile.share', $profile['id']) : url()->current();
+        $shareUsername = trim((string) ($profile['username'] ?? '')) !== '' ? '@' . $profile['username'] : ($isEnglish ? 'this profile' : 'profil ini');
+        $shareText = $isEnglish
+            ? "View {$shareUsername} on Savora: {$shareUrl}"
+            : "Lihat {$shareUsername} di Savora: {$shareUrl}";
     @endphp
 
     <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
@@ -83,6 +88,19 @@
             {{-- Decorative blobs --}}
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full pointer-events-none"></div>
             <div class="absolute -bottom-12 -left-12 w-40 h-40 bg-white opacity-[0.08] rounded-full pointer-events-none"></div>
+
+            <button type="button"
+                    class="absolute top-4 right-4 z-10 w-11 h-11 rounded-2xl flex items-center justify-center text-white border transition-all hover:bg-white/25 active:scale-95"
+                    style="background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.35);"
+                    data-share-title="{{ $isEnglish ? 'Savora Profile' : 'Profil Savora' }}"
+                    data-share-text="{{ e($shareText) }}"
+                    data-share-url="{{ e($shareUrl) }}"
+                    onclick="shareProfileFromWeb(this)"
+                    aria-label="{{ $isEnglish ? 'Share profile' : 'Bagikan profil' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316"/>
+                </svg>
+            </button>
 
             <div class="relative flex flex-col items-center text-center">
 
@@ -273,5 +291,26 @@
         @endif
 
     </div>
+    <script>
+        async function shareProfileFromWeb(button) {
+            const title = button.dataset.shareTitle || document.title;
+            const text = button.dataset.shareText || title;
+            const url = button.dataset.shareUrl || window.location.href;
+
+            try {
+                if (navigator.share) {
+                    await navigator.share({ title, text, url });
+                    return;
+                }
+
+                await navigator.clipboard?.writeText(url);
+                const original = button.innerHTML;
+                button.innerHTML = '<span class="text-xs font-bold">{{ $isEnglish ? 'Copied' : 'Disalin' }}</span>';
+                setTimeout(() => { button.innerHTML = original; }, 1600);
+            } catch (error) {
+                console.warn('Profile share failed', error);
+            }
+        }
+    </script>
 </body>
 </html>

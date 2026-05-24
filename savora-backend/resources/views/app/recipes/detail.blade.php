@@ -201,6 +201,27 @@
                 @endif
             </div>
 
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <a href="#simpan-resep"
+                   class="btn-primary-savora justify-center py-3 rounded-2xl text-sm">
+                    <svg class="w-5 h-5" fill="{{ $isFavorite ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                    {{ $isFavorite ? ($isEnglish ? 'Saved' : 'Tersimpan') : ($isEnglish ? 'Save' : 'Simpan') }}
+                </a>
+                <button type="button"
+                        class="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                        style="background: linear-gradient(135deg, #6366F1, #8B5CF6);"
+                        data-share-title="{{ e($recipe['title'] ?? 'Savora Recipe') }}"
+                        data-share-url="{{ url()->current() }}"
+                        onclick="shareRecipeFromDetail(this)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316"/>
+                    </svg>
+                    {{ $isEnglish ? 'Share' : 'Bagikan' }}
+                </button>
+            </div>
+
             {{-- Author --}}
             <a href="{{ route('web.profile.user', $author['id'] ?? 0) }}"
                class="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-100 transition-colors"
@@ -428,6 +449,21 @@
 
     </div>
     <script>
+        async function shareRecipeFromDetail(button) {
+            const title = button.dataset.shareTitle || document.title;
+            const url = button.dataset.shareUrl || window.location.href;
+
+            if (navigator.share) {
+                await navigator.share({ title, url });
+                return;
+            }
+
+            await navigator.clipboard?.writeText(url);
+            const original = button.innerHTML;
+            button.textContent = '{{ $isEnglish ? 'Link copied' : 'Link disalin' }}';
+            setTimeout(() => { button.innerHTML = original; }, 1600);
+        }
+
         if (location.hash === '#simpan-resep') {
             document.getElementById('simpan-resep')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }

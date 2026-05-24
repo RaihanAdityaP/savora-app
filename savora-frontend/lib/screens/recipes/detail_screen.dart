@@ -50,7 +50,6 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   ChewieController? _chewieController;
   bool _isVideoInitializing = false;
   late AnimationController _shareButtonAnimationController;
-  late Animation<double> _scaleAnimation;
 
   String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
@@ -134,9 +133,6 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     _shareButtonAnimationController = AnimationController(
       duration: const Duration(milliseconds: 150),
       vsync: this,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _shareButtonAnimationController, curve: Curves.easeInOut),
     );
     _initializeScreen();
   }
@@ -1525,36 +1521,28 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [AppTheme.primaryTeal.withValues(alpha: 0.1), AppTheme.primaryDark.withValues(alpha: 0.05)]),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.primaryDark.withValues(alpha: 0.3), width: 1.5),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EditRecipeScreen(recipe: _recipe!))).then((_) => _loadRecipe()),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.edit_rounded, size: 20, color: AppTheme.primaryDark), const SizedBox(width: 8), Text(_t('Edit Recipe', 'Edit Resep'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primaryDark))]),
+                child: _buildRecipeActionButton(
+                  icon: Icons.edit_rounded,
+                  label: _t('Edit', 'Edit'),
+                  gradient: AppTheme.tealGradient,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditRecipeScreen(recipe: _recipe!),
                     ),
-                  ),
+                  ).then((_) => _loadRecipe()),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.red.shade500, Colors.red.shade600]), borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))]),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _deleteRecipe,
-                      borderRadius: BorderRadius.circular(14),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.delete_rounded, size: 20, color: Colors.white), const SizedBox(width: 8), Text(_t('Delete', 'Hapus'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white))]),
-                    ),
+                child: _buildRecipeActionButton(
+                  icon: Icons.delete_rounded,
+                  label: _t('Delete', 'Hapus'),
+                  gradient: LinearGradient(
+                    colors: [Colors.red.shade500, Colors.red.shade600],
                   ),
+                  shadowColor: Colors.red,
+                  onTap: _deleteRecipe,
                 ),
               ),
             ],
@@ -1663,62 +1651,88 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         ),
         Row(
           children: [
-            if (!canEdit && !isAdmin)
-              Expanded(
-                child: Container(
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: _isFavorite ? AppTheme.orangeGradient : AppTheme.accentGradient,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [BoxShadow(color: (_isFavorite ? AppTheme.primaryOrange : AppTheme.primaryCoral).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _showBoardSelector,
-                      borderRadius: BorderRadius.circular(14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(_isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 22, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Text(_isFavorite ? _t('Saved', 'Tersimpan') : _t('Save Recipe', 'Simpan Resep'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (!canEdit && !isAdmin) const SizedBox(width: 12),
             Expanded(
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: GestureDetector(
-                  onTapDown: (_) => _shareButtonAnimationController.forward(),
-                  onTapUp: (_) => _shareButtonAnimationController.reverse(),
-                  onTapCancel: () => _shareButtonAnimationController.reverse(),
-                  child: Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _showShareBottomSheet,
-                        borderRadius: BorderRadius.circular(14),
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.share_rounded, color: Colors.white, size: 22), const SizedBox(width: 10), Text(_t('Share', 'Bagikan'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white))]),
-                      ),
-                    ),
-                  ),
+              child: _buildRecipeActionButton(
+                icon: _isFavorite
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                label: _isFavorite
+                    ? _t('Saved', 'Tersimpan')
+                    : _t('Save', 'Simpan'),
+                gradient:
+                    _isFavorite ? AppTheme.orangeGradient : AppTheme.accentGradient,
+                shadowColor:
+                    _isFavorite ? AppTheme.primaryOrange : AppTheme.primaryCoral,
+                onTap: _showBoardSelector,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildRecipeActionButton(
+                icon: Icons.share_rounded,
+                label: _t('Share', 'Bagikan'),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                 ),
+                shadowColor: const Color(0xFF8B5CF6),
+                onTap: _showShareBottomSheet,
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildRecipeActionButton({
+    required IconData icon,
+    required String label,
+    required Gradient gradient,
+    required VoidCallback onTap,
+    Color? shadowColor,
+  }) {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: (shadowColor ?? AppTheme.primaryTeal).withValues(alpha: 0.34),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 21, color: Colors.white),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

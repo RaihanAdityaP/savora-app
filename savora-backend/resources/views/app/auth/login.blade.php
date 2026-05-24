@@ -110,7 +110,7 @@
                 <div class="mb-4">
                     <div class="input-wrapper-savora">
                         <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                             style="color: var(--color-primary-coral) width:18px; height:18px;">
+                             style="color: var(--color-primary-coral); width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
@@ -125,7 +125,7 @@
                 <div class="mb-3">
                     <div class="input-wrapper-savora">
                         <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                             style="color: var(--color-primary-orange) width:18px; height:18px;">
+                             style="color: var(--color-primary-orange); width:18px; height:18px;">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
@@ -206,12 +206,12 @@
         </div>
 
         {{-- Register pill --}}
-        <div class="anim-footer flex items-center gap-3 px-5 py-3 bg-white/15 border border-white/30 rounded-full">
-            <span class="text-white/80 text-sm">Do not have an account?</span>
+        <div class="anim-footer w-full max-w-sm flex items-center gap-3 p-3 bg-white/15 border border-white/30 rounded-3xl">
+            <span class="flex-1 text-center text-white/80 text-sm leading-snug">Do not have an account?</span>
             <a href="{{ route('app.register') }}"
-               class="px-4 py-1.5 bg-white rounded-full font-bold text-sm hover:bg-white/90 transition-all shadow"
+               class="shrink-0 px-4 py-2 bg-white rounded-2xl font-bold text-sm hover:bg-white/90 transition-all shadow"
                style="color: var(--color-primary-coral)">
-                Register →
+                Register &rarr;
             </a>
         </div>
 
@@ -254,7 +254,7 @@
 
                 <div class="input-wrapper-savora mb-4">
                     <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         style="color: var(--color-primary-coral) width:18px; height:18px;">
+                         style="color: var(--color-primary-coral); width:18px; height:18px;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
@@ -321,7 +321,7 @@
 
                 <div class="input-wrapper-savora mb-4">
                     <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         style="color: var(--color-primary-teal) width:18px; height:18px;">
+                         style="color: var(--color-primary-teal); width:18px; height:18px;">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
@@ -373,7 +373,7 @@
 
             <div class="input-wrapper-savora mb-3">
                 <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                     style="color: var(--color-primary-orange) width:18px; height:18px;">
+                     style="color: var(--color-primary-orange); width:18px; height:18px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                 </svg>
@@ -385,7 +385,7 @@
 
             <div class="input-wrapper-savora mb-5">
                 <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                     style="color: var(--color-primary-orange) width:18px; height:18px;">
+                     style="color: var(--color-primary-orange); width:18px; height:18px;">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                 </svg>

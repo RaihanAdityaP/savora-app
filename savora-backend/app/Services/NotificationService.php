@@ -12,12 +12,10 @@ class NotificationService
     private const ANDROID_CHANNEL_ID = 'savora_high_channel';
 
     private string $projectId;
-    private string $fcmUrl;
 
     public function __construct()
     {
         $this->projectId = env('FCM_PROJECT_ID', '');
-        $this->fcmUrl    = "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
     }
 
     // ─────────────────────────────────────────────
@@ -41,7 +39,26 @@ class NotificationService
             throw new Exception('FCM_CREDENTIALS_JSON missing client_email or private_key.');
         }
 
+        $credentials['private_key'] = str_replace('\\n', "\n", $credentials['private_key']);
+        if ($this->projectId === '' && ! empty($credentials['project_id'])) {
+            $this->projectId = $credentials['project_id'];
+        }
+
         return $credentials;
+    }
+
+    private function fcmUrl(): string
+    {
+        if ($this->projectId === '') {
+            $credentials = $this->getCredentials();
+            $this->projectId = $credentials['project_id'] ?? '';
+        }
+
+        if ($this->projectId === '') {
+            throw new Exception('FCM_PROJECT_ID is not set and project_id is missing from FCM_CREDENTIALS_JSON.');
+        }
+
+        return "https://fcm.googleapis.com/v1/projects/{$this->projectId}/messages:send";
     }
 
     // ─────────────────────────────────────────────
@@ -87,6 +104,11 @@ class NotificationService
     // ─────────────────────────────────────────────
     public function sendToDevice(string $deviceToken, string $title, string $body, array $data = []): bool
     {
+        return (bool) ($this->sendToDeviceDetailed($deviceToken, $title, $body, $data)['success'] ?? false);
+    }
+
+    public function sendToDeviceDetailed(string $deviceToken, string $title, string $body, array $data = []): array
+    {
         try {
             $accessToken = $this->getAccessToken();
             $stringData  = array_map('strval', array_merge($data, [
@@ -125,25 +147,30 @@ class NotificationService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,
                 'Content-Type'  => 'application/json',
-            ])->post($this->fcmUrl, $payload);
+            ])->post($this->fcmUrl(), $payload);
 
             if ($response->successful()) {
                 Log::info('FCM v1: Notification sent to device: ' . $deviceToken);
-                return true;
+                return ['success' => true, 'inactive' => false, 'error' => null];
             }
 
             // Token OAuth expired → clear cache dan retry sekali
             if ($response->status() === 401) {
                 Cache::forget('fcm_access_token');
                 Log::warning('FCM v1: Access token expired, retrying...');
-                return $this->sendToDevice($deviceToken, $title, $body, $data);
+                return $this->sendToDeviceDetailed($deviceToken, $title, $body, $data);
             }
 
-            Log::error('FCM v1 sendToDevice error: ' . $response->body());
-            return false;
+            $errorBody = $response->body();
+            $inactive = str_contains($errorBody, 'UNREGISTERED')
+                || str_contains($errorBody, 'INVALID_ARGUMENT')
+                || str_contains($errorBody, 'registration-token-not-registered');
+
+            Log::error('FCM v1 sendToDevice error: ' . $errorBody);
+            return ['success' => false, 'inactive' => $inactive, 'error' => $errorBody];
         } catch (Exception $e) {
             Log::error('FCM v1 sendToDevice exception: ' . $e->getMessage());
-            return false;
+            return ['success' => false, 'inactive' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -155,13 +182,32 @@ class NotificationService
     {
         $success = 0;
         $failure = 0;
+        $inactiveTokens = [];
+        $lastError = null;
 
         foreach ($deviceTokens as $token) {
-            $this->sendToDevice($token, $title, $body, $data) ? $success++ : $failure++;
+            $result = $this->sendToDeviceDetailed($token, $title, $body, $data);
+
+            if ($result['success'] ?? false) {
+                $success++;
+                continue;
+            }
+
+            $failure++;
+            $lastError = $result['error'] ?? $lastError;
+
+            if ($result['inactive'] ?? false) {
+                $inactiveTokens[] = $token;
+            }
         }
 
         Log::info("FCM v1 batch: Success={$success}, Failure={$failure}");
-        return ['success' => $success, 'failure' => $failure];
+        return [
+            'success' => $success,
+            'failure' => $failure,
+            'inactive_tokens' => $inactiveTokens,
+            'last_error' => $lastError,
+        ];
     }
 
     // ─────────────────────────────────────────────
@@ -200,7 +246,7 @@ class NotificationService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $accessToken,
                 'Content-Type'  => 'application/json',
-            ])->post($this->fcmUrl, $payload);
+            ])->post($this->fcmUrl(), $payload);
 
             if ($response->successful()) {
                 Log::info('FCM v1: Notification sent to topic: ' . $topic);

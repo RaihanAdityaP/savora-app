@@ -2,7 +2,7 @@ name: savora
 description: "A blogger application."
 publish_to: 'none'
 
-version: 3.1.4+20262405
+version: 3.1.6+20262505
 
 environment:
   sdk: ^3.9.2
