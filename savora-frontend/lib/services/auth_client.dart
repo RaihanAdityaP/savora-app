@@ -219,6 +219,38 @@ class AuthClient {
     };
   }
 
+  static Future<bool> restoreFromSupabaseSession() async {
+    try {
+      debugPrint('AuthClient: Restoring session from Supabase...');
+
+      var session = _supabase.auth.currentSession;
+      if (session == null) {
+        debugPrint('AuthClient: No Supabase session to restore');
+        return false;
+      }
+
+      final expiresAt = session.expiresAt;
+      final nowInSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      if (expiresAt != null && expiresAt <= nowInSeconds + 60) {
+        debugPrint('AuthClient: Supabase session expired/near expiry, refreshing...');
+        final refreshed = await _supabase.auth.refreshSession();
+        session = refreshed.session ?? _supabase.auth.currentSession;
+      }
+
+      if (session == null) {
+        debugPrint('AuthClient: Supabase session refresh failed');
+        return false;
+      }
+
+      await _exchangeSupabaseSession(session);
+      debugPrint('AuthClient: Session restored from Supabase');
+      return true;
+    } catch (e) {
+      debugPrint('AuthClient.restoreFromSupabaseSession error: $e');
+      return false;
+    }
+  }
+
   // ─────────────────────────────────────────────
   // LOGOUT
   // ─────────────────────────────────────────────
@@ -261,6 +293,31 @@ class AuthClient {
   // ─────────────────────────────────────────────
   // GET CURRENT USER FROM LARAVEL
   // ─────────────────────────────────────────────
+  static Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      debugPrint('AuthClient: Sending password reset email...');
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb ? null : 'io.supabase.savora://login-callback/',
+      );
+      return true;
+    } catch (e) {
+      debugPrint('AuthClient.sendPasswordResetEmail error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> updatePassword(String password) async {
+    try {
+      debugPrint('AuthClient: Updating password...');
+      await _supabase.auth.updateUser(UserAttributes(password: password));
+      return true;
+    } catch (e) {
+      debugPrint('AuthClient.updatePassword error: $e');
+      return false;
+    }
+  }
+
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
       final response = await ApiService.get('/auth/me');

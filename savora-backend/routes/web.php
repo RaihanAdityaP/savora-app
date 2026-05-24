@@ -96,6 +96,9 @@ Route::get('/search',          [SearchController::class, 'index'])->name('web.se
 Route::prefix('app')->name('app.')->group(function () {
     Route::get('login',    [LoginController::class, 'showLogin'])->name('login');
     Route::post('login',   [LoginController::class, 'login'])->name('login.post');
+    Route::post('login/supabase-token', [LoginController::class, 'loginWithSupabaseToken'])->name('login.supabase-token');
+    Route::post('password/reset-email', [LoginController::class, 'sendPasswordReset'])->name('password.reset-email');
+    Route::post('email/resend-verification', [LoginController::class, 'resendVerificationEmail'])->name('email.resend-verification');
     Route::get('register', [LoginController::class, 'showRegister'])->name('register');
     Route::post('register',[LoginController::class, 'register'])->name('register.post');
     Route::post('logout',  [LoginController::class, 'logout'])->name('logout');

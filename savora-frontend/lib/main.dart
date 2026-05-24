@@ -15,6 +15,7 @@ import 'screens/searching_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/api_service.dart';
 import 'services/app_settings_service.dart';
+import 'services/auth_client.dart';
 import 'services/auth_storage.dart';
 import 'services/notification_service.dart';
 import 'services/recipe_client.dart';
@@ -72,12 +73,21 @@ Future<void> main() async {
           message.contains('invalid');
 
       if (isUnauthorized) {
-        debugPrint('Restored token invalid. Clearing local auth...');
-        ApiService.clearToken();
-        await AuthStorage.clear();
+        debugPrint('Restored token invalid. Trying silent Supabase restore...');
+        final restored = await AuthClient.restoreFromSupabaseSession();
+        if (!restored) {
+          debugPrint('Silent restore failed. Clearing local auth...');
+          ApiService.clearToken();
+          await AuthStorage.clear();
+        }
       } else {
         debugPrint('Token validation skipped due to non-auth error: $e');
       }
+    }
+  } else {
+    final restored = await AuthClient.restoreFromSupabaseSession();
+    if (restored) {
+      debugPrint('Session restored from Supabase without saved Sanctum token');
     }
   }
   // ─────────────────────────────────────────────────────────
@@ -369,6 +379,18 @@ class _MyAppState extends State<MyApp> {
         final secondaryTextColor = appSettings.isDarkMode
             ? Colors.white70
             : const Color(0xFF6B7280);
+        final backgroundColor = appSettings.isDarkMode
+            ? const Color(0xFF0F1318)
+            : const Color(0xFFF5F7FA);
+        final surfaceColor = appSettings.isDarkMode
+            ? const Color(0xFF1A2330)
+            : Colors.white;
+        final subtleSurfaceColor = appSettings.isDarkMode
+            ? const Color(0xFF222C35)
+            : Colors.grey.shade100;
+        final borderColor = appSettings.isDarkMode
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.grey.shade200;
 
         return MaterialApp(
           navigatorKey: navigatorKey,
@@ -377,15 +399,18 @@ class _MyAppState extends State<MyApp> {
           theme: ThemeData(
             brightness:
                 appSettings.isDarkMode ? Brightness.dark : Brightness.light,
-            scaffoldBackgroundColor: appSettings.isDarkMode
-                ? const Color(0xFF0F1318)
-                : const Color(0xFFF5F7FA),
-            cardColor:
-                appSettings.isDarkMode ? const Color(0xFF1A2330) : Colors.white,
+            scaffoldBackgroundColor: backgroundColor,
+            canvasColor: backgroundColor,
+            cardColor: surfaceColor,
+            dividerColor: borderColor,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFFE76F51),
+              brightness:
+                  appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+              surface: surfaceColor,
+            ),
             appBarTheme: AppBarTheme(
-              backgroundColor: appSettings.isDarkMode
-                  ? const Color(0xFF1A2330)
-                  : Colors.white,
+              backgroundColor: surfaceColor,
               foregroundColor: appSettings.isDarkMode
                   ? Colors.white
                   : const Color(0xFF264653),
@@ -400,6 +425,52 @@ class _MyAppState extends State<MyApp> {
                 ),
             inputDecorationTheme: InputDecorationTheme(
               hintStyle: TextStyle(color: secondaryTextColor),
+              filled: true,
+              fillColor: subtleSurfaceColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: borderColor),
+              ),
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: surfaceColor,
+              surfaceTintColor: Colors.transparent,
+              titleTextStyle: TextStyle(
+                color: textColor,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              contentTextStyle: TextStyle(
+                color: secondaryTextColor,
+                fontSize: 14,
+              ),
+            ),
+            popupMenuTheme: PopupMenuThemeData(
+              color: surfaceColor,
+              surfaceTintColor: Colors.transparent,
+              textStyle: TextStyle(color: textColor),
+            ),
+            bottomSheetTheme: BottomSheetThemeData(
+              backgroundColor: surfaceColor,
+              surfaceTintColor: Colors.transparent,
+              modalBackgroundColor: surfaceColor,
+              modalBarrierColor: Colors.black.withValues(alpha: 0.55),
+            ),
+            snackBarTheme: SnackBarThemeData(
+              backgroundColor: appSettings.isDarkMode
+                  ? const Color(0xFF222C35)
+                  : const Color(0xFF264653),
+              contentTextStyle: const TextStyle(color: Colors.white),
+              behavior: SnackBarBehavior.floating,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFE76F51),
+              ),
             ),
             primarySwatch: Colors.orange,
             useMaterial3: true,
@@ -449,8 +520,10 @@ class _StartupLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF5F7FA),
+    return Scaffold(
+      backgroundColor: AppSettingsService.current.isDarkMode
+          ? const Color(0xFF0F1318)
+          : const Color(0xFFF5F7FA),
       body: Center(
         child: CircularProgressIndicator(color: Color(0xFFE76F51)),
       ),
@@ -475,8 +548,10 @@ class _ForceUpdateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppSettingsService.current.isDarkMode;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor:
+          isDark ? const Color(0xFF0F1318) : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -506,7 +581,6 @@ class _ForceUpdateScreen extends StatelessWidget {
                     'Update Required',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Color(0xFF264653),
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                     ),
@@ -515,8 +589,8 @@ class _ForceUpdateScreen extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFF6B7280),
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                       fontSize: 15,
                       height: 1.5,
                       fontWeight: FontWeight.w500,

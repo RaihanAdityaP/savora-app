@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 /// Client untuk Notification operations
-/// Taruh di: lib/services/notification_client.dart
 class NotificationClient {
   /// Get semua notifikasi user
   static Future<List<Map<String, dynamic>>> getNotifications(

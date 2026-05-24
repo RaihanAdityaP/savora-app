@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_service.dart';
 import '../firebase_options.dart';
@@ -40,8 +41,16 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  static const String androidChannelId = 'savora_high_channel';
+  static const String androidChannelName = 'Savora Alerts';
+  static const String androidChannelDescription =
+      'Important notifications from Savora';
   static const String actionLikeRecipe = 'like_recipe';
   static const String actionReplyRecipe = 'reply_recipe';
+  static const String _lastRegisteredTokenKey =
+      'savora_last_registered_fcm_token';
+  static const String _lastRegisteredUserKey =
+      'savora_last_registered_fcm_user';
 
   // Callback opsional saat notifikasi atau action button di-tap.
   static void Function(String? payload, {String? actionId})?
@@ -108,9 +117,9 @@ class NotificationService {
 
     try {
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
-        'savora_channel',
-        'Savora Notifications',
-        description: 'Notifications from Savora',
+        androidChannelId,
+        androidChannelName,
+        description: androidChannelDescription,
         importance: Importance.max,
         enableVibration: true,
         playSound: true,
@@ -258,9 +267,9 @@ class NotificationService {
       final bool canActOnRecipe = _isRecipePayload(payload);
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        'savora_channel',
-        'Savora Notifications',
-        channelDescription: 'Notifications from Savora',
+        androidChannelId,
+        androidChannelName,
+        channelDescription: androidChannelDescription,
         importance: Importance.max,
         priority: Priority.high,
         showWhen: true,
@@ -356,9 +365,9 @@ class NotificationService {
     );
 
     const channel = AndroidNotificationChannel(
-      'savora_channel',
-      'Savora Notifications',
-      description: 'Notifications from Savora',
+      androidChannelId,
+      androidChannelName,
+      description: androidChannelDescription,
       importance: Importance.max,
       enableVibration: true,
       playSound: true,
@@ -372,9 +381,9 @@ class NotificationService {
     final payload = _payloadFromData(message.data);
     final canActOnRecipe = _isRecipePayloadData(message.data);
     final androidDetails = AndroidNotificationDetails(
-      'savora_channel',
-      'Savora Notifications',
-      channelDescription: 'Notifications from Savora',
+      androidChannelId,
+      androidChannelName,
+      channelDescription: androidChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
@@ -456,11 +465,23 @@ class NotificationService {
       return;
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString(_lastRegisteredTokenKey) == token &&
+        prefs.getString(_lastRegisteredUserKey) == userId) {
+      debugPrint('FCM token already registered for this user, skipping.');
+      return;
+    }
+
     final success = await NotificationClient.registerDevice(
       userId: userId,
       deviceToken: token,
       deviceType: defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
     );
+
+    if (success) {
+      await prefs.setString(_lastRegisteredTokenKey, token);
+      await prefs.setString(_lastRegisteredUserKey, userId);
+    }
 
     debugPrint('Register FCM token result: $success');
   }

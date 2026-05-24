@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AdminWebController extends Controller
@@ -169,9 +170,12 @@ class AdminWebController extends Controller
 
             $route = $validated['route'] ?? 'home';
             $entityId = $validated['related_entity_id'] ?? '';
-            $sent = $this->sendManualNotification($targetIds, $validated['title'], $validated['message'], $route, $entityId);
+            $result = $this->sendManualNotification($targetIds, $validated['title'], $validated['message'], $route, $entityId);
 
-            return back()->with('status', "Broadcast dibuat untuk {$sent} user.");
+            return back()->with(
+                'status',
+                "Broadcast dibuat untuk {$result['users']} user. Push terkirim {$result['push_success']} device, gagal {$result['push_failure']}, token aktif {$result['device_tokens']}."
+            );
         } catch (Exception $e) {
             return back()->withInput()->with('error', 'Broadcast gagal: ' . $e->getMessage());
         }
@@ -318,9 +322,12 @@ class AdminWebController extends Controller
         return [$stats, $error];
     }
 
-    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): int
+    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): array
     {
         $sent = 0;
+        $deviceTokens = 0;
+        $pushSuccess = 0;
+        $pushFailure = 0;
         $payload = ['route' => $route, 'id' => $entityId];
 
         foreach (array_unique($userIds) as $userId) {
@@ -343,15 +350,26 @@ class AdminWebController extends Controller
                 ]);
 
                 if (! empty($tokens)) {
-                    $this->notification->sendToMultipleDevices(array_column($tokens, 'token'), $title, $message, $payload);
+                    $tokenList = array_column($tokens, 'token');
+                    $deviceTokens += count($tokenList);
+                    $result = $this->notification->sendToMultipleDevices($tokenList, $title, $message, $payload);
+                    $pushSuccess += $result['success'] ?? 0;
+                    $pushFailure += $result['failure'] ?? 0;
                 }
-            } catch (Exception) {
+            } catch (Exception $e) {
+                Log::warning('Manual broadcast push failed for user ' . $userId . ': ' . $e->getMessage());
+                $pushFailure++;
             }
 
             $sent++;
         }
 
-        return $sent;
+        return [
+            'users' => $sent,
+            'device_tokens' => $deviceTokens,
+            'push_success' => $pushSuccess,
+            'push_failure' => $pushFailure,
+        ];
     }
 
     private function banReasonFromType(string $type, string $customReason): string

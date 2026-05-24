@@ -41,7 +41,7 @@ class _RecipeCardState extends State<RecipeCard> {
   void initState() {
     super.initState();
     _syncLikeStateFromRecipe();
-    _checkIfFavorite();
+    _syncSavedStateFromRecipe();
   }
 
   @override
@@ -52,11 +52,20 @@ class _RecipeCardState extends State<RecipeCard> {
         oldWidget.recipe['is_liked'] != widget.recipe['is_liked']) {
       _syncLikeStateFromRecipe();
     }
+    if (oldWidget.recipe['id'] != widget.recipe['id'] ||
+        oldWidget.recipe['is_saved'] != widget.recipe['is_saved']) {
+      _syncSavedStateFromRecipe();
+    }
   }
 
   void _syncLikeStateFromRecipe() {
     _likesCount = _toInt(widget.recipe['likes_count']);
     _isLiked = widget.recipe['is_liked'] == true;
+  }
+
+  void _syncSavedStateFromRecipe() {
+    _isFavorite = widget.recipe['is_saved'] == true;
+    _isCheckingFavorite = false;
   }
 
   int _toInt(dynamic value) {
@@ -68,34 +77,6 @@ class _RecipeCardState extends State<RecipeCard> {
   // ─────────────────────────────────────────────
   // CEK APAKAH SUDAH DI-FAVORITE
   // ─────────────────────────────────────────────
-
-  Future<void> _checkIfFavorite() async {
-    try {
-      final userId = widget.currentUserId;
-      if (userId == null) {
-        if (mounted) setState(() => _isCheckingFavorite = false);
-        return;
-      }
-
-      final favorites = await FavoriteClient.getFavorites(userId);
-      final recipeId = widget.recipe['id']?.toString();
-
-      final isFav = favorites.any(
-        (fav) => fav['recipe_id']?.toString() == recipeId ||
-            fav['recipes']?['id']?.toString() == recipeId,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isFavorite = isFav;
-          _isCheckingFavorite = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('RecipeCard._checkIfFavorite error: $e');
-      if (mounted) setState(() => _isCheckingFavorite = false);
-    }
-  }
 
   // ─────────────────────────────────────────────
   // SHOW BOARD SELECTOR
@@ -116,6 +97,7 @@ class _RecipeCardState extends State<RecipeCard> {
 
       showModalBottomSheet(
         context: context,
+        backgroundColor: AppTheme.surfaceColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -141,7 +123,7 @@ class _RecipeCardState extends State<RecipeCard> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppTheme.borderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -229,8 +211,9 @@ class _RecipeCardState extends State<RecipeCard> {
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: AppTheme.subtleSurfaceColor,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.borderColor),
               ),
               child: Center(
                 child: Column(
@@ -242,7 +225,7 @@ class _RecipeCardState extends State<RecipeCard> {
                       _t('No collections yet', 'Belum ada koleksi'),
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.grey.shade600,
+                        color: AppTheme.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -250,7 +233,7 @@ class _RecipeCardState extends State<RecipeCard> {
                     Text(
                       _t('Create your first collection',
                           'Buat koleksi pertama Anda'),
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                      style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
                     ),
                   ],
                 ),
@@ -266,7 +249,7 @@ class _RecipeCardState extends State<RecipeCard> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: AppTheme.primaryCoral.withValues(alpha: 0.2),
@@ -331,7 +314,7 @@ class _RecipeCardState extends State<RecipeCard> {
                                         board['description'],
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: AppTheme.textSecondary,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -560,19 +543,36 @@ class _RecipeCardState extends State<RecipeCard> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.recipe['profiles'];
-    final username = profile?['username'] ?? _t('Anonymous', 'Anonim');
+    final username = widget.recipe['author']?['name'] ??
+        profile?['username'] ??
+        _t('Anonymous', 'Anonim');
     final avatarUrl = profile?['avatar_url'];
     final authorUserId = widget.recipe['user_id'];
-    final userRole = profile?['role'] == 'admin' ? 'user' : (profile?['role'] ?? 'user');
+    final userRole =
+        profile?['role'] == 'admin' ? 'user' : (profile?['role'] ?? 'user');
 
     final category = widget.recipe['categories'];
-    final categoryName = category?['name'] ?? _t('Uncategorized', 'Tanpa Kategori');
+    final categoryName = widget.recipe['category'] ??
+        category?['name'] ??
+        _t('Uncategorized', 'Tanpa Kategori');
     final categoryId = category?['id'];
+    final title =
+        widget.recipe['title'] ?? widget.recipe['name'] ?? _t('Recipe', 'Resep');
+    final imageUrl = widget.recipe['image_url'] ?? widget.recipe['image'];
+    final description = widget.recipe['description']?.toString() ?? '';
+    final cookingTime = widget.recipe['prep_time'] ??
+        widget.recipe['cooking_time'] ??
+        widget.recipe['cook_time'];
+    final servings = widget.recipe['servings'];
+    final calories = widget.recipe['calories'];
+    final difficulty = widget.recipe['difficulty']?.toString();
+    final ratingCount = _toInt(widget.recipe['rating_count']);
+    final effectiveRating = widget.rating ??
+        (widget.recipe['rating_avg'] is num
+            ? (widget.recipe['rating_avg'] as num).toDouble()
+            : double.tryParse(widget.recipe['rating_avg']?.toString() ?? ''));
 
-    final recipeTags = widget.recipe['recipe_tags'] as List<dynamic>?;
-    final tags =
-        recipeTags?.map((rt) => rt['tags']).where((t) => t != null).toList() ??
-            [];
+    final tags = _recipeTags();
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -596,11 +596,10 @@ class _RecipeCardState extends State<RecipeCard> {
         scale: _isPressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 150),
         child: Container(
-          height: 140,
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: _isPressed
                   ? AppTheme.primaryCoral.withValues(alpha: 0.4)
@@ -616,246 +615,292 @@ class _RecipeCardState extends State<RecipeCard> {
               ),
             ],
           ),
-          child: Row(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image Section
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      bottomLeft: Radius.circular(20),
-                    ),
-                    child: Container(
-                      width: 130,
-                      height: double.infinity,
+              AspectRatio(
+                aspectRatio: 1.35,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
                       color: AppTheme.subtleSurfaceColor,
-                      child: widget.recipe['image_url'] != null
+                      child: imageUrl != null
                           ? Image.network(
-                              widget.recipe['image_url'],
+                              imageUrl.toString(),
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholder(),
+                              errorBuilder: (_, _, _) => _buildPlaceholder(),
                             )
                           : _buildPlaceholder(),
-                    ),
                   ),
                   Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _isCheckingFavorite ? null : _showBoardSelector,
-                        borderRadius: BorderRadius.circular(999),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _isFavorite ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                            color: _isFavorite ? AppTheme.primaryCoral : Colors.grey.shade700,
-                            size: 18,
-                          ),
-                        ),
+                    top: 14,
+                    left: 14,
+                    child: _roundOverlayButton(
+                      onTap: _isCheckingFavorite ? null : _showBoardSelector,
+                      child: Icon(
+                        _isFavorite
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        color: _isFavorite
+                            ? AppTheme.primaryCoral
+                            : Colors.grey.shade800,
+                        size: 21,
                       ),
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 14,
+                    right: 14,
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: _isTogglingLike ? null : _toggleLike,
                         borderRadius: BorderRadius.circular(999),
-                        child: Container(
-                          constraints: const BoxConstraints(minWidth: 34),
-                          height: 34,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            gradient: _isLiked ? AppTheme.accentGradient : null,
-                            color: _isLiked ? null : Colors.white.withValues(alpha: 0.94),
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.18),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                color: _isLiked ? Colors.white : AppTheme.primaryCoral,
-                                size: 17,
-                              ),
-                              if (_likesCount > 0) ...[
-                                const SizedBox(width: 3),
-                                Text(
-                                  _likesCount.toString(),
-                                  style: TextStyle(
-                                    color: _isLiked ? Colors.white : AppTheme.primaryCoral,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minWidth: 40),
+                          child: Ink(
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 11),
+                            decoration: BoxDecoration(
+                              gradient: _isLiked ? AppTheme.accentGradient : null,
+                              color: _isLiked
+                                  ? null
+                                  : Colors.white.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.18),
+                                  blurRadius: 10,
                                 ),
                               ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                _isLiked
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                color: _isLiked
+                                    ? Colors.white
+                                    : Colors.grey.shade800,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                _likesCount.toString(),
+                                style: TextStyle(
+                                  color: _isLiked
+                                      ? Colors.white
+                                      : Colors.grey.shade800,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
                   ),
-                  if (categoryName.isNotEmpty)
+                  ),
+                  if (categoryName.toString().isNotEmpty)
                     Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: _buildCategoryChip(context, categoryId, categoryName),
-                    ),
-                  // Rating badge
-                  if (widget.rating != null)
-                    Positioned(
-                      bottom: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.orangeGradient,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.star_rounded,
-                                color: Colors.white, size: 12),
-                            const SizedBox(width: 3),
-                            Text(
-                              widget.rating!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                      right: 14,
+                      bottom: 14,
+                      child: _buildCategoryChip(
+                        context,
+                        categoryId,
+                        categoryName.toString(),
                       ),
+                    ),
+                  Positioned(
+                    left: 14,
+                    bottom: 14,
+                    child: _buildRatingBadge(effectiveRating, ratingCount),
+                  ),
+                  if (difficulty != null && difficulty.isNotEmpty)
+                    Positioned(
+                      bottom: 14,
+                      left: 0,
+                      right: 0,
+                      child: Center(child: _buildDifficultyBadge(difficulty)),
                     ),
                 ],
               ),
-
-              // Content Section
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      Text(
-                        widget.recipe['title'] ?? _t('Untitled Recipe', 'Resep Tanpa Judul'),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-
-                      // User info
-                      GestureDetector(
-                        onTap: authorUserId != null
-                            ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProfileScreen(userId: authorUserId),
-                                  ),
-                                )
-                            : null,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: AppTheme.getRoleGradient(userRole),
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: avatarUrl != null
-                                    ? Image.network(
-                                        avatarUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                Icon(
-                                                    Icons.person_rounded,
-                                                    size: 12,
-                                                    color: Colors.white),
-                                      )
-                                    : const Icon(Icons.person_rounded,
-                                        size: 12, color: Colors.white),
-                              ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title.toString(),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                              color: AppTheme.textPrimary,
                             ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                username,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppTheme.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-
-                      const Spacer(),
-
-                      // Bottom row: Tags
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
+                        if (effectiveRating != null && effectiveRating > 0) ...[
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryCoral
+                                  .withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                ...tags.take(2).map((tag) => _buildTagChip(context, tag)),
+                                Icon(Icons.star_rounded,
+                                    color: AppTheme.primaryYellow, size: 16),
+                                const SizedBox(width: 3),
+                                Text(
+                                  effectiveRating.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppTheme.primaryCoral,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ],
+                      ],
+                    ),
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        description,
+                        style: AppTheme.bodySmall.copyWith(height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                  ),
+                    if (cookingTime != null ||
+                        servings != null ||
+                        calories != null) ...[
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (cookingTime != null)
+                            _buildMetaChip(
+                              Icons.access_time_rounded,
+                              '$cookingTime ${_t('min', 'mnt')}',
+                            ),
+                          if (servings != null)
+                            _buildMetaChip(
+                              Icons.people_rounded,
+                              '$servings ${_t('servings', 'porsi')}',
+                            ),
+                          if (calories != null)
+                            _buildMetaChip(
+                              Icons.local_fire_department_rounded,
+                              '$calories ${_t('cal', 'kal')}',
+                            ),
+                        ],
+                      ),
+                    ],
+                    if (tags.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: tags
+                            .take(3)
+                            .map((tag) => _buildTagChip(context, tag))
+                            .toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Container(height: 1, color: AppTheme.borderColor),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: authorUserId != null
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProfileScreen(userId: authorUserId),
+                                ),
+                              )
+                          : null,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: AppTheme.getRoleGradient(userRole),
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: avatarUrl != null
+                                  ? Image.network(
+                                      avatarUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, _, _) => const Icon(
+                                        Icons.person_rounded,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.person_rounded,
+                                      size: 18, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              username,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (profile?['role'] == 'admin')
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.adminGradient,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: const Text(
+                                'Admin',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -873,12 +918,179 @@ class _RecipeCardState extends State<RecipeCard> {
     return Container(
       color: AppTheme.subtleSurfaceColor,
       child: Center(
-        child: Icon(Icons.restaurant_rounded, size: 40, color: AppTheme.textMuted),
+        child:
+            Icon(Icons.restaurant_rounded, size: 48, color: AppTheme.textMuted),
       ),
     );
   }
 
-  Widget _buildCategoryChip(BuildContext context, dynamic categoryId, String categoryName) {
+  Widget _roundOverlayButton({
+    required VoidCallback? onTap,
+    required Widget child,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.92),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Center(child: child),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatingBadge(double? rating, int ratingCount) {
+    if (rating != null && rating > 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryYellow,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.star_rounded, color: Color(0xFF1C1917), size: 15),
+            const SizedBox(width: 4),
+            Text(
+              rating.toStringAsFixed(1),
+              style: const TextStyle(
+                color: Color(0xFF1C1917),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            if (ratingCount > 0) ...[
+              const SizedBox(width: 3),
+              Text(
+                '($ratingCount)',
+                style: TextStyle(
+                  color: const Color(0xFF1C1917).withValues(alpha: 0.72),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        _t('No rating yet', 'Belum ada rating'),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyBadge(String difficulty) {
+    final key = difficulty.toLowerCase();
+    final color = switch (key) {
+      'easy' || 'mudah' => const Color(0xFF22C55E),
+      'medium' || 'sedang' => const Color(0xFFEAB308),
+      'hard' || 'sulit' => const Color(0xFFEF4444),
+      _ => Colors.grey,
+    };
+    final label = switch (key) {
+      'easy' || 'mudah' => _t('Easy', 'Mudah'),
+      'medium' || 'sedang' => _t('Medium', 'Sedang'),
+      'hard' || 'sulit' => _t('Hard', 'Sulit'),
+      _ => difficulty,
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppTheme.subtleSurfaceColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppTheme.primaryCoral),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<dynamic> _recipeTags() {
+    final directTags = widget.recipe['tags'];
+    if (directTags is List) return directTags;
+
+    final recipeTags = widget.recipe['recipe_tags'];
+    if (recipeTags is! List) return const [];
+
+    return recipeTags
+        .map((rt) => rt is Map ? rt['tags'] : null)
+        .where((tag) => tag != null)
+        .toList();
+  }
+
+  Widget _buildCategoryChip(
+      BuildContext context, dynamic categoryId, String categoryName) {
     return GestureDetector(
       onTap: categoryId != null
           ? () => Navigator.push(
@@ -910,8 +1122,8 @@ class _RecipeCardState extends State<RecipeCard> {
   }
 
   Widget _buildTagChip(BuildContext context, dynamic tag) {
-    final tagName = tag['name'] ?? '';
-    final tagId = tag['id'];
+    final tagName = tag is Map ? (tag['name'] ?? '') : tag.toString();
+    final tagId = tag is Map ? tag['id'] : null;
 
     return GestureDetector(
       onTap: tagId != null
@@ -935,8 +1147,8 @@ class _RecipeCardState extends State<RecipeCard> {
         child: Text(
           '#$tagName',
           style: TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 9,
+            color: AppTheme.primaryCoral,
+            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
         ),

@@ -6,6 +6,7 @@
     <title>Login — Savora</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     @include('components.app-theme')
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600&display=swap');
@@ -121,7 +122,7 @@
                 </div>
 
                 {{-- Password --}}
-                <div class="mb-6">
+                <div class="mb-3">
                     <div class="input-wrapper-savora">
                         <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                              style="color: var(--color-primary-orange) width:18px; height:18px;">
@@ -146,6 +147,21 @@
                     </div>
                 </div>
 
+                <div class="mb-6 flex items-center justify-between gap-3">
+                    <button type="button"
+                            onclick="document.getElementById('resend-modal').classList.remove('hidden')"
+                            class="text-xs font-semibold hover:underline"
+                            style="color: var(--color-primary-coral)">
+                        Email not verified?
+                    </button>
+                    <button type="button"
+                            onclick="document.getElementById('reset-modal').classList.remove('hidden')"
+                            class="text-xs font-semibold hover:underline"
+                            style="color: var(--color-primary-teal)">
+                        Forgot password?
+                    </button>
+                </div>
+
                 {{-- Login button --}}
                 <button type="submit" :disabled="loading"
                         class="btn-primary-savora w-full py-4 rounded-2xl text-base tracking-widest disabled:opacity-60 hover:scale-[1.01] active:scale-[0.99]">
@@ -166,8 +182,19 @@
                     <div class="flex-1 h-px bg-gray-200"></div>
                 </div>
 
+                <button type="button" id="google-login-button"
+                        class="w-full py-3.5 rounded-2xl border border-gray-200 bg-white text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-all flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z"/>
+                    </svg>
+                    <span>Continue with Google</span>
+                </button>
+
                 {{-- Policy links --}}
-                <p class="text-center text-xs text-gray-500 leading-relaxed">
+                <p class="text-center text-xs text-gray-500 leading-relaxed mt-4">
                     By logging in, you agree to our
                     <button type="button" @click.prevent="PrivacyModal.show()"
                             class="font-semibold hover:underline" style="color: var(--color-primary-teal)">Privacy</button>
@@ -176,14 +203,6 @@
                             class="font-semibold hover:underline" style="color: var(--color-primary-coral)">Terms</button>
                 </p>
             </form>
-        </div>
-
-        {{-- Resend verification --}}
-        <div class="anim-footer w-full">
-            <button onclick="document.getElementById('resend-modal').classList.remove('hidden')"
-                    class="w-full text-center text-white/75 text-sm hover:text-white underline underline-offset-2 transition-colors">
-                Email not verified?
-            </button>
         </div>
 
         {{-- Register pill --}}
@@ -198,9 +217,14 @@
 
     </div>
 
+    <form id="supabase-token-form" method="POST" action="{{ route('app.login.supabase-token') }}" class="hidden">
+        @csrf
+        <input type="hidden" name="supabase_token" id="supabase-token-input">
+    </form>
+
     {{-- Resend verification modal --}}
     <div id="resend-modal"
-         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-4"
+         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
          onclick="if(event.target===this) this.classList.add('hidden')">
         <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6" onclick="event.stopPropagation()">
 
@@ -214,7 +238,7 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="font-bold text-gray-900 text-sm">Email Verification</h3>
-                    <p class="text-xs text-gray-500">Resend verification link</p>
+                    <p class="text-xs text-gray-500">Resend account verification</p>
                 </div>
                 <button onclick="document.getElementById('resend-modal').classList.add('hidden')"
                         class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -224,7 +248,7 @@
                 </button>
             </div>
 
-            <form method="POST" action="{{ route('app.register') }}"
+            <form method="POST" action="{{ route('app.email.resend-verification') }}"
                   x-data="{ loading: false }" @submit="loading = true">
                 @csrf
 
@@ -234,7 +258,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
-                    <input type="email" name="resend_email" required
+                    <input type="email" name="email" value="{{ old('email') }}" required
                            placeholder="Your email"
                            class="input-savora has-icon py-3.5"
                            style="border-radius: 1rem">
@@ -267,7 +291,192 @@
         </div>
     </div>
 
+    {{-- Reset password modal --}}
+    <div id="reset-modal"
+         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+         onclick="if(event.target===this) this.classList.add('hidden')">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-accent">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H3v-4l5.257-5.257A6 6 0 1121 9z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-gray-900 text-sm">Reset Password</h3>
+                    <p class="text-xs text-gray-500">Receive a password reset link</p>
+                </div>
+                <button onclick="document.getElementById('reset-modal').classList.add('hidden')"
+                        class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form method="POST" action="{{ route('app.password.reset-email') }}"
+                  x-data="{ loading: false }" @submit="loading = true">
+                @csrf
+
+                <div class="input-wrapper-savora mb-4">
+                    <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                         style="color: var(--color-primary-teal) width:18px; height:18px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <input type="email" name="email" value="{{ old('reset_email') }}" required
+                           placeholder="Your email"
+                           class="input-savora has-icon py-3.5"
+                           style="border-radius: 1rem">
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button"
+                            onclick="document.getElementById('reset-modal').classList.add('hidden')"
+                            class="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="loading"
+                            class="btn-primary-savora flex-1 py-3 rounded-2xl text-sm disabled:opacity-60">
+                        <span x-show="!loading">Send Link</span>
+                        <span x-show="loading">
+                            <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- New password modal after Supabase recovery link --}}
+    <div id="new-password-modal"
+         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-accent">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-gray-900 text-sm">New Password</h3>
+                    <p class="text-xs text-gray-500">Create your new password</p>
+                </div>
+            </div>
+
+            <div id="new-password-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs font-semibold"></div>
+
+            <div class="input-wrapper-savora mb-3">
+                <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     style="color: var(--color-primary-orange) width:18px; height:18px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <input type="password" id="new-password" required
+                       placeholder="New password"
+                       class="input-savora has-icon py-3.5"
+                       style="border-radius: 1rem">
+            </div>
+
+            <div class="input-wrapper-savora mb-5">
+                <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     style="color: var(--color-primary-orange) width:18px; height:18px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <input type="password" id="new-password-confirm" required
+                       placeholder="Confirm password"
+                       class="input-savora has-icon py-3.5"
+                       style="border-radius: 1rem">
+            </div>
+
+            <button type="button" id="new-password-button"
+                    class="btn-primary-savora w-full py-3 rounded-2xl text-sm disabled:opacity-60">
+                Update Password
+            </button>
+        </div>
+    </div>
+
     @include('components.privacy-modal')
     @include('components.terms-modal')
+    <script>
+        const supabaseUrl = @json($supabaseUrl);
+        const supabaseAnonKey = @json($supabaseAnonKey);
+        const supabaseOAuthRedirectUrl = @json($supabaseOAuthRedirectUrl);
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                detectSessionInUrl: true,
+                persistSession: true,
+            },
+        });
+
+        async function submitSupabaseSession() {
+            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            if (hashParams.get('type') === 'recovery') {
+                document.getElementById('new-password-modal').classList.remove('hidden');
+                return;
+            }
+
+            const { data } = await supabaseClient.auth.getSession();
+            const token = data?.session?.access_token;
+            if (!token) return;
+
+            document.getElementById('supabase-token-input').value = token;
+            document.getElementById('supabase-token-form').submit();
+        }
+
+        document.getElementById('google-login-button')?.addEventListener('click', async () => {
+            await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: supabaseOAuthRedirectUrl,
+                },
+            });
+        });
+
+        document.getElementById('new-password-button')?.addEventListener('click', async () => {
+            const button = document.getElementById('new-password-button');
+            const errorBox = document.getElementById('new-password-error');
+            const password = document.getElementById('new-password').value;
+            const confirm = document.getElementById('new-password-confirm').value;
+
+            errorBox.classList.add('hidden');
+            errorBox.textContent = '';
+
+            if (password.length < 6) {
+                errorBox.textContent = 'Password must be at least 6 characters.';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            if (password !== confirm) {
+                errorBox.textContent = 'Password confirmation does not match.';
+                errorBox.classList.remove('hidden');
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'Updating...';
+
+            const { error } = await supabaseClient.auth.updateUser({ password });
+            if (error) {
+                errorBox.textContent = error.message || 'Failed to update password.';
+                errorBox.classList.remove('hidden');
+                button.disabled = false;
+                button.textContent = 'Update Password';
+                return;
+            }
+
+            await supabaseClient.auth.signOut();
+            window.location.href = @json(route('app.login')) + '?password_reset=success';
+        });
+
+        submitSupabaseSession();
+    </script>
 </body>
 </html>

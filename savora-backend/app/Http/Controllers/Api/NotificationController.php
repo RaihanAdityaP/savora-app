@@ -7,6 +7,7 @@ use App\Services\SupabaseService;
 use App\Services\NotificationService;
 use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 
@@ -81,10 +82,10 @@ class NotificationController extends Controller
      * Mark notification as read
      * POST /api/notifications/{id}/read
      */
-    public function markAsRead($id)
+    public function markAsRead(Request $request, string $id)
     {
         try {
-            $userId = $this->getSupabaseUserIdFromRequest(request());
+            $userId = $this->getSupabaseUserIdFromRequest($request);
             $notifications = $this->supabase->select('notifications', ['*'], [
                 'id' => $id,
                 'user_id' => $userId,
@@ -212,7 +213,7 @@ class NotificationController extends Controller
                     );
                 } catch (Exception $e) {
                     // Log but don't fail the notification creation
-                    \Log::warning('Failed to send push notification: ' . $e->getMessage());
+                    Log::warning('Failed to send push notification: ' . $e->getMessage());
                 }
             }
 
@@ -272,12 +273,17 @@ class NotificationController extends Controller
 
             $route = $data['route'] ?? 'home';
             $entityId = $data['related_entity_id'] ?? '';
-            $sent = $this->sendManualNotification($targetIds, $data['title'], $data['message'], $route, $entityId);
+            $result = $this->sendManualNotification($targetIds, $data['title'], $data['message'], $route, $entityId);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Broadcast sent successfully',
-                'data' => ['sent_count' => $sent],
+                'data' => [
+                    'sent_count' => $result['users'],
+                    'device_tokens' => $result['device_tokens'],
+                    'push_success' => $result['push_success'],
+                    'push_failure' => $result['push_failure'],
+                ],
             ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -472,7 +478,7 @@ class NotificationController extends Controller
      * Delete notification
      * DELETE /api/notifications/{id}
      */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         try {
             $this->supabase->delete('notifications', ['id' => $id]);
@@ -489,9 +495,12 @@ class NotificationController extends Controller
         }
     }
 
-    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): int
+    private function sendManualNotification(array $userIds, string $title, string $message, string $route, string $entityId = ''): array
     {
         $sent = 0;
+        $deviceTokens = 0;
+        $pushSuccess = 0;
+        $pushFailure = 0;
         $payload = ['route' => $route, 'id' => $entityId];
 
         foreach (array_unique($userIds) as $userId) {
@@ -514,15 +523,26 @@ class NotificationController extends Controller
                 ]);
 
                 if (! empty($tokens)) {
-                    $this->notification->sendToMultipleDevices(array_column($tokens, 'token'), $title, $message, $payload);
+                    $tokenList = array_column($tokens, 'token');
+                    $deviceTokens += count($tokenList);
+                    $result = $this->notification->sendToMultipleDevices($tokenList, $title, $message, $payload);
+                    $pushSuccess += $result['success'] ?? 0;
+                    $pushFailure += $result['failure'] ?? 0;
                 }
-            } catch (Exception) {
+            } catch (Exception $e) {
+                Log::warning('Manual API broadcast push failed for user ' . $userId . ': ' . $e->getMessage());
+                $pushFailure++;
             }
 
             $sent++;
         }
 
-        return $sent;
+        return [
+            'users' => $sent,
+            'device_tokens' => $deviceTokens,
+            'push_success' => $pushSuccess,
+            'push_failure' => $pushFailure,
+        ];
     }
 
     private function isAdminUser(string $userId): bool

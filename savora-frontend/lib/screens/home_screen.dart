@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/app_settings_service.dart';
+import '../services/notification_service.dart';
 import '../services/user_client.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -120,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen>
         return;
       }
       _currentUserId = userId;
+      await NotificationService().syncDeviceTokenForCurrentUser();
 
       final profile = await UserClient.getProfile(userId);
       if (mounted && profile != null) {
@@ -496,9 +498,9 @@ class _HomeScreenState extends State<HomeScreen>
               key: const ValueKey('loading'),
               height: 54,
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: AppTheme.subtleSurfaceColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: AppTheme.borderColor),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -517,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen>
                     _t('Loading more recipes...', 'Memuat resep lainnya...'),
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey.shade600,
+                      color: AppTheme.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -569,9 +571,9 @@ class _HomeScreenState extends State<HomeScreen>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -579,14 +581,14 @@ class _HomeScreenState extends State<HomeScreen>
           Icon(
             Icons.check_circle_outline_rounded,
             size: 16,
-            color: Colors.grey.shade400,
+            color: AppTheme.textMuted,
           ),
           const SizedBox(width: 8),
           // Flexible mencegah overflow
           Flexible(
             child: Text(
               _t('You have seen all recipes for you', 'Kamu sudah melihat semua resep untukmu'),
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               maxLines: 2,
@@ -900,7 +902,7 @@ class _HomeScreenState extends State<HomeScreen>
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade900,
+                color: AppTheme.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),

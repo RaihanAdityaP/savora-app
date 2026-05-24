@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class FeedController extends Controller
@@ -26,18 +27,22 @@ class FeedController extends Controller
 
         try {
             $userId   = $this->getSupabaseUserIdFromRequest($request);
-            $scored   = $this->buildScoredFeed($userId);
+            $scored   = Cache::remember(
+                "feed:scored:{$userId}",
+                now()->addMinutes(2),
+                fn () => $this->buildScoredFeed($userId)
+            );
             $total    = count($scored);
             $pageIds  = array_slice(array_keys($scored), $offset, $limit);
 
             if (empty($pageIds)) {
-                return $this->fallbackFeed($limit, $offset);
+                return $this->fallbackFeed($limit, $offset, $userId);
             }
 
-            $recipes = $this->fetchRecipesByIds($pageIds);
+            $recipes = $this->fetchRecipesByIds($pageIds, $userId);
 
             if (empty($recipes)) {
-                return $this->fallbackFeed($limit, $offset);
+                return $this->fallbackFeed($limit, $offset, $userId);
             }
 
             return response()->json([
@@ -53,7 +58,7 @@ class FeedController extends Controller
 
         } catch (Exception $e) {
             // Fallback: popular recipes tanpa personalisasi
-            return $this->fallbackFeed($limit, $offset);
+            return $this->fallbackFeed($limit, $offset, null);
         }
     }
 
@@ -383,7 +388,7 @@ class FeedController extends Controller
     }
 
     // ── Fetch full recipe data ───────────────────────────────
-    private function fetchRecipesByIds(array $ids): array
+    private function fetchRecipesByIds(array $ids, ?string $userId): array
     {
         if (empty($ids)) return [];
 
@@ -429,10 +434,10 @@ class FeedController extends Controller
                 $ordered[] = $recipe;
             }
         }
-        return $this->attachLikes($ordered);
+        return $this->attachSavedState($this->attachLikes($ordered, $userId), $userId);
     }
 
-    private function attachLikes(array $recipes): array
+    private function attachLikes(array $recipes, ?string $userId): array
     {
         $ids = array_values(array_filter(array_column($recipes, 'id')));
         if (empty($ids)) {
@@ -443,7 +448,6 @@ class FeedController extends Controller
         $liked = [];
 
         try {
-            $userId = request()->user() ? $this->getSupabaseUserIdFromRequest(request()) : null;
             $rows = $this->supabase->select(
                 'recipe_likes',
                 ['recipe_id', 'user_id'],
@@ -472,8 +476,45 @@ class FeedController extends Controller
         return $recipes;
     }
 
+    private function attachSavedState(array $recipes, ?string $userId): array
+    {
+        foreach ($recipes as $index => $recipe) {
+            $recipes[$index]['is_saved'] = false;
+        }
+
+        if (!$userId || empty($recipes)) {
+            return $recipes;
+        }
+
+        try {
+            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
+            $boardIds = array_values(array_filter(array_column($boards, 'id')));
+            if (empty($boardIds)) {
+                return $recipes;
+            }
+
+            $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+            $rows = $this->supabase->select(
+                'board_recipes',
+                ['recipe_id'],
+                [
+                    'board_id' => ['operator' => 'in', 'values' => $boardIds],
+                    'recipe_id' => ['operator' => 'in', 'values' => $recipeIds],
+                ]
+            );
+            $saved = array_fill_keys(array_column($rows, 'recipe_id'), true);
+
+            foreach ($recipes as $index => $recipe) {
+                $recipeId = $recipe['id'] ?? null;
+                $recipes[$index]['is_saved'] = $recipeId ? !empty($saved[$recipeId]) : false;
+            }
+        } catch (Exception $e) { /* skip */ }
+
+        return $recipes;
+    }
+
     // ── Fallback ─────────────────────────────────────────────
-    private function fallbackFeed(int $limit, int $offset): \Illuminate\Http\JsonResponse
+    private function fallbackFeed(int $limit, int $offset, ?string $userId): \Illuminate\Http\JsonResponse
     {
         try {
             $recipes = $this->supabase->select(
@@ -482,7 +523,7 @@ class FeedController extends Controller
                 ['status' => 'approved'],
                 ['order' => 'views_count.desc', 'limit' => $limit, 'offset' => $offset]
             );
-            $recipes = $this->attachLikes($recipes);
+            $recipes = $this->attachSavedState($this->attachLikes($recipes, $userId), $userId);
             return response()->json([
                 'success'    => true,
                 'data'       => $recipes,

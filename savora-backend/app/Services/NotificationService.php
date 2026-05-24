@@ -9,6 +9,8 @@ use Exception;
 
 class NotificationService
 {
+    private const ANDROID_CHANNEL_ID = 'savora_high_channel';
+
     private string $projectId;
     private string $fcmUrl;
 
@@ -103,9 +105,11 @@ class NotificationService
                     'android'      => [
                         'priority'     => 'high',
                         'notification' => [
-                            'channel_id'   => 'savora_channel',
+                            'channel_id'   => self::ANDROID_CHANNEL_ID,
                             'sound'        => 'default',
                             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                            'notification_priority' => 'PRIORITY_HIGH',
+                            'visibility'   => 'PUBLIC',
                         ],
                     ],
                     'apns'         => [
@@ -167,7 +171,10 @@ class NotificationService
     {
         try {
             $accessToken = $this->getAccessToken();
-            $stringData  = array_map('strval', $data);
+            $stringData  = array_map('strval', array_merge($data, [
+                'title' => $title,
+                'body'  => $body,
+            ]));
 
             $payload = [
                 'message' => [
@@ -180,8 +187,11 @@ class NotificationService
                     'android' => [
                         'priority'     => 'high',
                         'notification' => [
+                            'channel_id'   => self::ANDROID_CHANNEL_ID,
                             'sound'        => 'default',
                             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                            'notification_priority' => 'PRIORITY_HIGH',
+                            'visibility'   => 'PUBLIC',
                         ],
                     ],
                 ],

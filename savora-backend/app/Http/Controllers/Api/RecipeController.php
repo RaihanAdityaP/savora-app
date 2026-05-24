@@ -194,7 +194,11 @@ class RecipeController extends Controller
             }
             unset($recipe);
 
-            $recipes = $this->attachRecipeLikes($recipes, $this->resolveRequestUserId($request));
+            $requestUserId = $this->resolveRequestUserId($request);
+            $recipes = $this->attachSavedState(
+                $this->attachRecipeLikes($recipes, $requestUserId),
+                $requestUserId
+            );
 
             return response()->json([
                 'success'    => true,
@@ -244,7 +248,11 @@ class RecipeController extends Controller
                 'average' => $avgRating,
                 'total'   => $totalRatings,
             ];
-            $recipe = $this->attachRecipeLikes([$recipe], $this->resolveRequestUserId($request))[0];
+            $requestUserId = $this->resolveRequestUserId($request);
+            $recipe = $this->attachSavedState(
+                $this->attachRecipeLikes([$recipe], $requestUserId),
+                $requestUserId
+            )[0];
 
             if ($this->settingsService->enabled($request->input('user_id'), 'allow_analytics')) {
                 $this->supabase->update('recipes', [
@@ -702,7 +710,11 @@ class RecipeController extends Controller
             }
             unset($recipe);
 
-            $recipes = $this->attachRecipeLikes($recipes, $this->resolveRequestUserId($request));
+            $requestUserId = $this->resolveRequestUserId($request);
+            $recipes = $this->attachSavedState(
+                $this->attachRecipeLikes($recipes, $requestUserId),
+                $requestUserId
+            );
 
             return response()->json([
                 'success'    => true,
@@ -1026,6 +1038,44 @@ class RecipeController extends Controller
             $recipeId = $recipe['id'] ?? null;
             $recipes[$index]['likes_count'] = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
             $recipes[$index]['is_liked'] = $recipeId ? !empty($likedRecipeIds[$recipeId]) : false;
+        }
+
+        return $recipes;
+    }
+
+    private function attachSavedState(array $recipes, ?string $userId): array
+    {
+        foreach ($recipes as $index => $recipe) {
+            $recipes[$index]['is_saved'] = false;
+        }
+
+        if (!$userId || empty($recipes)) {
+            return $recipes;
+        }
+
+        try {
+            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
+            $boardIds = array_values(array_filter(array_column($boards, 'id')));
+            if (empty($boardIds)) {
+                return $recipes;
+            }
+
+            $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+            $rows = $this->supabase->select(
+                'board_recipes',
+                ['recipe_id'],
+                [
+                    'board_id' => ['operator' => 'in', 'values' => $boardIds],
+                    'recipe_id' => ['operator' => 'in', 'values' => $recipeIds],
+                ]
+            );
+            $saved = array_fill_keys(array_column($rows, 'recipe_id'), true);
+
+            foreach ($recipes as $index => $recipe) {
+                $recipeId = $recipe['id'] ?? null;
+                $recipes[$index]['is_saved'] = $recipeId ? !empty($saved[$recipeId]) : false;
+            }
+        } catch (Exception) {
         }
 
         return $recipes;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_client.dart';
@@ -22,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _isGoogleLoading = false;
+  StreamSubscription<AuthState>? _authSubscription;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -42,6 +45,12 @@ class _LoginScreenState extends State<LoginScreen>
     _scaleAnimation = Tween<double>(begin: 0.7, end: 1.0).animate(
         CurvedAnimation(
             parent: _animationController, curve: Curves.elasticOut));
+    _authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.passwordRecovery && mounted) {
+        _showUpdatePasswordDialog();
+      }
+    });
     _animationController.forward();
   }
 
@@ -49,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _authSubscription?.cancel();
     _animationController.dispose();
     super.dispose();
   }
@@ -234,6 +244,189 @@ class _LoginScreenState extends State<LoginScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _showResetPasswordDialog() async {
+    final emailController =
+        TextEditingController(text: _emailController.text.trim());
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.key_rounded,
+                  color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+                child: Text('Reset Password',
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your email to receive a password reset link:'),
+            const SizedBox(height: 20),
+            Container(
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: Colors.grey.shade200, width: 1.5)),
+              child: TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(
+                  color: AppTheme.primaryDark,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined,
+                      color: AppTheme.primaryTeal, size: 22),
+                  border: InputBorder.none,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Cancel',
+                style: TextStyle(color: Colors.grey.shade600)),
+          ),
+          Container(
+            decoration: BoxDecoration(
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(12)),
+            child: TextButton(
+              onPressed: () async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) return;
+                Navigator.pop(dialogContext);
+
+                final success =
+                    await AuthClient.sendPasswordResetEmail(email);
+                if (!mounted) return;
+
+                _showSnackBar(
+                  success
+                      ? 'Password reset link sent to $email'
+                      : 'Failed to send password reset link',
+                  isError: !success,
+                );
+              },
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text('Send',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    emailController.dispose();
+  }
+
+  Future<void> _showUpdatePasswordDialog() async {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  gradient: AppTheme.orangeGradient,
+                  borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.lock_reset_rounded,
+                  color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+                child: Text('New Password',
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Create a new password for your Savora account.'),
+            const SizedBox(height: 18),
+            _buildDialogPasswordField(passwordController, 'New password'),
+            const SizedBox(height: 12),
+            _buildDialogPasswordField(confirmController, 'Confirm password'),
+          ],
+        ),
+        actions: [
+          Container(
+            decoration: BoxDecoration(
+                gradient: AppTheme.orangeGradient,
+                borderRadius: BorderRadius.circular(12)),
+            child: TextButton(
+              onPressed: () async {
+                final password = passwordController.text;
+                final confirm = confirmController.text;
+
+                if (password.length < 6) {
+                  _showSnackBar('Password must be at least 6 characters',
+                      isError: true);
+                  return;
+                }
+                if (password != confirm) {
+                  _showSnackBar('Password confirmation does not match',
+                      isError: true);
+                  return;
+                }
+
+                final success = await AuthClient.updatePassword(password);
+                if (!dialogContext.mounted || !mounted) return;
+                Navigator.pop(dialogContext);
+                _showSnackBar(
+                  success
+                      ? 'Password updated. Please log in again.'
+                      : 'Failed to update password',
+                  isError: !success,
+                );
+                if (success) await AuthClient.logout();
+              },
+              child: const Text('Update',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    passwordController.dispose();
+    confirmController.dispose();
   }
 
   void _showBannedDialog({required String reason, String? bannedAt}) {
@@ -445,7 +638,49 @@ class _LoginScreenState extends State<LoginScreen>
                                 icon: Icons.lock_outline_rounded,
                                 color: AppTheme.primaryOrange,
                                 isPassword: true),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                TextButton(
+                                  onPressed: _showResendVerificationDialog,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Email not verified?',
+                                    style: TextStyle(
+                                      color: AppTheme.primaryCoral,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _showResetPasswordDialog,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Forgot password?',
+                                    style: TextStyle(
+                                      color: AppTheme.primaryTeal,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 22),
 
                             // Login button
                             Container(
@@ -571,28 +806,6 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     const SizedBox(height: 20),
-
-                    // Resend verification
-                    TextButton(
-                      onPressed: _showResendVerificationDialog,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        backgroundColor:
-                            Colors.white.withValues(alpha: 0.15),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text('Email not verified?',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                              decorationColor:
-                                  Colors.white.withValues(alpha: 0.95))),
-                    ),
-                    const SizedBox(height: 18),
 
                     // Register link
                     Container(
@@ -760,6 +973,35 @@ class _LoginScreenState extends State<LoginScreen>
               borderSide: BorderSide(color: color, width: 2)),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDialogPasswordField(
+    TextEditingController controller,
+    String hint,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200, width: 1.5),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: true,
+        style: const TextStyle(
+          color: AppTheme.primaryDark,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: const Icon(Icons.lock_outline_rounded,
+              color: AppTheme.primaryOrange, size: 22),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

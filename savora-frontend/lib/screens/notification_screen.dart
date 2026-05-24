@@ -561,7 +561,7 @@ class _NotificationScreenState extends State<NotificationScreen>
               padding: const EdgeInsets.all(8.0),
               child: Container(
                 decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.surfaceColor,
                     shape: BoxShape.circle,
                     boxShadow: AppTheme.cardShadow),
                 child: IconButton(
@@ -575,7 +575,7 @@ class _NotificationScreenState extends State<NotificationScreen>
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.surfaceColor,
                       shape: BoxShape.circle,
                       boxShadow: AppTheme.cardShadow),
                   child: PopupMenuButton<String>(
@@ -714,7 +714,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           Text(_t('No notifications', 'Tidak ada notifikasi'),
               style: TextStyle(
                   fontSize: 20,
-                  color: Colors.grey.shade700,
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(_t('Notifications will appear here',
@@ -798,11 +798,15 @@ class _NotificationScreenState extends State<NotificationScreen>
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isRead
+                ? AppTheme.surfaceColor
+                : (AppTheme.isDarkMode
+                    ? AppTheme.primaryCoral.withValues(alpha: 0.08)
+                    : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
                 color: isRead
-                    ? Colors.grey.shade200
+                    ? AppTheme.borderColor
                     : color.withValues(alpha: 0.5),
                 width: isRead ? 1 : 2),
             boxShadow: [
