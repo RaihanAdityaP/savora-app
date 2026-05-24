@@ -255,25 +255,37 @@ class AuthClient {
   // LOGOUT
   // ─────────────────────────────────────────────
   static Future<void> logout() async {
-    try {
-      debugPrint('AuthClient: Logging out...');
+    debugPrint('AuthClient: Logging out...');
 
+    try {
       await ApiService.post('/auth/logout', {});
+    } catch (e) {
+      debugPrint('AuthClient.logout backend error: $e');
+    }
+
+    try {
       await _supabase.auth.signOut();
 
-      if (!kIsWeb) await _googleSignIn.signOut();
 
-      ApiService.clearToken();
 
       // ── HAPUS dari disk ──
-      await AuthStorage.clear();
 
-      debugPrint('AuthClient: Logout successful');
     } catch (e) {
-      debugPrint('AuthClient.logout error: $e');
-      ApiService.clearToken();
-      await AuthStorage.clear();
+      debugPrint('AuthClient.logout Supabase error: $e');
     }
+
+    if (!kIsWeb) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        debugPrint('AuthClient.logout Google error: $e');
+      }
+    }
+
+    ApiService.clearToken();
+    await AuthStorage.clear();
+
+    debugPrint('AuthClient: Logout complete');
   }
 
   // ─────────────────────────────────────────────

@@ -408,6 +408,14 @@
         const supabaseUrl = @json($supabaseUrl);
         const supabaseAnonKey = @json($supabaseAnonKey);
         const supabaseOAuthRedirectUrl = @json($supabaseOAuthRedirectUrl);
+        const loginUrl = @json(route('app.login'));
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const isLogoutRedirect = searchParams.get('logged_out') === '1';
+        const isAuthCallback = searchParams.has('code')
+            || hashParams.has('access_token')
+            || hashParams.has('refresh_token')
+            || hashParams.get('type') === 'recovery';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
             auth: {
                 detectSessionInUrl: true,
@@ -416,11 +424,19 @@
         });
 
         async function submitSupabaseSession() {
-            const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+            if (isLogoutRedirect) {
+                await supabaseClient.auth.signOut();
+                clearSupabaseBrowserSession();
+                window.history.replaceState({}, document.title, loginUrl);
+                return;
+            }
+
             if (hashParams.get('type') === 'recovery') {
                 document.getElementById('new-password-modal').classList.remove('hidden');
                 return;
             }
+
+            if (!isAuthCallback) return;
 
             const { data } = await supabaseClient.auth.getSession();
             const token = data?.session?.access_token;
@@ -428,6 +444,26 @@
 
             document.getElementById('supabase-token-input').value = token;
             document.getElementById('supabase-token-form').submit();
+        }
+
+        function clearSupabaseBrowserSession() {
+            try {
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            } catch (error) {}
+
+            try {
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const key = sessionStorage.key(i);
+                    if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                        sessionStorage.removeItem(key);
+                    }
+                }
+            } catch (error) {}
         }
 
         document.getElementById('google-login-button')?.addEventListener('click', async () => {
@@ -473,7 +509,8 @@
             }
 
             await supabaseClient.auth.signOut();
-            window.location.href = @json(route('app.login')) + '?password_reset=success';
+            clearSupabaseBrowserSession();
+            window.location.href = loginUrl + '?password_reset=success';
         });
 
         submitSupabaseSession();

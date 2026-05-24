@@ -24,9 +24,29 @@ $isEnglish        = session('user_language', 'en') === 'en';
         username: @js($resolvedUsername),
         avatarUrl: @js($resolvedAvatar),
         pathname: window.location.pathname,
-        handleLogout() {
+        async handleLogout() {
             if (!confirm('Keluar dari akun Savora?')) return;
+            this.clearSupabaseBrowserSession();
             document.getElementById('logout-form').submit();
+        },
+        clearSupabaseBrowserSession() {
+            try {
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            } catch (error) {}
+
+            try {
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const key = sessionStorage.key(i);
+                    if (key && key.startsWith('sb-') && key.includes('auth-token')) {
+                        sessionStorage.removeItem(key);
+                    }
+                }
+            } catch (error) {}
         },
         profileUrl() {
             return this.userId ? '/profile/' + this.userId : '#';

@@ -192,7 +192,7 @@ class LoginController extends Controller
         session()->invalidate();
         session()->regenerateToken();
 
-        return redirect()->route('app.login')
+        return redirect()->route('app.login', ['logged_out' => 1])
             ->with('status', 'You have been logged out.');
     }
 
