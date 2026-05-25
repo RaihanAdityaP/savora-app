@@ -324,6 +324,19 @@
     }
     .btn-icon-savora:active { transform: scale(.98); }
 
+    .savora-svg-icon {
+        display: block;
+        flex-shrink: 0;
+        transform-box: fill-box;
+        transform-origin: center;
+    }
+
+    .savora-icon-center {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .btn-translate-savora {
         display: inline-flex;
         align-items: center;
@@ -383,8 +396,11 @@
     .input-wrapper-savora .input-icon {
         position: absolute; left: 14px; top: 50%;
         transform: translateY(-50%);
+        transform-box: fill-box;
+        transform-origin: center;
         color: var(--color-text-muted);
         pointer-events: none; font-size: 18px; line-height: 1;
+        display: block;
     }
     .input-wrapper-savora .input-savora.has-icon { padding-left: 42px; }
 

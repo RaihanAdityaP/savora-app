@@ -66,6 +66,18 @@ class RecipeController extends Controller
                 ['order' => 'created_at.desc']
             );
 
+            $ratingByUser = [];
+            foreach ($ratings as $ratingRow) {
+                if (! empty($ratingRow['user_id'])) {
+                    $ratingByUser[$ratingRow['user_id']] = (int) ($ratingRow['rating'] ?? 0);
+                }
+            }
+
+            foreach ($comments as &$comment) {
+                $comment['rating'] = $ratingByUser[$comment['user_id'] ?? ''] ?? null;
+            }
+            unset($comment);
+
             $tags = [];
             foreach ($recipe['recipe_tags'] ?? [] as $rt) {
                 if ($rt['tags'] ?? null) $tags[] = $rt['tags'];
@@ -354,7 +366,10 @@ class RecipeController extends Controller
     // POST /app/recipes/{id}/comment
     public function postComment(Request $request, string $id)
     {
-        $request->validate(['content' => 'required|string|max:1000']);
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'content' => 'required|string|max:1000',
+        ]);
 
         try {
             $userId = session('user_id');
@@ -363,6 +378,24 @@ class RecipeController extends Controller
                 'user_id'   => $userId,
                 'content'   => $request->input('content'),
             ]);
+
+            $existingRating = $this->supabase->select('recipe_ratings', ['id'], [
+                'user_id' => $userId,
+                'recipe_id' => $id,
+            ]);
+
+            if (! empty($existingRating)) {
+                $this->supabase->update('recipe_ratings',
+                    ['rating' => (int) $request->input('rating')],
+                    ['user_id' => $userId, 'recipe_id' => $id]
+                );
+            } else {
+                $this->supabase->insert('recipe_ratings', [
+                    'user_id' => $userId,
+                    'recipe_id' => $id,
+                    'rating' => (int) $request->input('rating'),
+                ]);
+            }
 
             $recipes = $this->supabase->select('recipes', ['user_id', 'title'], ['id' => $id]);
             if (! empty($recipes)) {
@@ -389,7 +422,7 @@ class RecipeController extends Controller
                 }
             }
 
-            return back()->with('status', $this->tr('Comment sent.', 'Komentar berhasil dikirim.'));
+            return back()->with('status', $this->tr('Review sent.', 'Ulasan berhasil dikirim.'));
         } catch (Exception $e) {
             return back()->with('error', $this->tr('Failed: ', 'Gagal: ') . $e->getMessage());
         }

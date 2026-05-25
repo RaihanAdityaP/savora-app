@@ -231,7 +231,7 @@
             {{-- Header --}}
             <div class="flex items-center gap-3 mb-5">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-accent">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="savora-svg-icon w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
@@ -273,9 +273,9 @@
                     <button type="submit" :disabled="loading"
                             class="btn-primary-savora flex-1 py-3 rounded-2xl text-sm disabled:opacity-60">
                         <span x-show="!loading" class="flex items-center gap-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="savora-svg-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
                             Send
                         </span>
@@ -298,9 +298,9 @@
         <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6" onclick="event.stopPropagation()">
             <div class="flex items-center gap-3 mb-5">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 bg-gradient-accent">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="savora-svg-icon w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H3v-4l5.257-5.257A6 6 0 1121 9z"/>
+                              d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3zm0 0v8m-3-3h6"/>
                     </svg>
                 </div>
                 <div class="flex-1">

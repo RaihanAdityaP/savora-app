@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/notification_screen.dart';
 import 'screens/recipes/detail_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/searching_screen.dart';
@@ -132,6 +133,8 @@ class _DeepLinkParser {
           return _DeepLinkTarget.home();
         case 'settings':
           return _DeepLinkTarget.settings();
+        case 'notifications':
+          return _DeepLinkTarget.notifications();
       }
       return null;
     }
@@ -176,9 +179,10 @@ class _DeepLinkTarget {
   factory _DeepLinkTarget.search()           => const _DeepLinkTarget._(_DeepLinkType.search);
   factory _DeepLinkTarget.home()             => const _DeepLinkTarget._(_DeepLinkType.home);
   factory _DeepLinkTarget.settings()        => const _DeepLinkTarget._(_DeepLinkType.settings);
+  factory _DeepLinkTarget.notifications()   => const _DeepLinkTarget._(_DeepLinkType.notifications);
 }
 
-enum _DeepLinkType { recipe, profile, search, home, settings }
+enum _DeepLinkType { recipe, profile, search, home, settings, notifications }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // APP
@@ -263,6 +267,8 @@ class _MyAppState extends State<MyApp> {
           _navigateTo(_DeepLinkTarget.recipe(id));
         } else if (route == 'profile' && id != null && id.isNotEmpty) {
           _navigateTo(_DeepLinkTarget.profile(id));
+        } else if (route == 'notifications') {
+          _navigateTo(_DeepLinkTarget.notifications());
         } else if (route == 'home') {
           _navigateTo(_DeepLinkTarget.home());
         }
@@ -325,6 +331,9 @@ class _MyAppState extends State<MyApp> {
       case _DeepLinkType.settings:
         screen = const SettingsScreen();
         break;
+      case _DeepLinkType.notifications:
+        screen = const NotificationScreen();
+        break;
       case _DeepLinkType.home:
         screen = const HomeScreen();
         break;
@@ -353,6 +362,8 @@ class _MyAppState extends State<MyApp> {
           return const SearchingScreen();
         case _DeepLinkType.settings:
           return const SettingsScreen();
+        case _DeepLinkType.notifications:
+          return const NotificationScreen();
         case _DeepLinkType.home:
           break;
       }

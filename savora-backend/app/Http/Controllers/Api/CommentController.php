@@ -44,6 +44,16 @@ class CommentController extends Controller
                 ]
             );
 
+            foreach ($comments as &$comment) {
+                $ratings = $this->supabase->select('recipe_ratings',
+                    ['rating'],
+                    ['recipe_id' => $recipeId, 'user_id' => $comment['user_id']]
+                );
+
+                $comment['rating'] = !empty($ratings) ? (int) $ratings[0]['rating'] : null;
+            }
+            unset($comment);
+
             return response()->json([
                 'success' => true,
                 'data' => $comments,
@@ -132,6 +142,7 @@ class CommentController extends Controller
         $validator = Validator::make($request->all(), [
             'recipe_id' => 'required|uuid',
             'user_id' => 'required|uuid',
+            'rating' => 'required|integer|min:1|max:5',
             'content' => 'required|string|min:1|max:1000',
         ]);
 
@@ -149,6 +160,27 @@ class CommentController extends Controller
                 'user_id' => $request->input('user_id'),
                 'content' => $request->input('content'),
             ]);
+
+            $existingRating = $this->supabase->select('recipe_ratings', ['id'], [
+                'recipe_id' => $request->input('recipe_id'),
+                'user_id' => $request->input('user_id'),
+            ]);
+
+            if (!empty($existingRating)) {
+                $this->supabase->update('recipe_ratings',
+                    ['rating' => (int) $request->input('rating')],
+                    [
+                        'recipe_id' => $request->input('recipe_id'),
+                        'user_id' => $request->input('user_id'),
+                    ]
+                );
+            } else {
+                $this->supabase->insert('recipe_ratings', [
+                    'recipe_id' => $request->input('recipe_id'),
+                    'user_id' => $request->input('user_id'),
+                    'rating' => (int) $request->input('rating'),
+                ]);
+            }
 
             // Get recipe owner to send notification
             $recipeData = $this->supabase->select('recipes', 
@@ -219,7 +251,9 @@ class CommentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Comment posted successfully',
-                'data' => !empty($fullComment) ? $fullComment[0] : $comment[0],
+                'data' => array_merge(!empty($fullComment) ? $fullComment[0] : $comment[0], [
+                    'rating' => (int) $request->input('rating'),
+                ]),
             ], 201);
         } catch (Exception $e) {
             return response()->json([

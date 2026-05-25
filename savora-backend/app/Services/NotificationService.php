@@ -23,10 +23,17 @@ class NotificationService
     // ─────────────────────────────────────────────
     private function getCredentials(): array
     {
-        $json = env('FCM_CREDENTIALS_JSON', '');
+        $json = trim((string) env('FCM_CREDENTIALS_JSON', ''));
 
         if (empty($json)) {
             throw new Exception('FCM_CREDENTIALS_JSON is not set in environment variables.');
+        }
+
+        if (
+            (str_starts_with($json, "'") && str_ends_with($json, "'")) ||
+            (str_starts_with($json, '"') && str_ends_with($json, '"'))
+        ) {
+            $json = substr($json, 1, -1);
         }
 
         $credentials = json_decode($json, true);

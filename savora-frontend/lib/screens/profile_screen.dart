@@ -219,9 +219,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (!mounted) return;
 
       for (var recipe in recipes) {
-        final avg = recipe['average_rating'];
-        if (avg != null) {
-          _recipeRatings[recipe['id']] = (avg as num).toDouble();
+        final avg = recipe['average_rating'] ??
+            recipe['rating_avg'] ??
+            recipe['rating_info']?['average'];
+        final rating = avg is num ? avg.toDouble() : double.tryParse(avg?.toString() ?? '');
+        if (rating != null && rating > 0) {
+          _recipeRatings[recipe['id'].toString()] = rating;
         }
       }
 
@@ -1004,7 +1007,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ..._userRecipes.map((recipe) {
               return RecipeCard(
                 recipe: recipe,
-                rating: _recipeRatings[recipe['id']],
+                rating: _recipeRatings[recipe['id'].toString()],
                 currentUserId: _currentUserId,
                 onTap: () {
                   Navigator.push(

@@ -566,11 +566,21 @@ class _RecipeCardState extends State<RecipeCard> {
     final servings = widget.recipe['servings'];
     final calories = widget.recipe['calories'];
     final difficulty = widget.recipe['difficulty']?.toString();
-    final ratingCount = _toInt(widget.recipe['rating_count']);
+    final ratingInfo = widget.recipe['rating_info'];
+    final ratingCount = _toInt(
+      widget.recipe['rating_count'] ??
+          (ratingInfo is Map ? ratingInfo['total'] : null),
+    );
     final effectiveRating = widget.rating ??
         (widget.recipe['rating_avg'] is num
             ? (widget.recipe['rating_avg'] as num).toDouble()
-            : double.tryParse(widget.recipe['rating_avg']?.toString() ?? ''));
+            : double.tryParse(
+                (widget.recipe['rating_avg'] ??
+                        widget.recipe['average_rating'] ??
+                        (ratingInfo is Map ? ratingInfo['average'] : null))
+                    ?.toString() ??
+                    '',
+              ));
 
     final tags = _recipeTags();
 
@@ -716,18 +726,6 @@ class _RecipeCardState extends State<RecipeCard> {
                         categoryName.toString(),
                       ),
                     ),
-                  Positioned(
-                    left: 14,
-                    bottom: 14,
-                    child: _buildRatingBadge(effectiveRating, ratingCount),
-                  ),
-                  if (difficulty != null && difficulty.isNotEmpty)
-                    Positioned(
-                      bottom: 14,
-                      left: 0,
-                      right: 0,
-                      child: Center(child: _buildDifficultyBadge(difficulty)),
-                    ),
                 ],
               ),
               ),
@@ -752,34 +750,6 @@ class _RecipeCardState extends State<RecipeCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (effectiveRating != null && effectiveRating > 0) ...[
-                          const SizedBox(width: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryCoral
-                                  .withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.star_rounded,
-                                    color: AppTheme.primaryYellow, size: 16),
-                                const SizedBox(width: 3),
-                                Text(
-                                  effectiveRating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppTheme.primaryCoral,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                     if (description.isNotEmpty) ...[
@@ -793,12 +763,16 @@ class _RecipeCardState extends State<RecipeCard> {
                     ],
                     if (cookingTime != null ||
                         servings != null ||
-                        calories != null) ...[
+                        calories != null ||
+                        (effectiveRating != null && effectiveRating > 0) ||
+                        (difficulty != null && difficulty.isNotEmpty)) ...[
                       const SizedBox(height: 14),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
+                          if (effectiveRating != null && effectiveRating > 0)
+                            _buildRatingMetaChip(effectiveRating, ratingCount),
                           if (cookingTime != null)
                             _buildMetaChip(
                               Icons.access_time_rounded,
@@ -814,6 +788,8 @@ class _RecipeCardState extends State<RecipeCard> {
                               Icons.local_fire_department_rounded,
                               '$calories ${_t('cal', 'kal')}',
                             ),
+                          if (difficulty != null && difficulty.isNotEmpty)
+                            _buildDifficultyMetaChip(difficulty),
                         ],
                       ),
                     ],
@@ -952,74 +928,53 @@ class _RecipeCardState extends State<RecipeCard> {
     );
   }
 
-  Widget _buildRatingBadge(double? rating, int ratingCount) {
-    if (rating != null && rating > 0) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppTheme.primaryYellow,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.20),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.star_rounded, color: Color(0xFF1C1917), size: 15),
-            const SizedBox(width: 4),
-            Text(
-              rating.toStringAsFixed(1),
-              style: const TextStyle(
-                color: Color(0xFF1C1917),
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            if (ratingCount > 0) ...[
-              const SizedBox(width: 3),
-              Text(
-                '($ratingCount)',
-                style: TextStyle(
-                  color: const Color(0xFF1C1917).withValues(alpha: 0.72),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
+  Widget _buildRatingMetaChip(double rating, int ratingCount) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.55),
+        color: AppTheme.subtleSurfaceColor,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppTheme.borderColor),
       ),
-      child: Text(
-        _t('No rating yet', 'Belum ada rating'),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...List.generate(5, (index) {
+            final value = index + 1;
+            final icon = rating >= value
+                ? Icons.star_rounded
+                : rating >= value - 0.5
+                    ? Icons.star_half_rounded
+                    : Icons.star_outline_rounded;
+            return Icon(icon, size: 14, color: AppTheme.primaryYellow);
+          }),
+          const SizedBox(width: 6),
+          Text(
+            rating.toStringAsFixed(1),
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (ratingCount > 0) ...[
+            const SizedBox(width: 3),
+            Text(
+              '($ratingCount)',
+              style: TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildDifficultyBadge(String difficulty) {
+  Widget _buildDifficultyMetaChip(String difficulty) {
     final key = difficulty.toLowerCase();
-    final color = switch (key) {
-      'easy' || 'mudah' => const Color(0xFF22C55E),
-      'medium' || 'sedang' => const Color(0xFFEAB308),
-      'hard' || 'sulit' => const Color(0xFFEF4444),
-      _ => Colors.grey,
-    };
     final label = switch (key) {
       'easy' || 'mudah' => _t('Easy', 'Mudah'),
       'medium' || 'sedang' => _t('Medium', 'Sedang'),
@@ -1027,27 +982,7 @@ class _RecipeCardState extends State<RecipeCard> {
       _ => difficulty,
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
+    return _buildMetaChip(Icons.bar_chart_rounded, label);
   }
 
   Widget _buildMetaChip(IconData icon, String label) {

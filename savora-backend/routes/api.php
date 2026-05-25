@@ -266,6 +266,7 @@ Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
         Route::get('/', [NotificationController::class, 'getUserNotifications']);
         Route::get('unread-count', [NotificationController::class, 'getUnreadCount']);
         Route::get('devices', [NotificationController::class, 'getUserDevices']);
+        Route::get('{id}', [NotificationController::class, 'show']);
     });
 
     Route::middleware('throttle:30,1')->group(function () {

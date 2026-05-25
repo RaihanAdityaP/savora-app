@@ -120,6 +120,34 @@ class NotificationController extends Controller
         }
     }
 
+    public function show(Request $request, string $id)
+    {
+        try {
+            $userId = $this->getSupabaseUserIdFromRequest($request);
+            $notifications = $this->supabase->select('notifications', ['*'], [
+                'id' => $id,
+                'user_id' => $userId,
+            ], ['limit' => 1]);
+
+            if (empty($notifications)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Notification not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $notifications[0],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * Mark all notifications as read
      * POST /api/notifications/user/{userId}/read-all

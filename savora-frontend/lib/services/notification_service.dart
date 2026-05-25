@@ -77,7 +77,7 @@ class NotificationService {
       debugPrint('Starting NotificationService initialization...');
 
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@drawable/ic_stat_savora');
 
       const InitializationSettings initializationSettings =
           InitializationSettings(
@@ -275,7 +275,7 @@ class NotificationService {
         showWhen: true,
         enableVibration: true,
         playSound: true,
-        icon: '@mipmap/ic_launcher',
+        icon: '@drawable/ic_stat_savora',
         color: const Color(0xFFFF6B6B),
         largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         styleInformation: BigTextStyleInformation(
@@ -355,7 +355,7 @@ class NotificationService {
 
     final plugin = FlutterLocalNotificationsPlugin();
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      android: AndroidInitializationSettings('@drawable/ic_stat_savora'),
     );
 
     await plugin.initialize(
@@ -389,7 +389,7 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_stat_savora',
       color: const Color(0xFFFF6B6B),
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       styleInformation: BigTextStyleInformation(

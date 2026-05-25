@@ -604,15 +604,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Container(
       margin: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryCoral,
-            AppTheme.primaryOrange,
-            AppTheme.primaryYellow,
-          ],
-        ),
+        gradient: AppTheme.accentGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(

@@ -21,8 +21,14 @@
     $authorAvatar   = $authorBlock['avatar'] ?? ($profiles['avatar_url'] ?? null);
     $tagList        = $recipe['tags'] ?? collect($recipe['recipe_tags'] ?? [])->pluck('tags.name')->filter()->take(3)->values()->all();
     $prepTime       = $recipe['prep_time'] ?? $recipe['cooking_time'] ?? $recipe['cook_time'] ?? null;
-    $ratingValue    = $rating ?? ($recipe['rating_avg'] ?? null);
-    $ratingCount    = (int) ($recipe['rating_count'] ?? 0);
+    $ratingInfo     = $recipe['rating_info'] ?? [];
+    $ratingValue    = $rating ?? ($recipe['rating_avg'] ?? ($recipe['average_rating'] ?? ($ratingInfo['average'] ?? null)));
+    $ratingCount    = (int) ($recipe['rating_count'] ?? ($ratingInfo['total'] ?? 0));
+    $diffLabels     = $isEnglish
+        ? ['easy'=>'Easy','medium'=>'Medium','hard'=>'Hard','mudah'=>'Easy','sedang'=>'Medium','sulit'=>'Hard']
+        : ['easy'=>'Mudah','medium'=>'Sedang','hard'=>'Sulit','mudah'=>'Mudah','sedang'=>'Sedang','sulit'=>'Sulit'];
+    $diffKey        = strtolower((string) ($recipe['difficulty'] ?? ''));
+    $difficultyLabel = $diffKey !== '' ? ($diffLabels[$diffKey] ?? ucfirst((string) $recipe['difficulty'])) : null;
     $resolvedLikesCount = (int) ($likesCount ?? ($recipe['likes_count'] ?? 0));
     $resolvedIsLiked = (bool) ($isLiked ?? ($recipe['is_liked'] ?? false));
     $linkHref       = $detailHref ?? (isset($recipe['id']) ? route('app.recipe.show', $recipe['id']) : '#');
@@ -117,41 +123,6 @@
             </span>
         @endif
 
-        {{-- Rating badge (bottom-left) --}}
-        <div class="absolute bottom-4 left-4 pointer-events-none">
-            @if ($ratingValue !== null && (float) $ratingValue > 0)
-                <div class="px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow"
-                     style="background: #F59E0B; color: #1C1917;">
-                    <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    <span>{{ number_format((float) $ratingValue, 1) }}</span>
-                    @if($ratingCount > 0)
-                        <span class="font-semibold text-xs" style="opacity: 0.80;">({{ $ratingCount }})</span>
-                    @endif
-                </div>
-            @else
-                <div class="px-3 py-1.5 rounded-full text-xs font-semibold shadow"
-                     style="background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); color: #ffffff;">
-                    {{ $isEnglish ? 'No rating yet' : 'Belum ada rating' }}
-                </div>
-            @endif
-        </div>
-
-        {{-- Difficulty badge (bottom center, agar category tetap bottom-right) --}}
-        @if (!empty($recipe['difficulty']))
-            @php
-                $diffColors = ['easy'=>'#22c55e','medium'=>'#eab308','hard'=>'#ef4444','mudah'=>'#22c55e','sedang'=>'#eab308','sulit'=>'#ef4444'];
-                $diffLabels = $isEnglish
-                    ? ['easy'=>'Easy','medium'=>'Medium','hard'=>'Hard','mudah'=>'Easy','sedang'=>'Medium','sulit'=>'Hard']
-                    : ['easy'=>'Mudah','medium'=>'Sedang','hard'=>'Sulit','mudah'=>'Mudah','sedang'=>'Sedang','sulit'=>'Sulit'];
-                $diff = strtolower($recipe['difficulty']);
-            @endphp
-            <span class="absolute bottom-4 left-1/2 -translate-x-1/2 px-2.5 py-1 text-white text-xs font-bold shadow rounded-full pointer-events-none"
-                  style="background: {{ $diffColors[$diff] ?? '#6b7280' }};">
-                {{ $diffLabels[$diff] ?? ucfirst($recipe['difficulty']) }}
-            </span>
-        @endif
     </div>
 
     {{-- Content area --}}
@@ -162,15 +133,6 @@
             <h3 class="text-xl font-bold leading-tight line-clamp-2 flex-1" style="color: var(--color-text-primary);">
                 {{ $title }}
             </h3>
-            @if ($ratingValue !== null && (float) $ratingValue > 0)
-                <span class="shrink-0 text-sm font-bold flex items-center gap-0.5 px-2 py-1 rounded-lg"
-                      style="background: rgba(231,111,81,0.10); color: var(--color-primary-coral);">
-                    <svg class="w-4 h-4" style="color: #F59E0B;" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    {{ number_format((float) $ratingValue, 1) }}
-                </span>
-            @endif
         </div>
 
         {{-- Description --}}
@@ -182,6 +144,32 @@
 
         {{-- Meta chips --}}
         <div class="flex flex-wrap gap-2 mb-4">
+            @if ($ratingValue !== null && (float) $ratingValue > 0)
+                <span class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full"
+                      style="background: var(--color-chip-bg); color: var(--color-text-secondary);">
+                    <span class="flex items-center gap-0.5" aria-label="{{ number_format((float) $ratingValue, 1) }} dari 5">
+                        @for($i = 1; $i <= 5; $i++)
+                            @php
+                                $ratingNumber = (float) $ratingValue;
+                                $isFull = $ratingNumber >= $i;
+                                $isHalf = ! $isFull && $ratingNumber >= ($i - 0.5);
+                            @endphp
+                            @if($isHalf)
+                                <span class="relative inline-block text-sm text-gray-300 leading-none">
+                                    &#9733;
+                                    <span class="absolute inset-0 overflow-hidden text-yellow-400 leading-none" style="width: 50%;">&#9733;</span>
+                                </span>
+                            @else
+                                <span class="text-sm {{ $isFull ? 'text-yellow-400' : 'text-gray-300' }}">&#9733;</span>
+                            @endif
+                        @endfor
+                    </span>
+                    <span class="font-bold">{{ number_format((float) $ratingValue, 1) }}</span>
+                    @if($ratingCount > 0)
+                        <span class="text-xs" style="color: var(--color-text-muted);">({{ $ratingCount }})</span>
+                    @endif
+                </span>
+            @endif
             @if ($prepTime)
                 <span class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full"
                       style="background: var(--color-chip-bg); color: var(--color-text-secondary);">
@@ -207,6 +195,15 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
                     </svg>
                     {{ $recipe['calories'] }} {{ $isEnglish ? 'cal' : 'kal' }}
+                </span>
+            @endif
+            @if ($difficultyLabel)
+                <span class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full"
+                      style="background: var(--color-chip-bg); color: var(--color-text-secondary);">
+                    <svg class="w-4 h-4 shrink-0" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 17V9m4 8V7m4 10v-5"/>
+                    </svg>
+                    {{ $difficultyLabel }}
                 </span>
             @endif
         </div>

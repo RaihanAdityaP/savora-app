@@ -236,6 +236,7 @@ class UserController extends Controller
                     $recipes[$index]['is_liked'] = false;
                 }
             }
+            $recipes = $this->enrichRecipeRatings($recipes);
 
             return response()->json([
                 'success' => true,
@@ -903,6 +904,7 @@ class UserController extends Controller
                 ['user_id' => $id, 'status' => $status],
                 ['order' => 'created_at.desc', 'limit' => $limit, 'offset' => $offset]
             );
+            $recipes = $this->enrichRecipeRatings($recipes);
 
             return response()->json([
                 'success' => true,
@@ -1011,5 +1013,33 @@ class UserController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function enrichRecipeRatings(array $recipes): array
+    {
+        foreach ($recipes as $index => $recipe) {
+            $recipeId = $recipe['id'] ?? null;
+            if (! $recipeId) continue;
+
+            try {
+                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipeId]);
+                $total = count($ratings);
+                $average = $total > 0
+                    ? round(array_sum(array_column($ratings, 'rating')) / $total, 1)
+                    : 0;
+
+                $recipes[$index]['rating_avg'] = $average;
+                $recipes[$index]['average_rating'] = $average;
+                $recipes[$index]['rating_count'] = $total;
+                $recipes[$index]['rating_info'] = ['average' => $average, 'total' => $total];
+            } catch (Exception $e) {
+                $recipes[$index]['rating_avg'] = 0;
+                $recipes[$index]['average_rating'] = 0;
+                $recipes[$index]['rating_count'] = 0;
+                $recipes[$index]['rating_info'] = ['average' => 0, 'total' => 0];
+            }
+        }
+
+        return $recipes;
     }
 }

@@ -84,14 +84,6 @@
                 <span class="absolute bottom-4 right-4 px-3 py-1 text-white text-xs font-bold rounded-full shadow"
                       style="background: var(--gradient-accent);">{{ $category }}</span>
             @endif
-            @if($avgRating > 0)
-                <div class="absolute bottom-4 left-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    {{ number_format($avgRating, 1) }} ({{ $totalRatings }})
-                </div>
-            @endif
         </div>
 
         {{-- Title & Actions --}}
@@ -170,6 +162,31 @@
 
             {{-- Meta chips --}}
             <div class="flex flex-wrap gap-2 mb-4">
+                @if($avgRating > 0)
+                    <span class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-sm font-medium rounded-full" style="color: var(--color-text-secondary);">
+                        <span class="flex items-center gap-0.5" aria-label="{{ number_format($avgRating, 1) }} dari 5">
+                            @for($i = 1; $i <= 5; $i++)
+                                @php
+                                    $ratingValue = (float) $avgRating;
+                                    $isFull = $ratingValue >= $i;
+                                    $isHalf = ! $isFull && $ratingValue >= ($i - 0.5);
+                                @endphp
+                                @if($isHalf)
+                                    <span class="relative inline-block text-sm text-gray-300 leading-none">
+                                        &#9733;
+                                        <span class="absolute inset-0 overflow-hidden text-yellow-400 leading-none" style="width: 50%;">&#9733;</span>
+                                    </span>
+                                @else
+                                    <span class="text-sm {{ $isFull ? 'text-yellow-400' : 'text-gray-300' }}">&#9733;</span>
+                                @endif
+                            @endfor
+                        </span>
+                        <span class="font-bold">{{ number_format($avgRating, 1) }}</span>
+                        @if($totalRatings > 0)
+                            <span class="text-xs" style="color: var(--color-text-muted);">({{ $totalRatings }})</span>
+                        @endif
+                    </span>
+                @endif
                 @if(!empty($recipe['cooking_time']))
                     <span class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-sm font-medium rounded-full" style="color: var(--color-text-secondary);">
                         <svg class="w-4 h-4" style="color: var(--color-primary-coral);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,40 +366,10 @@
             />
         </div>
 
-        {{-- Rating --}}
+        {{-- Rating & Comments --}}
         <div class="card-savora p-5 mb-4">
             <div class="mb-4 flex items-center justify-between">
-                <x-app-theme.section-header title="Rating" :icon="$svgStar" />
-                @if($avgRating > 0)
-                    <span class="flex items-center gap-1 font-bold" style="color: var(--color-primary-yellow);">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                        </svg>
-                        {{ number_format($avgRating, 1) }} / 5
-                        <span class="font-normal text-xs" style="color: var(--color-text-secondary);">({{ $totalRatings }})</span>
-                    </span>
-                @endif
-            </div>
-            <form action="{{ route('app.recipe.rate', $recipe['id']) }}" method="POST">
-                @csrf
-                <div class="flex items-center gap-2 mb-3">
-                    @for($i = 1; $i <= 5; $i++)
-                        <button type="submit" name="rating" value="{{ $i }}"
-                                class="text-3xl transition-transform hover:scale-110 {{ $i <= ($userRating ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</button>
-                    @endfor
-                    @if($userRating)
-                        <span class="text-sm ml-2" style="color: var(--color-text-secondary);">{{ $isEnglish ? 'Your rating' : 'Rating kamu' }}: {{ $userRating }}/5</span>
-                    @endif
-                </div>
-            </form>
-        </div>
-
-        {{-- Comments --}}
-        <div class="card-savora p-5 mb-4">
-            <div class="mb-4 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <x-app-theme.section-header :title="$isEnglish ? 'Comments' : 'Komentar'" :icon="$svgChat" />
-                </div>
+                <x-app-theme.section-header :title="$isEnglish ? 'Rating & Comments' : 'Rating & Komentar'" :icon="$svgStar" />
                 <span class="badge-savora" style="background: var(--gradient-category);">{{ count($comments) }}</span>
             </div>
 
@@ -394,9 +381,28 @@
                         {{ strtoupper(substr(session('user_username', 'U'), 0, 1)) }}
                     </div>
                     <div class="flex-1">
-                        <textarea name="content" rows="2" placeholder="{{ $isEnglish ? 'Write a comment...' : 'Tulis komentar...' }}"
+                        <div class="rounded-2xl px-4 py-3 mb-3"
+                             style="background: rgba(233,196,106,0.08); border: 1px solid rgba(233,196,106,0.25);">
+                            <p class="text-sm font-bold mb-2" style="color: var(--color-text-primary);">
+                                {{ $isEnglish ? 'Rate your review' : 'Beri rating untuk ulasan Anda' }}
+                            </p>
+                            <div class="flex items-center gap-2" data-review-rating-group>
+                                @for($i = 1; $i <= 5; $i++)
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="rating" value="{{ $i }}" class="sr-only" {{ (int) old('rating', $userRating ?? 0) === $i ? 'checked' : '' }} required>
+                                        <span data-review-rating-star="{{ $i }}" class="text-3xl transition-transform hover:scale-110 {{ $i <= (int) old('rating', $userRating ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">&#9733;</span>
+                                    </label>
+                                @endfor
+                                @if($userRating)
+                                    <span class="text-xs ml-1" style="color: var(--color-text-secondary);">
+                                        {{ $isEnglish ? 'Current' : 'Saat ini' }}: {{ $userRating }}/5
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <textarea name="content" rows="2" placeholder="{{ $isEnglish ? 'Write your review...' : 'Tulis ulasan Anda...' }}"
                                   class="input-savora resize-none mb-2"></textarea>
-                        <button type="submit" class="btn-primary-savora px-5 py-2 text-sm">{{ $isEnglish ? 'Send' : 'Kirim' }}</button>
+                        <button type="submit" class="btn-primary-savora px-5 py-2 text-sm">{{ $isEnglish ? 'Send review' : 'Kirim ulasan' }}</button>
                     </div>
                 </div>
             </form>
@@ -415,6 +421,13 @@
                     <div class="flex-1">
                         <div class="px-4 py-3 rounded-2xl" style="background: var(--color-bg-light);">
                             <p class="font-bold text-sm mb-1" style="color: var(--color-text-primary);">{{ $commenter['username'] ?? 'Unknown' }}</p>
+                            @if(!empty($comment['rating']))
+                                <div class="flex items-center gap-0.5 mb-2" aria-label="{{ $comment['rating'] }}/5">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <span class="text-sm {{ $i <= (int) $comment['rating'] ? 'text-yellow-400' : 'text-gray-300' }}">&#9733;</span>
+                                    @endfor
+                                </div>
+                            @endif
                             <p class="text-sm leading-relaxed savora-comment-copy" style="color: var(--color-text-primary);">{{ $comment['content'] }}</p>
                         </div>
                         <div class="flex items-center gap-3 mt-1 px-2">
@@ -449,6 +462,24 @@
 
     </div>
     <script>
+        document.querySelectorAll('[data-review-rating-group]').forEach(group => {
+            const inputs = group.querySelectorAll('input[name="rating"]');
+            const stars = group.querySelectorAll('[data-review-rating-star]');
+
+            function paint(value) {
+                stars.forEach(star => {
+                    const active = Number(star.dataset.reviewRatingStar) <= value;
+                    star.classList.toggle('text-yellow-400', active);
+                    star.classList.toggle('text-gray-300', !active);
+                });
+            }
+
+            inputs.forEach(input => {
+                input.addEventListener('change', () => paint(Number(input.value)));
+                if (input.checked) paint(Number(input.value));
+            });
+        });
+
         async function shareRecipeFromDetail(button) {
             const title = button.dataset.shareTitle || document.title;
             const url = button.dataset.shareUrl || window.location.href;

@@ -97,8 +97,8 @@
                     data-share-url="{{ e($shareUrl) }}"
                     onclick="shareProfileFromWeb(this)"
                     aria-label="{{ $isEnglish ? 'Share profile' : 'Bagikan profil' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316"/>
+                <svg class="savora-svg-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12a3 3 0 100-6 3 3 0 000 6zm10-3a3 3 0 100-6 3 3 0 000 6zM17 21a3 3 0 100-6 3 3 0 000 6zM9.59 10.51l4.83-2.02M9.59 13.49l4.83 2.02"/>
                 </svg>
             </button>
 

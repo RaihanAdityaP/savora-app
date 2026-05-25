@@ -30,10 +30,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   bool _isFavorite = false;
   bool _isLiked = false;
   bool _isTogglingLike = false;
+  bool _isPostingComment = false;
   bool _isTranslatingRecipe = false;
   bool _recipeTranslated = false;
   int _likesCount = 0;
   int? _userRating;
+  int? _selectedReviewRating;
   double? _averageRating;
   int? _ratingCount;
   List<Map<String, dynamic>> _comments = [];
@@ -223,8 +225,10 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         _isLiked = _recipe?['is_liked'] == true;
         _ratingCount = ratings.length;
         if (_ratingCount! > 0) {
-          final total = ratings.fold(0, (sum, r) => sum + (r['rating'] as int));
+          final total = ratings.fold<int>(0, (sum, r) => sum + _toInt(r['rating']));
           _averageRating = total / _ratingCount!;
+        } else {
+          _averageRating = 0;
         }
         _isLoading = false;
       });
@@ -257,6 +261,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  int? _ratingFromComment(Map<String, dynamic> comment) {
+    final rawRating = comment['rating'] ?? comment['user_rating'] ?? comment['review_rating'];
+    final rating = _toInt(rawRating);
+    return rating >= 1 && rating <= 5 ? rating : null;
   }
 
   Future<void> _toggleLike() async {
@@ -411,7 +421,11 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
       if (userId != null) {
         final response = await ApiService.get('/ratings/recipe/${widget.recipeId}/user');
         if (!mounted) return;
-        setState(() => _userRating = response['data']?['rating'] as int?);
+        final rating = _toInt(response['data']?['rating']);
+        setState(() {
+          _userRating = rating >= 1 && rating <= 5 ? rating : null;
+          _selectedReviewRating ??= _userRating;
+        });
       }
     } catch (e) {
       debugPrint('Error loading user rating: $e');
@@ -848,23 +862,6 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     }
   }
 
-  Future<void> _submitRating(int rating) async {
-    try {
-      final userId = ApiService.currentUserId;
-      if (userId == null) {
-        _showSnackBar(_t('Please log in to rate', 'Silakan login untuk memberi rating'), isError: true);
-        return;
-      }
-      await ApiService.post('/ratings/recipe/${widget.recipeId}', {'rating': rating});
-      if (!mounted) return;
-      setState(() => _userRating = rating);
-      await _loadRecipe();
-      _showSnackBar('Rating dikirim!', isError: false);
-    } catch (e) {
-      _showSnackBar(_t('Failed to send rating', 'Gagal mengirim rating'), isError: true);
-    }
-  }
-
   Future<void> _loadComments() async {
     try {
       final response = await ApiService.get('/comments/recipe/${widget.recipeId}');
@@ -876,6 +873,11 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
   }
 
   Future<void> _postComment() async {
+    if (_isPostingComment) return;
+    if (_selectedReviewRating == null) {
+      _showSnackBar(_t('Please choose a rating first', 'Pilih rating terlebih dahulu'), isError: true);
+      return;
+    }
     if (_commentController.text.trim().isEmpty) {
       _showSnackBar(_t('Comment cannot be empty', 'Komentar tidak boleh kosong'), isError: true);
       return;
@@ -886,16 +888,23 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         _showSnackBar(_t('Please log in to comment', 'Silakan login untuk berkomentar'), isError: true);
         return;
       }
+      setState(() => _isPostingComment = true);
       await ApiService.post('/comments', {
         'recipe_id': widget.recipeId,
         'user_id': userId,
+        'rating': _selectedReviewRating,
         'content': _commentController.text.trim(),
       });
+      if (!mounted) return;
       _commentController.clear();
+      setState(() => _userRating = _selectedReviewRating);
+      await _loadRecipe();
       await _loadComments();
-      _showSnackBar(_t('Comment sent!', 'Komentar berhasil dikirim!'), isError: false);
+      _showSnackBar(_t('Review sent!', 'Ulasan berhasil dikirim!'), isError: false);
     } catch (e) {
       _showSnackBar('Error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _isPostingComment = false);
     }
   }
 
@@ -1209,6 +1218,36 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
     );
   }
 
+  Widget _buildCompactRatingChip(double rating, int ratingCount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryCoral.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryCoral.withValues(alpha: 0.18), width: 1.2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ...List.generate(5, (index) {
+            final value = index + 1;
+            final icon = rating >= value
+                ? Icons.star_rounded
+                : rating >= value - 0.5
+                    ? Icons.star_half_rounded
+                    : Icons.star_outline_rounded;
+            return Icon(icon, size: 13, color: AppTheme.primaryYellow);
+          }),
+          const SizedBox(width: 6),
+          Text(
+            '${rating.toStringAsFixed(1)}${ratingCount > 0 ? ' ($ratingCount)' : ''}',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPhotoPill({
     required IconData icon,
     required String label,
@@ -1306,28 +1345,6 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     ),
                   ),
                 ),
-                if (_averageRating != null && _averageRating! > 0)
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: _buildPhotoPill(
-                      icon: Icons.star_rounded,
-                      label: '${_averageRating!.toStringAsFixed(1)} (${_ratingCount ?? 0})',
-                      backgroundColor: AppTheme.primaryYellow,
-                      foregroundColor: const Color(0xFF3B2A00),
-                    ),
-                  )
-                else
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: _buildPhotoPill(
-                      icon: Icons.star_border_rounded,
-                      label: _t('No rating yet', 'Belum ada rating'),
-                      backgroundColor: Colors.black.withValues(alpha: 0.55),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
                 if (categoryName != null && categoryName.isNotEmpty)
                   Positioned(
                     bottom: 16,
@@ -1361,8 +1378,12 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    if ((_averageRating ?? 0) > 0)
+                      _buildCompactRatingChip(_averageRating!, _ratingCount ?? 0),
                     _buildCompactInfoChip('${_recipe!['cooking_time'] ?? 15} min', Icons.access_time_rounded),
                     _buildCompactInfoChip('${_recipe!['servings'] ?? 1} ${_t('servings', 'porsi')}', Icons.restaurant_menu_rounded),
+                    if (_recipe!['calories'] != null)
+                      _buildCompactInfoChip('${_recipe!['calories']} ${_t('cal', 'kal')}', Icons.local_fire_department_rounded),
                     _buildCompactInfoChip((_recipe!['difficulty'] ?? 'mudah').toUpperCase(), Icons.bar_chart_rounded),
                   ],
                 ),
@@ -1563,44 +1584,71 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
           ),
           const SizedBox(height: 12),
         ],
-        Container(
-          height: 64,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 68,
           margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             gradient: _isLiked
                 ? AppTheme.accentGradient
                 : LinearGradient(colors: [
-                    AppTheme.primaryCoral.withValues(alpha: 0.10),
-                    AppTheme.primaryOrange.withValues(alpha: 0.08),
+                    Colors.white,
+                    AppTheme.primaryCoral.withValues(alpha: 0.06),
                   ]),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: _isLiked
                   ? Colors.white.withValues(alpha: 0.20)
-                  : AppTheme.borderColor,
-              width: 1.5,
+                  : AppTheme.primaryCoral.withValues(alpha: 0.18),
+              width: 1.2,
             ),
-            boxShadow: _isLiked ? AppTheme.buttonShadow : AppTheme.cardShadow,
+            boxShadow: _isLiked
+                ? AppTheme.buttonShadow
+                : [
+                    BoxShadow(
+                      color: AppTheme.primaryCoral.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: _isTogglingLike ? null : _toggleLike,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: _isLiked ? 0.24 : 0.85),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      size: 24,
-                      color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                  AnimatedScale(
+                    duration: const Duration(milliseconds: 160),
+                    scale: _isLiked ? 1.04 : 1,
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: _isLiked ? 0.24 : 1),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: _isLiked
+                              ? Colors.white.withValues(alpha: 0.24)
+                              : AppTheme.primaryCoral.withValues(alpha: 0.16),
+                        ),
+                      ),
+                      child: _isTogglingLike
+                          ? Padding(
+                              padding: const EdgeInsets.all(11),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                              ),
+                            )
+                          : Icon(
+                              _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              size: 24,
+                              color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1619,7 +1667,9 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _t('$_likesCount people like this recipe', '$_likesCount orang menyukai resep ini'),
+                          _likesCount == 0
+                              ? _t('Be the first to like this recipe', 'Jadilah yang pertama menyukai resep ini')
+                              : _t('$_likesCount people like this recipe', '$_likesCount orang menyukai resep ini'),
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 11,
@@ -1634,14 +1684,26 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: _isLiked ? 0.22 : 0.85),
                       borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white.withValues(alpha: _isLiked ? 0.20 : 0)),
                     ),
-                    child: Text(
-                      _likesCount.toString(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: _isLiked ? Colors.white : AppTheme.primaryCoral,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.favorite_rounded, size: 13, color: _isLiked ? Colors.white : AppTheme.primaryCoral),
+                        const SizedBox(width: 4),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 160),
+                          child: Text(
+                            _likesCount.toString(),
+                            key: ValueKey(_likesCount),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _isLiked ? Colors.white : AppTheme.primaryCoral,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1896,51 +1958,45 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
         children: [
           AppTheme.buildSectionHeader(_t('Rating & Reviews', 'Rating & Ulasan'), Icons.star_rounded),
           const SizedBox(height: 20),
-          if (_averageRating != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppTheme.primaryYellow.withValues(alpha: 0.2), AppTheme.primaryOrange.withValues(alpha: 0.1)]),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.primaryYellow.withValues(alpha: 0.4), width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle), child: Icon(Icons.star_rounded, color: AppTheme.primaryYellow, size: 28)),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(_averageRating!.toStringAsFixed(1), style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                      Text(_t('from $_ratingCount ratings', 'dari $_ratingCount rating'), style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(gradient: LinearGradient(colors: [AppTheme.subtleSurfaceColor, AppTheme.surfaceColor]), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppTheme.borderColor)),
-              child: Row(children: [Icon(Icons.star_outline_rounded, color: AppTheme.textMuted, size: 28), const SizedBox(width: 12), Text(_t('No rating yet', 'Belum ada rating'), style: TextStyle(color: AppTheme.textSecondary))]),
-            ),
-          const SizedBox(height: 20),
-          Text(_t('Give Your Rating', 'Beri Rating Anda'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textSecondary)),
-          const SizedBox(height: 10),
-          Row(
-            children: List.generate(5, (index) {
-              final isActive = _userRating != null && _userRating! >= index + 1;
-              return GestureDetector(
-                onTap: () => _submitRating(index + 1),
-                child: Padding(padding: const EdgeInsets.only(right: 8), child: Icon(isActive ? Icons.star_rounded : Icons.star_outline_rounded, color: isActive ? AppTheme.primaryYellow : Colors.grey.shade300, size: 32)),
-              );
-            }),
-          ),
-          const SizedBox(height: 24),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
           Text(_t('Reviews (${_comments.length})', 'Ulasan (${_comments.length})'), style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
           const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryYellow.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primaryYellow.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _t('Rate when writing your review', 'Rating saat menulis ulasan'),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(5, (index) {
+                    final value = index + 1;
+                    final isActive = (_selectedReviewRating ?? 0) >= value;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedReviewRating = value),
+                      child: Padding(
+                        padding: EdgeInsets.only(left: index == 0 ? 0 : 2),
+                        child: Icon(
+                          isActive ? Icons.star_rounded : Icons.star_outline_rounded,
+                          color: isActive ? AppTheme.primaryYellow : Colors.grey.shade300,
+                          size: 28,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           Container(
             decoration: AppTheme.inputDecoration(AppTheme.primaryYellow),
             child: TextField(
@@ -1956,7 +2012,16 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 suffixIcon: Container(
                   margin: const EdgeInsets.all(6),
                   decoration: BoxDecoration(gradient: AppTheme.accentGradient, borderRadius: BorderRadius.circular(8)),
-                  child: IconButton(onPressed: _postComment, icon: Icon(Icons.send_rounded, color: Colors.white, size: 18)),
+                  child: IconButton(
+                    onPressed: _isPostingComment ? null : _postComment,
+                    icon: _isPostingComment
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                  ),
                 ),
               ),
               textInputAction: TextInputAction.done,
@@ -1983,6 +2048,7 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                 final canManageComment = isCommentOwner || isAdmin;
                 final commentTranslated = _translatedCommentIds.contains(commentId);
                 final commentTranslating = _translatingCommentIds.contains(commentId);
+                final commentRating = _ratingFromComment(comment);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
@@ -2033,6 +2099,21 @@ class _DetailScreenState extends State<DetailScreen> with TickerProviderStateMix
                         ],
                       ),
                       const SizedBox(height: 10),
+                      if (commentRating != null) ...[
+                        Row(
+                          children: [
+                            ...List.generate(5, (starIndex) {
+                              final isActive = commentRating >= starIndex + 1;
+                              return Icon(
+                                isActive ? Icons.star_rounded : Icons.star_outline_rounded,
+                                size: 15,
+                                color: isActive ? AppTheme.primaryYellow : Colors.grey.shade300,
+                              );
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Text(comment['content'] ?? '', style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4)),
                       const SizedBox(height: 8),
                       Row(
