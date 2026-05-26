@@ -95,26 +95,28 @@ class _ProfileScreenState extends State<ProfileScreen>
         ? _t('this profile', 'profil ini')
         : '@${_usernameController.text.trim()}';
 
-    await SharePlus.instance.share(ShareParams(
-      text: _t(
-        'View $username on Savora: $url',
-        'Lihat $username di Savora: $url',
+    await SharePlus.instance.share(
+      ShareParams(
+        text: _t(
+          'View $username on Savora: $url',
+          'Lihat $username di Savora: $url',
+        ),
+        subject: _t('Savora Profile', 'Profil Savora'),
       ),
-      subject: _t('Savora Profile', 'Profil Savora'),
-    ));
+    );
   }
 
   // ignore: unused_element
   LinearGradient get _headerGradient => const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFFD700),
-          Color(0xFFFFA500),
-          Color(0xFFFF8C00),
-          Color(0xFFFFD700),
-        ],
-      );
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFD700),
+      Color(0xFFFFA500),
+      Color(0xFFFF8C00),
+      Color(0xFFFFD700),
+    ],
+  );
 
   @override
   void initState() {
@@ -123,19 +125,24 @@ class _ProfileScreenState extends State<ProfileScreen>
     _isOwnProfile = widget.userId == null || widget.userId == _currentUserId;
 
     _animationController = AnimationController(
-        duration: const Duration(milliseconds: 1000), vsync: this);
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
     _fadeAnimation = CurvedAnimation(
-        parent: _animationController, curve: Curves.easeInOut);
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _animationController, curve: Curves.easeOutCubic));
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _loadProfile();
-    _loadCurrentUserAvatar();
+    if (!_isOwnProfile) _loadCurrentUserAvatar();
     _loadUserRecipes();
-    if (!_isOwnProfile) _checkIfFollowing();
   }
 
   @override
@@ -171,14 +178,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isFollowing = _followRequestStatus == 'following';
           _followerCount =
               ((profile['followers_count'] ?? profile['total_followers'])
-                          as num?)
-                      ?.toInt() ??
-                  0;
+                      as num?)
+                  ?.toInt() ??
+              0;
           _followingCount =
               ((profile['following_count'] ?? profile['total_following'])
-                          as num?)
-                      ?.toInt() ??
-                  0;
+                      as num?)
+                  ?.toInt() ??
+              0;
           _likedRecipesCount =
               (profile['liked_recipes_count'] as num?)?.toInt() ?? 0;
           _isLoading = false;
@@ -189,7 +196,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar('${_t('Failed to load profile', 'Gagal memuat profil')}: $e', isError: true);
+        _showSnackBar(
+          '${_t('Failed to load profile', 'Gagal memuat profil')}: $e',
+          isError: true,
+        );
         setState(() => _isLoading = false);
       }
     }
@@ -219,10 +229,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (!mounted) return;
 
       for (var recipe in recipes) {
-        final avg = recipe['average_rating'] ??
+        final avg =
+            recipe['average_rating'] ??
             recipe['rating_avg'] ??
             recipe['rating_info']?['average'];
-        final rating = avg is num ? avg.toDouble() : double.tryParse(avg?.toString() ?? '');
+        final rating = avg is num
+            ? avg.toDouble()
+            : double.tryParse(avg?.toString() ?? '');
         if (rating != null && rating > 0) {
           _recipeRatings[recipe['id'].toString()] = rating;
         }
@@ -231,28 +244,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) setState(() => _userRecipes = recipes);
     } catch (e) {
       debugPrint('Error loading user recipes: $e');
-    }
-  }
-
-  Future<void> _checkIfFollowing() async {
-    if (_currentUserId == null || _isOwnProfile) return;
-    try {
-      final isFollowing = await UserClient.isFollowing(
-        targetUserId: widget.userId!,
-        myUserId: _currentUserId!,
-      );
-      final requestStatus = await UserClient.followRequestStatus(
-        targetUserId: widget.userId!,
-        requesterId: _currentUserId!,
-      );
-      if (mounted) {
-        setState(() {
-          _isFollowing = isFollowing || requestStatus == 'following';
-          _followRequestStatus = requestStatus;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error checking follow status: $e');
     }
   }
 
@@ -350,7 +341,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         builder: (_) => FollowListScreen(
           userId: targetUserId,
           followers: followers,
-          username: _usernameController.text.isEmpty ? null : _usernameController.text,
+          username: _usernameController.text.isEmpty
+              ? null
+              : _usernameController.text,
         ),
       ),
     );
@@ -383,15 +376,24 @@ class _ProfileScreenState extends State<ProfileScreen>
           _isUploadingImage = false;
         });
         if (updated != null) {
-          _showSnackBar(_t('Profile photo updated!', 'Foto profil berhasil diperbarui!'), isError: false);
+          _showSnackBar(
+            _t('Profile photo updated!', 'Foto profil berhasil diperbarui!'),
+            isError: false,
+          );
         } else {
-          _showSnackBar(_t('Failed to upload photo', 'Gagal mengunggah foto'), isError: true);
+          _showSnackBar(
+            _t('Failed to upload photo', 'Gagal mengunggah foto'),
+            isError: true,
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isUploadingImage = false);
-        _showSnackBar('${_t('Failed to upload photo', 'Gagal mengunggah foto')}: $e', isError: true);
+        _showSnackBar(
+          '${_t('Failed to upload photo', 'Gagal mengunggah foto')}: $e',
+          isError: true,
+        );
       }
     }
   }
@@ -403,8 +405,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         content: Row(
           children: [
             Icon(
-                isError ? Icons.error_outline : Icons.check_circle_outline,
-                color: Colors.white),
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+            ),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -433,10 +436,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 position: _slideAnimation,
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    _buildProfileHeader(),
-                    _buildProfileContent(),
-                  ],
+                  slivers: [_buildProfileHeader(), _buildProfileContent()],
                 ),
               ),
             ),
@@ -460,21 +460,26 @@ class _ProfileScreenState extends State<ProfileScreen>
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                    color: _primaryColor.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10)),
+                  color: _primaryColor.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeWidth: 3),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              strokeWidth: 3,
+            ),
           ),
           const SizedBox(height: 24),
-          Text(_t('Loading profile...', 'Memuat profil...'),
-              style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            _t('Loading profile...', 'Memuat profil...'),
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -498,9 +503,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           gradient: _headerGradient,
           boxShadow: [
             BoxShadow(
-                color: _primaryColor.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10)),
+              color: _primaryColor.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
           ],
         ),
         child: SafeArea(
@@ -522,40 +528,51 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 if (_fullNameController.text.isNotEmpty) ...[
                   const SizedBox(height: 6),
-                  Text(_fullNameController.text,
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.9))),
+                  Text(
+                    _fullNameController.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 12),
 
                 // Role badge
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: AppTheme.getRoleGradient(_userRole)
-                          .map((c) => c.withValues(alpha: 0.3))
-                          .toList(),
+                      colors: AppTheme.getRoleGradient(
+                        _userRole,
+                      ).map((c) => c.withValues(alpha: 0.3)).toList(),
                     ),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5), width: 1.5),
+                      color: Colors.white.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.admin_panel_settings_rounded,
-                          color: Colors.white, size: 16),
+                      Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         AppTheme.getRoleLabel(_userRole),
                         style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5),
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),
@@ -570,16 +587,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 1.5),
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
                     ),
                     child: Text(
                       _bioController.text,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: 14,
-                          height: 1.5),
+                        color: Colors.white.withValues(alpha: 0.95),
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -589,37 +608,49 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem(_t('Recipes', 'Resep'), _userRecipes.length.toString(),
-                        onGradient: true),
+                    _buildStatItem(
+                      _t('Recipes', 'Resep'),
+                      _userRecipes.length.toString(),
+                      onGradient: true,
+                    ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.white.withValues(alpha: 0.3)),
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
                     GestureDetector(
                       onTap: () => _openFollowList(followers: true),
                       child: _buildStatItem(
-                          _t('Followers', 'Pengikut'), _followerCount.toString(),
-                          onGradient: true),
+                        _t('Followers', 'Pengikut'),
+                        _followerCount.toString(),
+                        onGradient: true,
+                      ),
                     ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.white.withValues(alpha: 0.3)),
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
                     GestureDetector(
                       onTap: () => _openFollowList(followers: false),
                       child: _buildStatItem(
-                          _t('Following', 'Mengikuti'), _followingCount.toString(),
-                          onGradient: true),
+                        _t('Following', 'Mengikuti'),
+                        _followingCount.toString(),
+                        onGradient: true,
+                      ),
                     ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.white.withValues(alpha: 0.3)),
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
                     GestureDetector(
                       onTap: _openLikedRecipes,
                       child: _buildStatItem(
-                          _t('Likes', 'Like'), _likedRecipesCount.toString(),
-                          onGradient: true),
+                        _t('Likes', 'Like'),
+                        _likedRecipesCount.toString(),
+                        onGradient: true,
+                      ),
                     ),
                   ],
                 ),
@@ -649,26 +680,33 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _usernameController.text.isEmpty
                     ? 'Unknown'
                     : _usernameController.text,
-                style: AppTheme.headingMedium
-                    .copyWith(color: AppTheme.textPrimary, fontSize: 22),
+                style: AppTheme.headingMedium.copyWith(
+                  color: AppTheme.textPrimary,
+                  fontSize: 22,
+                ),
               ),
               if (_fullNameController.text.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text(_fullNameController.text,
-                    style: TextStyle(
-                        fontSize: 14, color: AppTheme.textSecondary)),
+                Text(
+                  _fullNameController.text,
+                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+                ),
               ],
               const SizedBox(height: 12),
 
               // Role badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: _primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: _primaryColor.withValues(alpha: 0.35), width: 1.5),
+                    color: _primaryColor.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -677,8 +715,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       _userRole == 'admin'
                           ? Icons.admin_panel_settings_rounded
                           : _isPremium
-                              ? Icons.workspace_premium_rounded
-                              : Icons.person_rounded,
+                          ? Icons.workspace_premium_rounded
+                          : Icons.person_rounded,
                       color: _primaryColor,
                       size: 16,
                     ),
@@ -686,10 +724,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Text(
                       AppTheme.getRoleLabel(_userRole),
                       style: TextStyle(
-                          color: _primaryColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5),
+                        color: _primaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ],
                 ),
@@ -710,9 +749,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _bioController.text,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 14,
-                        height: 1.5),
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],
@@ -727,41 +767,54 @@ class _ProfileScreenState extends State<ProfileScreen>
                   border: Border.all(color: AppTheme.borderColor),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4)),
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem(_t('Recipes', 'Resep'), _userRecipes.length.toString()),
+                    _buildStatItem(
+                      _t('Recipes', 'Resep'),
+                      _userRecipes.length.toString(),
+                    ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.shade200),
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                    ),
                     GestureDetector(
                       onTap: () => _openFollowList(followers: true),
                       child: _buildStatItem(
-                          _t('Followers', 'Pengikut'), _followerCount.toString()),
+                        _t('Followers', 'Pengikut'),
+                        _followerCount.toString(),
+                      ),
                     ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.shade200),
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                    ),
                     GestureDetector(
                       onTap: () => _openFollowList(followers: false),
                       child: _buildStatItem(
-                          _t('Following', 'Mengikuti'), _followingCount.toString()),
+                        _t('Following', 'Mengikuti'),
+                        _followingCount.toString(),
+                      ),
                     ),
                     Container(
-                        width: 1,
-                        height: 40,
-                        color: Colors.grey.shade200),
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                    ),
                     GestureDetector(
                       onTap: _openLikedRecipes,
                       child: _buildStatItem(
-                          _t('Likes', 'Like'), _likedRecipesCount.toString()),
+                        _t('Likes', 'Like'),
+                        _likedRecipesCount.toString(),
+                      ),
                     ),
                   ],
                 ),
@@ -782,17 +835,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                         : null,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: (_isFollowing || _isFollowPending)
-                            ? AppTheme.borderColor
-                            : Colors.transparent,
-                        width: 1.5),
+                      color: (_isFollowing || _isFollowPending)
+                          ? AppTheme.borderColor
+                          : Colors.transparent,
+                      width: 1.5,
+                    ),
                     boxShadow: _isFollowing
                         ? null
                         : [
                             BoxShadow(
-                                color: _primaryColor.withValues(alpha: 0.35),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6))
+                              color: _primaryColor.withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
                           ],
                   ),
                   child: Material(
@@ -808,10 +863,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 width: 24,
                                 height: 24,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: (_isFollowing || _isFollowPending)
-                                        ? _primaryColor
-                                        : Colors.white))
+                                  strokeWidth: 2.5,
+                                  color: (_isFollowing || _isFollowPending)
+                                      ? _primaryColor
+                                      : Colors.white,
+                                ),
+                              )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -819,8 +876,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     _isFollowing
                                         ? Icons.person_remove_rounded
                                         : _isFollowPending
-                                            ? Icons.hourglass_top_rounded
-                                            : Icons.person_add_rounded,
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.person_add_rounded,
                                     color: (_isFollowing || _isFollowPending)
                                         ? AppTheme.textSecondary
                                         : Colors.white,
@@ -831,15 +888,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                     _isFollowing
                                         ? _t('Unfollow', 'Berhenti Mengikuti')
                                         : _isFollowPending
-                                            ? _t('Requested', 'Diminta')
-                                            : _canViewProfile
-                                                ? _t('Follow', 'Ikuti')
-                                                : _t('Request Follow', 'Minta Follow'),
+                                        ? _t('Requested', 'Diminta')
+                                        : _canViewProfile
+                                        ? _t('Follow', 'Ikuti')
+                                        : _t('Request Follow', 'Minta Follow'),
                                     style: (_isFollowing || _isFollowPending)
                                         ? TextStyle(
                                             color: AppTheme.textSecondary,
                                             fontSize: 15,
-                                            fontWeight: FontWeight.bold)
+                                            fontWeight: FontWeight.bold,
+                                          )
                                         : AppTheme.buttonText,
                                   ),
                                 ],
@@ -880,11 +938,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                     onPressed: _openEditProfile,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: _primaryColor,
-                      side: BorderSide(color: _primaryColor.withValues(alpha: 0.35), width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      side: BorderSide(
+                        color: _primaryColor.withValues(alpha: 0.35),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     icon: Icon(Icons.edit_rounded),
-                    label: Text(_t('Edit Profile', 'Edit Profil'), style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      _t('Edit Profile', 'Edit Profil'),
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -956,37 +1022,47 @@ class _ProfileScreenState extends State<ProfileScreen>
                 height: 24,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                      colors: _primaryGradient,
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter),
+                    colors: _primaryGradient,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _isOwnProfile ? _t('My Recipes', 'Resep Saya') : _t('Recipes', 'Resep'),
+                  _isOwnProfile
+                      ? _t('My Recipes', 'Resep Saya')
+                      : _t('Recipes', 'Resep'),
                   style: AppTheme.headingMedium,
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                    _primaryColor.withValues(alpha: 0.1),
-                    _secondaryColor.withValues(alpha: 0.1),
-                  ]),
+                  gradient: LinearGradient(
+                    colors: [
+                      _primaryColor.withValues(alpha: 0.1),
+                      _secondaryColor.withValues(alpha: 0.1),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: _primaryColor.withValues(alpha: 0.3), width: 1),
+                    color: _primaryColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Text(
                   '${_userRecipes.length}',
                   style: TextStyle(
-                      fontSize: 13,
-                      color: _primaryColor,
-                      fontWeight: FontWeight.bold),
+                    fontSize: 13,
+                    color: _primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -998,10 +1074,19 @@ class _ProfileScreenState extends State<ProfileScreen>
               icon: Icons.restaurant_menu_rounded,
               title: _isOwnProfile
                   ? _t('No recipes yet', 'Belum ada resep')
-                  : _t('This user has no recipes yet', 'Pengguna ini belum memiliki resep'),
+                  : _t(
+                      'This user has no recipes yet',
+                      'Pengguna ini belum memiliki resep',
+                    ),
               subtitle: _isOwnProfile
-                  ? _t('Start sharing your favorite recipes!', 'Mulai berbagi resep favorit Anda!')
-                  : _t('Check back when they share a recipe.', 'Tunggu hingga mereka membagikan kreasi kuliner'),
+                  ? _t(
+                      'Start sharing your favorite recipes!',
+                      'Mulai berbagi resep favorit Anda!',
+                    )
+                  : _t(
+                      'Check back when they share a recipe.',
+                      'Tunggu hingga mereka membagikan kreasi kuliner',
+                    ),
             )
           else
             ..._userRecipes.map((recipe) {
@@ -1042,15 +1127,17 @@ class _ProfileScreenState extends State<ProfileScreen>
           height: 110,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient:
-                LinearGradient(colors: AppTheme.getRoleGradient(_userRole)),
+            gradient: LinearGradient(
+              colors: AppTheme.getRoleGradient(_userRole),
+            ),
             boxShadow: [
               BoxShadow(
-                  color: onGradient
-                      ? Colors.black.withValues(alpha: 0.3)
-                      : _primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8)),
+                color: onGradient
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : _primaryColor.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
         ),
@@ -1058,18 +1145,22 @@ class _ProfileScreenState extends State<ProfileScreen>
           width: 110,
           height: 110,
           decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: onGradient
-                      ? Colors.white
-                      : _primaryColor.withValues(alpha: 0.4),
-                  width: 3)),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: onGradient
+                  ? Colors.white
+                  : _primaryColor.withValues(alpha: 0.4),
+              width: 3,
+            ),
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(55),
             child: _avatarUrl != null
                 ? Image.network(
                     _avatarUrl!,
                     fit: BoxFit.cover,
+                    cacheWidth: (220 * MediaQuery.devicePixelRatioOf(context))
+                        .round(),
                     errorBuilder: (_, _, _) => _buildDefaultAvatar(),
                   )
                 : _buildDefaultAvatar(),
@@ -1079,11 +1170,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withValues(alpha: 0.6)),
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.6),
+              ),
               child: const Center(
-                  child: CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 3)),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
             ),
           ),
         if (_isOwnProfile)
@@ -1098,18 +1193,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                   gradient: LinearGradient(colors: _primaryGradient),
                   shape: BoxShape.circle,
                   border: Border.all(
-                      color: onGradient
-                          ? Colors.white
-                          : AppTheme.backgroundLight,
-                      width: 3),
+                    color: onGradient ? Colors.white : AppTheme.backgroundLight,
+                    width: 3,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 8)
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                    ),
                   ],
                 ),
-                child: const Icon(Icons.camera_alt_rounded,
-                    color: Colors.white, size: 16),
+                child: const Icon(
+                  Icons.camera_alt_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
               ),
             ),
           ),
@@ -1123,16 +1221,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                 gradient: AppTheme.adminGradient,
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: onGradient ? Colors.white : AppTheme.backgroundLight,
-                    width: 2),
+                  color: onGradient ? Colors.white : AppTheme.backgroundLight,
+                  width: 2,
+                ),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8)
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                  ),
                 ],
               ),
-              child: const Icon(Icons.verified_rounded,
-                  color: Colors.white, size: 16),
+              child: const Icon(
+                Icons.verified_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
           ),
       ],
@@ -1142,39 +1245,43 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
-          gradient:
-              LinearGradient(colors: AppTheme.getRoleGradient(_userRole))),
+        gradient: LinearGradient(colors: AppTheme.getRoleGradient(_userRole)),
+      ),
       child: const Icon(Icons.person_rounded, size: 50, color: Colors.white),
     );
   }
 
   /// [onGradient] → true = teks putih (di atas gradient admin header)
-  Widget _buildStatItem(String label, String value,
-      {bool onGradient = false}) {
+  Widget _buildStatItem(String label, String value, {bool onGradient = false}) {
     return SizedBox(
       width: 64,
       child: Column(
         children: [
-          Text(value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: onGradient ? Colors.white : AppTheme.textPrimary)),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: onGradient ? Colors.white : AppTheme.textPrimary,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: onGradient
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: onGradient
+                  ? Colors.white.withValues(alpha: 0.9)
+                  : AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
   }
-
 }

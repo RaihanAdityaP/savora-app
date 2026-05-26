@@ -27,9 +27,13 @@ class _NotificationScreenState extends State<NotificationScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-        duration: const Duration(milliseconds: 800), vsync: this);
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
     _loadNotifications();
   }
 
@@ -44,8 +48,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     try {
       final response = await ApiService.get('/notifications');
       if (mounted) {
-        final notifs =
-            List<Map<String, dynamic>>.from(response['data'] ?? []);
+        final notifs = List<Map<String, dynamic>>.from(response['data'] ?? []);
         final deduped = _dedupeNotifications(notifs);
         setState(() {
           _notifications = deduped;
@@ -57,14 +60,16 @@ class _NotificationScreenState extends State<NotificationScreen>
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   List<Map<String, dynamic>> _dedupeNotifications(
-      List<Map<String, dynamic>> notifications) {
+    List<Map<String, dynamic>> notifications,
+  ) {
     final seen = <String>{};
     final deduped = <Map<String, dynamic>>[];
     for (final notification in notifications) {
@@ -94,23 +99,33 @@ class _NotificationScreenState extends State<NotificationScreen>
       await ApiService.post('/notifications/read-all', {});
       _loadNotifications();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(_t('All notifications marked as read',
-                'Semua notifikasi ditandai sudah dibaca'))
-          ]),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  _t(
+                    'All notifications marked as read',
+                    'Semua notifikasi ditandai sudah dibaca',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -119,21 +134,26 @@ class _NotificationScreenState extends State<NotificationScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             const Icon(Icons.delete_sweep, color: Colors.red, size: 28),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(_t('Delete All Notifications',
-                  'Hapus Semua Notifikasi'),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              child: Text(
+                _t('Delete All Notifications', 'Hapus Semua Notifikasi'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
-        content: Text(_t('Are you sure you want to delete all notifications?',
-            'Apakah Anda yakin ingin menghapus semua notifikasi?')),
+        content: Text(
+          _t(
+            'Are you sure you want to delete all notifications?',
+            'Apakah Anda yakin ingin menghapus semua notifikasi?',
+          ),
+        ),
         actions: [
           Wrap(
             alignment: WrapAlignment.end,
@@ -141,15 +161,18 @@ class _NotificationScreenState extends State<NotificationScreen>
             runSpacing: 8,
             children: [
               TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(_t('Cancel', 'Batal'))),
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(_t('Cancel', 'Batal')),
+              ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 child: Text(_t('Delete All', 'Hapus Semua')),
               ),
             ],
@@ -163,23 +186,33 @@ class _NotificationScreenState extends State<NotificationScreen>
       await ApiService.delete('/notifications');
       _loadNotifications();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(_t('All notifications deleted successfully',
-                'Semua notifikasi berhasil dihapus'))
-          ]),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  _t(
+                    'All notifications deleted successfully',
+                    'Semua notifikasi berhasil dihapus',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -195,23 +228,29 @@ class _NotificationScreenState extends State<NotificationScreen>
       await ApiService.delete('/notifications/$notificationId');
       _loadNotifications();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Row(children: [
-            const Icon(Icons.delete, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(_t('Notification deleted', 'Notifikasi dihapus'))
-          ]),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red.shade400,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.delete, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(_t('Notification deleted', 'Notifikasi dihapus')),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red.shade400,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -228,24 +267,37 @@ class _NotificationScreenState extends State<NotificationScreen>
       );
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          success
-              ? accept
-                  ? _t('Follow request accepted', 'Permintaan follow diterima')
-                  : _t('Follow request rejected', 'Permintaan follow ditolak')
-              : _t('Failed to respond', 'Gagal memproses permintaan'),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? accept
+                      ? _t(
+                          'Follow request accepted',
+                          'Permintaan follow diterima',
+                        )
+                      : _t(
+                          'Follow request rejected',
+                          'Permintaan follow ditolak',
+                        )
+                : _t('Failed to respond', 'Gagal memproses permintaan'),
+          ),
+          backgroundColor: success
+              ? Colors.green.shade600
+              : Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
-        backgroundColor: success ? Colors.green.shade600 : Colors.red.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ));
+      );
 
       if (success) _loadNotifications();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -256,16 +308,19 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
 
     final type = notification['type'] ?? '';
-    final relatedId =
-        _normalizeRelatedId(notification['related_entity_id']);
+    final relatedId = _normalizeRelatedId(notification['related_entity_id']);
     if (relatedId.isEmpty) return;
 
     switch (type) {
       case 'new_follower':
       case 'follow_request_approved':
       case 'follow_request_rejected':
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => ProfileScreen(userId: relatedId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileScreen(userId: relatedId),
+          ),
+        );
         break;
       case 'follow_request':
         break;
@@ -274,8 +329,12 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'recipe_rejected':
       case 'new_comment':
       case 'new_like':
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => DetailScreen(recipeId: relatedId)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailScreen(recipeId: relatedId),
+          ),
+        );
         break;
       default:
         break;
@@ -290,14 +349,22 @@ class _NotificationScreenState extends State<NotificationScreen>
       return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
     }
     if (difference.inDays > 0) {
-      return _t('${difference.inDays} days ago', '${difference.inDays} hari lalu');
+      return _t(
+        '${difference.inDays} days ago',
+        '${difference.inDays} hari lalu',
+      );
     }
     if (difference.inHours > 0) {
-      return _t('${difference.inHours} hours ago', '${difference.inHours} jam lalu');
+      return _t(
+        '${difference.inHours} hours ago',
+        '${difference.inHours} jam lalu',
+      );
     }
     if (difference.inMinutes > 0) {
-      return _t('${difference.inMinutes} minutes ago',
-          '${difference.inMinutes} menit lalu');
+      return _t(
+        '${difference.inMinutes} minutes ago',
+        '${difference.inMinutes} menit lalu',
+      );
     }
     return _t('Just now', 'Baru saja');
   }
@@ -360,28 +427,40 @@ class _NotificationScreenState extends State<NotificationScreen>
     final items = <PopupMenuEntry<String>>[];
 
     if (_unreadCount > 0) {
-      items.add(PopupMenuItem(
-        value: 'read_all',
-        child: Row(children: [
-          Icon(Icons.done_all_rounded, color: AppTheme.primaryTeal, size: 20),
-          const SizedBox(width: 10),
-          Text(
-            _t('Mark All as Read', 'Tandai Semua Dibaca'),
-            style: TextStyle(color: AppTheme.primaryTeal),
+      items.add(
+        PopupMenuItem(
+          value: 'read_all',
+          child: Row(
+            children: [
+              Icon(
+                Icons.done_all_rounded,
+                color: AppTheme.primaryTeal,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                _t('Mark All as Read', 'Tandai Semua Dibaca'),
+                style: TextStyle(color: AppTheme.primaryTeal),
+              ),
+            ],
           ),
-        ]),
-      ));
+        ),
+      );
       items.add(const PopupMenuDivider());
     }
 
-    items.add(PopupMenuItem(
-      value: 'delete_all',
-      child: Row(children: [
-        const Icon(Icons.delete_sweep_rounded, color: Colors.red, size: 20),
-        const SizedBox(width: 10),
-        Text(_t('Delete All', 'Hapus Semua')),
-      ]),
-    ));
+    items.add(
+      PopupMenuItem(
+        value: 'delete_all',
+        child: Row(
+          children: [
+            const Icon(Icons.delete_sweep_rounded, color: Colors.red, size: 20),
+            const SizedBox(width: 10),
+            Text(_t('Delete All', 'Hapus Semua')),
+          ],
+        ),
+      ),
+    );
 
     return items;
   }
@@ -408,7 +487,8 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'new_recipe_from_following':
         return _t('New Recipe', 'Resep Baru');
       default:
-        return notification['title']?.toString() ?? _t('Notification', 'Notifikasi');
+        return notification['title']?.toString() ??
+            _t('Notification', 'Notifikasi');
     }
   }
 
@@ -431,7 +511,9 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'recipe_rejected':
         final title = _quotedValue(raw);
         final reason = _reasonFromMessage(raw);
-        final reasonSuffix = reason == null ? '' : _t(' Reason: $reason', ' Alasan: $reason');
+        final reasonSuffix = reason == null
+            ? ''
+            : _t(' Reason: $reason', ' Alasan: $reason');
         return title == null
             ? _t(
                 'Your recipe was rejected.$reasonSuffix',
@@ -445,12 +527,22 @@ class _NotificationScreenState extends State<NotificationScreen>
         final actor = _actorFromMessage(
           raw,
           englishMarkers: [' started following you!', ' started following you'],
-          indonesianMarkers: [' mulai mengikuti Anda!', ' mulai mengikuti Anda'],
+          indonesianMarkers: [
+            ' mulai mengikuti Anda!',
+            ' mulai mengikuti Anda',
+          ],
         );
-        return _t('$actor started following you!', '$actor mulai mengikuti Anda!');
+        return _t(
+          '$actor started following you!',
+          '$actor mulai mengikuti Anda!',
+        );
       case 'follow_request':
         final requesterName =
-            notification['follow_requester_name']?.toString().trim().isNotEmpty == true
+            notification['follow_requester_name']
+                    ?.toString()
+                    .trim()
+                    .isNotEmpty ==
+                true
             ? notification['follow_requester_name'].toString().trim()
             : _followRequesterName(raw);
         return _t(
@@ -488,7 +580,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         );
         final title = _quotedValue(raw);
         return title == null
-            ? _t('$actor commented on your recipe.', '$actor berkomentar di resep Anda.')
+            ? _t(
+                '$actor commented on your recipe.',
+                '$actor berkomentar di resep Anda.',
+              )
             : _t(
                 "$actor commented on your recipe '$title'.",
                 "$actor berkomentar di resep '$title'.",
@@ -561,13 +656,14 @@ class _NotificationScreenState extends State<NotificationScreen>
               padding: const EdgeInsets.all(8.0),
               child: Container(
                 decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
-                    shape: BoxShape.circle,
-                    boxShadow: AppTheme.cardShadow),
+                  color: AppTheme.surfaceColor,
+                  shape: BoxShape.circle,
+                  boxShadow: AppTheme.cardShadow,
+                ),
                 child: IconButton(
-                    icon: Icon(Icons.arrow_back,
-                        color: AppTheme.textPrimary),
-                    onPressed: () => Navigator.pop(context)),
+                  icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
             ),
             actions: [
@@ -575,14 +671,18 @@ class _NotificationScreenState extends State<NotificationScreen>
                 padding: const EdgeInsets.all(8.0),
                 child: Container(
                   decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      shape: BoxShape.circle,
-                      boxShadow: AppTheme.cardShadow),
+                    color: AppTheme.surfaceColor,
+                    shape: BoxShape.circle,
+                    boxShadow: AppTheme.cardShadow,
+                  ),
                   child: PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert_rounded,
-                        color: AppTheme.textPrimary),
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      color: AppTheme.textPrimary,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     onSelected: (value) {
                       if (value == 'read_all') _markAllAsRead();
                       if (value == 'delete_all') _deleteAllNotifications();
@@ -605,46 +705,62 @@ class _NotificationScreenState extends State<NotificationScreen>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryTeal.withValues(alpha: 0.1),
+                              color: AppTheme.primaryTeal.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: AppTheme.primaryTeal
-                                      .withValues(alpha: 0.25),
-                                  width: 1.5),
+                                color: AppTheme.primaryTeal.withValues(
+                                  alpha: 0.25,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: const Icon(
-                                Icons.notifications_active_rounded,
-                                color: AppTheme.primaryTeal,
-                                size: 28),
+                              Icons.notifications_active_rounded,
+                              color: AppTheme.primaryTeal,
+                              size: 28,
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(_t('Notifications', 'Notifikasi'),
-                                    style: AppTheme.headingMedium.copyWith(
-                                        color: AppTheme.textPrimary)),
+                                Text(
+                                  _t('Notifications', 'Notifikasi'),
+                                  style: AppTheme.headingMedium.copyWith(
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
                                 if (_unreadCount > 0)
                                   Container(
                                     margin: const EdgeInsets.only(top: 4),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 4),
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.primaryOrange
-                                          .withValues(alpha: 0.1),
+                                      color: AppTheme.primaryOrange.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                          color: AppTheme.primaryOrange
-                                              .withValues(alpha: 0.3)),
+                                        color: AppTheme.primaryOrange
+                                            .withValues(alpha: 0.3),
+                                      ),
                                     ),
                                     child: Text(
-                                        _t('$_unreadCount new',
-                                            '$_unreadCount baru'),
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.primaryOrange)),
+                                      _t(
+                                        '$_unreadCount new',
+                                        '$_unreadCount baru',
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryOrange,
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),
@@ -661,35 +777,43 @@ class _NotificationScreenState extends State<NotificationScreen>
           _isLoading
               ? const SliverFillRemaining(
                   child: Center(
-                      child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.primaryTeal))))
-              : _notifications.isEmpty
-                  ? SliverFillRemaining(child: _buildEmptyState())
-                  : SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                      begin: const Offset(0.3, 0),
-                                      end: Offset.zero)
-                                  .animate(CurvedAnimation(
-                                      parent: _animationController,
-                                      curve: Interval(
-                                          (index * 0.1).clamp(0.0, 1.0),
-                                          1.0,
-                                          curve: Curves.easeOut))),
-                              child:
-                                  _buildNotificationCard(_notifications[index]),
-                            ),
-                          ),
-                          childCount: _notifications.length,
-                        ),
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppTheme.primaryTeal,
                       ),
                     ),
+                  ),
+                )
+              : _notifications.isEmpty
+              ? SliverFillRemaining(child: _buildEmptyState())
+              : SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: SlideTransition(
+                          position:
+                              Tween<Offset>(
+                                begin: const Offset(0.3, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: _animationController,
+                                  curve: Interval(
+                                    (index * 0.1).clamp(0.0, 1.0),
+                                    1.0,
+                                    curve: Curves.easeOut,
+                                  ),
+                                ),
+                              ),
+                          child: _buildNotificationCard(_notifications[index]),
+                        ),
+                      ),
+                      childCount: _notifications.length,
+                    ),
+                  ),
+                ),
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
         ],
       ),
@@ -704,21 +828,33 @@ class _NotificationScreenState extends State<NotificationScreen>
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-                gradient: AppTheme.cardGradient,
-                shape: BoxShape.circle,
-                boxShadow: AppTheme.cardShadow),
-            child: Icon(Icons.notifications_off_rounded,
-                size: 80, color: Colors.grey.shade400),
+              gradient: AppTheme.cardGradient,
+              shape: BoxShape.circle,
+              boxShadow: AppTheme.cardShadow,
+            ),
+            child: Icon(
+              Icons.notifications_off_rounded,
+              size: 80,
+              color: Colors.grey.shade400,
+            ),
           ),
           const SizedBox(height: 24),
-          Text(_t('No notifications', 'Tidak ada notifikasi'),
-              style: TextStyle(
-                  fontSize: 20,
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            _t('No notifications', 'Tidak ada notifikasi'),
+            style: TextStyle(
+              fontSize: 20,
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(_t('Notifications will appear here',
-              'Notifikasi akan muncul di sini'), style: AppTheme.bodySmall),
+          Text(
+            _t(
+              'Notifications will appear here',
+              'Notifikasi akan muncul di sini',
+            ),
+            style: AppTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -735,7 +871,8 @@ class _NotificationScreenState extends State<NotificationScreen>
     // tidak terikat is_read karena user mungkin sudah baca tapi belum merespons
     final followRequestStatus =
         notification['follow_request_status']?.toString() ?? '';
-    final showFollowRequestActions = type == 'follow_request' &&
+    final showFollowRequestActions =
+        type == 'follow_request' &&
         relatedId.isNotEmpty &&
         followRequestStatus == 'pending';
 
@@ -745,26 +882,36 @@ class _NotificationScreenState extends State<NotificationScreen>
       confirmDismiss: (direction) async => await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(children: [
-            const Icon(Icons.delete_rounded, color: Colors.red, size: 24),
-            const SizedBox(width: 8),
-            Text(_t('Delete Notification', 'Hapus Notifikasi'))
-          ]),
-          content: Text(_t('Are you sure you want to delete this notification?',
-              'Apakah Anda yakin ingin menghapus notifikasi ini?')),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.delete_rounded, color: Colors.red, size: 24),
+              const SizedBox(width: 8),
+              Text(_t('Delete Notification', 'Hapus Notifikasi')),
+            ],
+          ),
+          content: Text(
+            _t(
+              'Are you sure you want to delete this notification?',
+              'Apakah Anda yakin ingin menghapus notifikasi ini?',
+            ),
+          ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(_t('Cancel', 'Batal'))),
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(_t('Cancel', 'Batal')),
+            ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10))),
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: Text(_t('Delete', 'Hapus')),
             ),
           ],
@@ -773,9 +920,11 @@ class _NotificationScreenState extends State<NotificationScreen>
       background: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [Colors.red.shade400, Colors.red.shade600]),
-            borderRadius: BorderRadius.circular(16)),
+          gradient: LinearGradient(
+            colors: [Colors.red.shade400, Colors.red.shade600],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
         child: Column(
@@ -783,11 +932,14 @@ class _NotificationScreenState extends State<NotificationScreen>
           children: [
             const Icon(Icons.delete_rounded, color: Colors.white, size: 32),
             const SizedBox(height: 4),
-            Text(_t('Delete', 'Hapus'),
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13))
+            Text(
+              _t('Delete', 'Hapus'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
           ],
         ),
       ),
@@ -801,21 +953,23 @@ class _NotificationScreenState extends State<NotificationScreen>
             color: isRead
                 ? AppTheme.surfaceColor
                 : (AppTheme.isDarkMode
-                    ? AppTheme.primaryCoral.withValues(alpha: 0.08)
-                    : Colors.white),
+                      ? AppTheme.primaryCoral.withValues(alpha: 0.08)
+                      : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: isRead
-                    ? AppTheme.borderColor
-                    : color.withValues(alpha: 0.5),
-                width: isRead ? 1 : 2),
+              color: isRead
+                  ? AppTheme.borderColor
+                  : color.withValues(alpha: 0.5),
+              width: isRead ? 1 : 2,
+            ),
             boxShadow: [
               BoxShadow(
-                  color: isRead
-                      ? Colors.black.withValues(alpha: 0.05)
-                      : color.withValues(alpha: 0.15),
-                  blurRadius: isRead ? 8 : 12,
-                  offset: const Offset(0, 4))
+                color: isRead
+                    ? Colors.black.withValues(alpha: 0.05)
+                    : color.withValues(alpha: 0.15),
+                blurRadius: isRead ? 8 : 12,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Stack(
@@ -825,12 +979,13 @@ class _NotificationScreenState extends State<NotificationScreen>
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                          colors: [
-                            color.withValues(alpha: 0.05),
-                            Colors.transparent
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight),
+                        colors: [
+                          color.withValues(alpha: 0.05),
+                          Colors.transparent,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
@@ -845,13 +1000,17 @@ class _NotificationScreenState extends State<NotificationScreen>
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [
-                          color.withValues(alpha: 0.2),
-                          color.withValues(alpha: 0.1)
-                        ]),
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withValues(alpha: 0.2),
+                            color.withValues(alpha: 0.1),
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: color.withValues(alpha: 0.3), width: 2),
+                          color: color.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
                       ),
                       child: Icon(icon, color: color, size: 28),
                     ),
@@ -867,11 +1026,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 child: Text(
                                   _notificationTitle(notification),
                                   style: TextStyle(
-                                      fontWeight: isRead
-                                          ? FontWeight.w600
-                                          : FontWeight.bold,
-                                      fontSize: 15,
-                                      color: AppTheme.textPrimary),
+                                    fontWeight: isRead
+                                        ? FontWeight.w600
+                                        : FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppTheme.textPrimary,
+                                  ),
                                 ),
                               ),
                               if (!isRead)
@@ -883,9 +1043,10 @@ class _NotificationScreenState extends State<NotificationScreen>
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                          color: color.withValues(alpha: 0.45),
-                                          blurRadius: 5,
-                                          spreadRadius: 1)
+                                        color: color.withValues(alpha: 0.45),
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -893,9 +1054,13 @@ class _NotificationScreenState extends State<NotificationScreen>
                           ),
                           const SizedBox(height: 6),
                           // Message
-                          Text(_notificationMessage(notification),
-                              style: AppTheme.bodyMedium.copyWith(
-                                  color: AppTheme.textSecondary, height: 1.4)),
+                          Text(
+                            _notificationMessage(notification),
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
 
                           // ── FOLLOW REQUEST ACTIONS ──
                           if (showFollowRequestActions) ...[
@@ -905,21 +1070,27 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () => _respondToFollowRequest(
-                                        relatedId, false),
-                                    icon: Icon(Icons.close_rounded,
-                                        size: 15,
-                                        color: Colors.red.shade600),
+                                      relatedId,
+                                      false,
+                                    ),
+                                    icon: Icon(
+                                      Icons.close_rounded,
+                                      size: 15,
+                                      color: Colors.red.shade600,
+                                    ),
                                     label: Text(_t('Reject', 'Tolak')),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.red.shade600,
                                       side: BorderSide(
-                                          color: Colors.red.shade200,
-                                          width: 1.5),
+                                        color: Colors.red.shade200,
+                                        width: 1.5,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 10),
+                                        vertical: 10,
+                                      ),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -927,19 +1098,25 @@ class _NotificationScreenState extends State<NotificationScreen>
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () => _respondToFollowRequest(
-                                        relatedId, true),
-                                    icon: const Icon(Icons.check_rounded,
-                                        size: 15, color: Colors.white),
+                                      relatedId,
+                                      true,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.check_rounded,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
                                     label: Text(_t('Accept', 'Terima')),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppTheme.primaryTeal,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       padding: const EdgeInsets.symmetric(
-                                          vertical: 10),
+                                        vertical: 10,
+                                      ),
                                       shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -951,13 +1128,18 @@ class _NotificationScreenState extends State<NotificationScreen>
                           // Timestamp
                           Row(
                             children: [
-                              Icon(Icons.access_time_rounded,
-                                  size: 14, color: Colors.grey.shade400),
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: Colors.grey.shade400,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                  _getTimeAgo(notification['created_at']),
-                                  style: AppTheme.bodySmall.copyWith(
-                                      fontWeight: FontWeight.w500)),
+                                _getTimeAgo(notification['created_at']),
+                                style: AppTheme.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ],
                           ),
                         ],

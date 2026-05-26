@@ -8,8 +8,7 @@ class NotificationClient {
     String userId,
   ) async {
     try {
-      final response =
-          await ApiService.get('/notifications');
+      final response = await ApiService.get('/notifications');
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -24,9 +23,7 @@ class NotificationClient {
   /// Hitung notifikasi yang belum dibaca
   static Future<int> getUnreadCount(String userId) async {
     try {
-      final response = await ApiService.get(
-        '/notifications/unread-count',
-      );
+      final response = await ApiService.get('/notifications/unread-count');
       if (response['success'] == true) {
         return response['data']?['count'] ?? 0;
       }
@@ -40,8 +37,10 @@ class NotificationClient {
   /// Tandai satu notifikasi sudah dibaca
   static Future<bool> markAsRead(String notificationId) async {
     try {
-      final response =
-          await ApiService.post('/notifications/$notificationId/read', {});
+      final response = await ApiService.post(
+        '/notifications/$notificationId/read',
+        {},
+      );
       return response['success'] == true;
     } catch (e) {
       debugPrint('NotificationClient.markAsRead error: $e');
@@ -52,10 +51,7 @@ class NotificationClient {
   /// Tandai semua notifikasi sudah dibaca
   static Future<bool> markAllAsRead(String userId) async {
     try {
-      final response = await ApiService.post(
-        '/notifications/read-all',
-        {},
-      );
+      final response = await ApiService.post('/notifications/read-all', {});
       return response['success'] == true;
     } catch (e) {
       debugPrint('NotificationClient.markAllAsRead error: $e');
@@ -86,8 +82,9 @@ class NotificationClient {
   /// Hapus notifikasi
   static Future<bool> deleteNotification(String notificationId) async {
     try {
-      final response =
-          await ApiService.delete('/notifications/$notificationId');
+      final response = await ApiService.delete(
+        '/notifications/$notificationId',
+      );
       return response['success'] == true;
     } catch (e) {
       debugPrint('NotificationClient.deleteNotification error: $e');

@@ -73,7 +73,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF0a0a0a) : Colors.white,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.grey[100],
+        backgroundColor: isDarkMode
+            ? const Color(0xFF1a1a1a)
+            : Colors.grey[100],
         elevation: 0,
         title: Text(
           _t('Settings', 'Pengaturan'),
@@ -83,7 +85,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -100,14 +105,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Column(
                   children: [
-                    _buildSectionHeader(_t('Display & Appearance', 'Tampilan'), Icons.palette_outlined, isDarkMode),
+                    _buildSectionHeader(
+                      _t('Display & Appearance', 'Tampilan'),
+                      Icons.palette_outlined,
+                      isDarkMode,
+                    ),
                     _buildThemeSelector(isDarkMode),
                     _buildLanguageSelector(isDarkMode),
                     _buildFontSizeSlider(isDarkMode),
 
                     const SizedBox(height: 24),
 
-                    _buildSectionHeader(_t('Notifications', 'Notifikasi'), Icons.notifications_outlined, isDarkMode),
+                    _buildSectionHeader(
+                      _t('Notifications', 'Notifikasi'),
+                      Icons.notifications_outlined,
+                      isDarkMode,
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                       child: Text(
@@ -153,14 +166,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     const SizedBox(height: 24),
 
-                    _buildSectionHeader(_t('Privacy & Data', 'Privasi & Data'), Icons.security_outlined, isDarkMode),
-                    _buildPrivacyToggle(_t('Analytics', 'Analitik'), _t('Allow usage analytics to improve Savora', 'Izinkan analitik penggunaan untuk meningkatkan Savora'), 'allow_analytics', isDarkMode),
-                    _buildPrivacyToggle(_t('Public Profile', 'Profil Publik'), _t('Make my profile public', 'Jadikan profil saya publik'), 'profile_public', isDarkMode),
+                    _buildSectionHeader(
+                      _t('Privacy & Data', 'Privasi & Data'),
+                      Icons.security_outlined,
+                      isDarkMode,
+                    ),
+                    _buildPrivacyToggle(
+                      _t('Analytics', 'Analitik'),
+                      _t(
+                        'Allow usage analytics to improve Savora',
+                        'Izinkan analitik penggunaan untuk meningkatkan Savora',
+                      ),
+                      'allow_analytics',
+                      isDarkMode,
+                    ),
+                    _buildPrivacyToggle(
+                      _t('Public Profile', 'Profil Publik'),
+                      _t(
+                        'Make my profile public',
+                        'Jadikan profil saya publik',
+                      ),
+                      'profile_public',
+                      isDarkMode,
+                    ),
 
                     const SizedBox(height: 24),
 
-                    _buildSectionHeader(_t('Other Preferences', 'Preferensi Lain'), Icons.tune_outlined, isDarkMode),
-                    _buildPreferenceToggle(_t('Auto-save Drafts', 'Simpan Draft Otomatis'), _t('Auto-save recipe drafts', 'Simpan draft resep otomatis'), 'auto_save_drafts', isDarkMode),
+                    _buildSectionHeader(
+                      _t('Other Preferences', 'Preferensi Lain'),
+                      Icons.tune_outlined,
+                      isDarkMode,
+                    ),
+                    _buildPreferenceToggle(
+                      _t('Auto-save Drafts', 'Simpan Draft Otomatis'),
+                      _t(
+                        'Auto-save recipe drafts',
+                        'Simpan draft resep otomatis',
+                      ),
+                      'auto_save_drafts',
+                      isDarkMode,
+                    ),
 
                     const SizedBox(height: 32),
 
@@ -183,7 +228,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   height: 24,
                                   width: 24,
                                   child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Colors.white,
+                                    ),
                                     strokeWidth: 2,
                                   ),
                                 )
@@ -257,9 +304,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildThemeButton(_t('Dark', 'Gelap'), 'dark', isDarkMode)),
+              Expanded(
+                child: _buildThemeButton(
+                  _t('Dark', 'Gelap'),
+                  'dark',
+                  isDarkMode,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _buildThemeButton(_t('Light', 'Terang'), 'light', isDarkMode)),
+              Expanded(
+                child: _buildThemeButton(
+                  _t('Light', 'Terang'),
+                  'light',
+                  isDarkMode,
+                ),
+              ),
             ],
           ),
         ],
@@ -334,7 +393,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: isDarkMode ? Colors.white.withAlpha(13) : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isDarkMode ? Colors.white.withAlpha(26) : Colors.grey[300]!, // 0.1 * 255 ≈ 26
+                color: isDarkMode
+                    ? Colors.white.withAlpha(26)
+                    : Colors.grey[300]!, // 0.1 * 255 ≈ 26
               ),
             ),
             child: DropdownButton<String>(
@@ -346,7 +407,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
-              dropdownColor: isDarkMode ? const Color(0xFF1a1a1a) : Colors.white,
+              dropdownColor: isDarkMode
+                  ? const Color(0xFF1a1a1a)
+                  : Colors.white,
               items: const [
                 DropdownMenuItem(value: 'en', child: Text('English')),
                 DropdownMenuItem(value: 'id', child: Text('Bahasa Indonesia')),
@@ -394,7 +457,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     min: 12,
                     max: 18,
                     divisions: 6,
-                    onChanged: (value) => setState(() => settings['fontSize'] = value.toInt()),
+                    onChanged: (value) =>
+                        setState(() => settings['fontSize'] = value.toInt()),
                   ),
                 ),
               ),
@@ -403,7 +467,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 width: 48,
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white.withAlpha(13) : Colors.grey[100],
+                  color: isDarkMode
+                      ? Colors.white.withAlpha(13)
+                      : Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -424,7 +490,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildNotificationToggle(String title, String subtitle, String key, bool isDarkMode) {
+  Widget _buildNotificationToggle(
+    String title,
+    String subtitle,
+    String key,
+    bool isDarkMode,
+  ) {
     return _buildSettingTile(
       title: title,
       subtitle: subtitle,
@@ -453,7 +524,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPrivacyToggle(String title, String subtitle, String key, bool isDarkMode) {
+  Widget _buildPrivacyToggle(
+    String title,
+    String subtitle,
+    String key,
+    bool isDarkMode,
+  ) {
     return _buildSettingTile(
       title: title,
       subtitle: subtitle,
@@ -467,7 +543,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPreferenceToggle(String title, String subtitle, String key, bool isDarkMode) {
+  Widget _buildPreferenceToggle(
+    String title,
+    String subtitle,
+    String key,
+    bool isDarkMode,
+  ) {
     return _buildSettingTile(
       title: title,
       subtitle: subtitle,

@@ -86,8 +86,10 @@ class _RecipeCardState extends State<RecipeCard> {
     try {
       final userId = widget.currentUserId;
       if (userId == null) {
-        _showSnackBar(_t('Please log in first', 'Silakan login terlebih dahulu'),
-            isError: true);
+        _showSnackBar(
+          _t('Please log in first', 'Silakan login terlebih dahulu'),
+          isError: true,
+        );
         return;
       }
 
@@ -110,7 +112,9 @@ class _RecipeCardState extends State<RecipeCard> {
   }
 
   Widget _buildBoardSelectorSheet(
-      List<Map<String, dynamic>> boards, String userId) {
+    List<Map<String, dynamic>> boards,
+    String userId,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -139,8 +143,11 @@ class _RecipeCardState extends State<RecipeCard> {
                   gradient: AppTheme.accentGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.collections_bookmark_rounded,
-                    color: Colors.white, size: 24),
+                child: Icon(
+                  Icons.collections_bookmark_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -182,8 +189,11 @@ class _RecipeCardState extends State<RecipeCard> {
                           color: Colors.white.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.add_rounded,
-                            color: Colors.white, size: 20),
+                        child: Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -196,8 +206,11 @@ class _RecipeCardState extends State<RecipeCard> {
                           ),
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          color: Colors.white, size: 16),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -218,8 +231,11 @@ class _RecipeCardState extends State<RecipeCard> {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.collections_bookmark_outlined,
-                        size: 48, color: Colors.grey.shade400),
+                    Icon(
+                      Icons.collections_bookmark_outlined,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       _t('No collections yet', 'Belum ada koleksi'),
@@ -231,8 +247,10 @@ class _RecipeCardState extends State<RecipeCard> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _t('Create your first collection',
-                          'Buat koleksi pertama Anda'),
+                      _t(
+                        'Create your first collection',
+                        'Buat koleksi pertama Anda',
+                      ),
                       style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
                     ),
                   ],
@@ -283,8 +301,12 @@ class _RecipeCardState extends State<RecipeCard> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      AppTheme.primaryCoral.withValues(alpha: 0.2),
-                                      AppTheme.primaryOrange.withValues(alpha: 0.1),
+                                      AppTheme.primaryCoral.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      AppTheme.primaryOrange.withValues(
+                                        alpha: 0.1,
+                                      ),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
@@ -309,7 +331,9 @@ class _RecipeCardState extends State<RecipeCard> {
                                       ),
                                     ),
                                     if (board['description'] != null &&
-                                        board['description'].toString().isNotEmpty)
+                                        board['description']
+                                            .toString()
+                                            .isNotEmpty)
                                       Text(
                                         board['description'],
                                         style: TextStyle(
@@ -361,11 +385,17 @@ class _RecipeCardState extends State<RecipeCard> {
                 gradient: AppTheme.accentGradient,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
-            Text(_t('New Collection', 'Koleksi Baru'),
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(
+              _t('New Collection', 'Koleksi Baru'),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: Column(
@@ -401,8 +431,13 @@ class _RecipeCardState extends State<RecipeCard> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
-            child: Text(_t('Cancel', 'Batal'), style: TextStyle(fontWeight: FontWeight.w600)),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.textSecondary,
+            ),
+            child: Text(
+              _t('Cancel', 'Batal'),
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
           Container(
             decoration: BoxDecoration(
@@ -414,8 +449,14 @@ class _RecipeCardState extends State<RecipeCard> {
                 if (nameController.text.trim().isEmpty) {
                   if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text(_t('Collection name is required',
-                        'Nama koleksi harus diisi'))),
+                    SnackBar(
+                      content: Text(
+                        _t(
+                          'Collection name is required',
+                          'Nama koleksi harus diisi',
+                        ),
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -433,15 +474,25 @@ class _RecipeCardState extends State<RecipeCard> {
 
                 if (board != null) {
                   if (!mounted) return;
-                  _showSnackBar(_t('Collection created!', 'Koleksi berhasil dibuat!'), isError: false);
+                  _showSnackBar(
+                    _t('Collection created!', 'Koleksi berhasil dibuat!'),
+                    isError: false,
+                  );
                   _showBoardSelector();
                 } else {
                   if (!mounted) return;
-                  _showSnackBar(_t('Failed to create collection',
-                      'Gagal membuat koleksi'), isError: true);
+                  _showSnackBar(
+                    _t('Failed to create collection', 'Gagal membuat koleksi'),
+                    isError: true,
+                  );
                 }
               },
-              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
               child: Text(_t('Create', 'Buat'), style: AppTheme.buttonText),
             ),
           ),
@@ -466,10 +517,18 @@ class _RecipeCardState extends State<RecipeCard> {
 
       if (success) {
         setState(() => _isFavorite = true);
-        _showSnackBar(_t('Added to "$boardName"', 'Ditambahkan ke "$boardName"'), isError: false);
+        _showSnackBar(
+          _t('Added to "$boardName"', 'Ditambahkan ke "$boardName"'),
+          isError: false,
+        );
       } else {
-        _showSnackBar(_t('Recipe is already in this collection',
-            'Resep sudah ada di koleksi ini'), isError: true);
+        _showSnackBar(
+          _t(
+            'Recipe is already in this collection',
+            'Resep sudah ada di koleksi ini',
+          ),
+          isError: true,
+        );
       }
     } catch (e) {
       if (!mounted) return;
@@ -483,8 +542,10 @@ class _RecipeCardState extends State<RecipeCard> {
     if (recipeId == null || recipeId.isEmpty) return;
 
     if (widget.currentUserId == null) {
-      _showSnackBar(_t('Please log in first', 'Silakan login terlebih dahulu'),
-          isError: true);
+      _showSnackBar(
+        _t('Please log in first', 'Silakan login terlebih dahulu'),
+        isError: true,
+      );
       return;
     }
 
@@ -500,8 +561,10 @@ class _RecipeCardState extends State<RecipeCard> {
         widget.recipe['is_liked'] = _isLiked;
       });
     } else {
-      _showSnackBar(_t('Failed to update like', 'Gagal memperbarui like'),
-          isError: true);
+      _showSnackBar(
+        _t('Failed to update like', 'Gagal memperbarui like'),
+        isError: true,
+      );
     }
 
     if (mounted) setState(() => _isTogglingLike = false);
@@ -527,8 +590,7 @@ class _RecipeCardState extends State<RecipeCard> {
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor:
-            isError ? Colors.red.shade600 : Colors.green.shade600,
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -542,25 +604,35 @@ class _RecipeCardState extends State<RecipeCard> {
 
   @override
   Widget build(BuildContext context) {
+    final imageCacheWidth = (640 * MediaQuery.devicePixelRatioOf(context))
+        .round();
+    final avatarCacheWidth = (72 * MediaQuery.devicePixelRatioOf(context))
+        .round();
     final profile = widget.recipe['profiles'];
-    final username = widget.recipe['author']?['name'] ??
+    final username =
+        widget.recipe['author']?['name'] ??
         profile?['username'] ??
         _t('Anonymous', 'Anonim');
     final avatarUrl = profile?['avatar_url'];
     final authorUserId = widget.recipe['user_id'];
-    final userRole =
-        profile?['role'] == 'admin' ? 'user' : (profile?['role'] ?? 'user');
+    final userRole = profile?['role'] == 'admin'
+        ? 'user'
+        : (profile?['role'] ?? 'user');
 
     final category = widget.recipe['categories'];
-    final categoryName = widget.recipe['category'] ??
+    final categoryName =
+        widget.recipe['category'] ??
         category?['name'] ??
         _t('Uncategorized', 'Tanpa Kategori');
     final categoryId = category?['id'];
     final title =
-        widget.recipe['title'] ?? widget.recipe['name'] ?? _t('Recipe', 'Resep');
+        widget.recipe['title'] ??
+        widget.recipe['name'] ??
+        _t('Recipe', 'Resep');
     final imageUrl = widget.recipe['image_url'] ?? widget.recipe['image'];
     final description = widget.recipe['description']?.toString() ?? '';
-    final cookingTime = widget.recipe['prep_time'] ??
+    final cookingTime =
+        widget.recipe['prep_time'] ??
         widget.recipe['cooking_time'] ??
         widget.recipe['cook_time'];
     final servings = widget.recipe['servings'];
@@ -571,14 +643,15 @@ class _RecipeCardState extends State<RecipeCard> {
       widget.recipe['rating_count'] ??
           (ratingInfo is Map ? ratingInfo['total'] : null),
     );
-    final effectiveRating = widget.rating ??
+    final effectiveRating =
+        widget.rating ??
         (widget.recipe['rating_avg'] is num
             ? (widget.recipe['rating_avg'] as num).toDouble()
             : double.tryParse(
                 (widget.recipe['rating_avg'] ??
-                        widget.recipe['average_rating'] ??
-                        (ratingInfo is Map ? ratingInfo['average'] : null))
-                    ?.toString() ??
+                            widget.recipe['average_rating'] ??
+                            (ratingInfo is Map ? ratingInfo['average'] : null))
+                        ?.toString() ??
                     '',
               ));
 
@@ -594,9 +667,8 @@ class _RecipeCardState extends State<RecipeCard> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => DetailScreen(
-                recipeId: widget.recipe['id'].toString(),
-              ),
+              builder: (context) =>
+                  DetailScreen(recipeId: widget.recipe['id'].toString()),
             ),
           );
         }
@@ -619,7 +691,10 @@ class _RecipeCardState extends State<RecipeCard> {
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(
-                    alpha: AppTheme.isDarkMode ? 0.30 : (_isPressed ? 0.12 : 0.08)),
+                  alpha: AppTheme.isDarkMode
+                      ? 0.30
+                      : (_isPressed ? 0.12 : 0.08),
+                ),
                 blurRadius: _isPressed ? 16 : 12,
                 offset: Offset(0, _isPressed ? 6 : 4),
               ),
@@ -640,94 +715,99 @@ class _RecipeCardState extends State<RecipeCard> {
                           ? Image.network(
                               imageUrl.toString(),
                               fit: BoxFit.cover,
+                              cacheWidth: imageCacheWidth,
                               errorBuilder: (_, _, _) => _buildPlaceholder(),
                             )
                           : _buildPlaceholder(),
-                  ),
-                  Positioned(
-                    top: 14,
-                    left: 14,
-                    child: _roundOverlayButton(
-                      onTap: _isCheckingFavorite ? null : _showBoardSelector,
-                      child: Icon(
-                        _isFavorite
-                            ? Icons.bookmark_rounded
-                            : Icons.bookmark_border_rounded,
-                        color: _isFavorite
-                            ? AppTheme.primaryCoral
-                            : Colors.grey.shade800,
-                        size: 21,
+                    ),
+                    Positioned(
+                      top: 14,
+                      left: 14,
+                      child: _roundOverlayButton(
+                        onTap: _isCheckingFavorite ? null : _showBoardSelector,
+                        child: Icon(
+                          _isFavorite
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
+                          color: _isFavorite
+                              ? AppTheme.primaryCoral
+                              : Colors.grey.shade800,
+                          size: 21,
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 14,
-                    right: 14,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _isTogglingLike ? null : _toggleLike,
-                        borderRadius: BorderRadius.circular(999),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minWidth: 40),
-                          child: Ink(
-                            height: 40,
-                            padding: const EdgeInsets.symmetric(horizontal: 11),
-                            decoration: BoxDecoration(
-                              gradient: _isLiked ? AppTheme.accentGradient : null,
-                              color: _isLiked
-                                  ? null
-                                  : Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.18),
-                                  blurRadius: 10,
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                _isLiked
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
+                    Positioned(
+                      top: 14,
+                      right: 14,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isTogglingLike ? null : _toggleLike,
+                          borderRadius: BorderRadius.circular(999),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minWidth: 40),
+                            child: Ink(
+                              height: 40,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: _isLiked
+                                    ? AppTheme.accentGradient
+                                    : null,
                                 color: _isLiked
-                                    ? Colors.white
-                                    : Colors.grey.shade800,
-                                size: 20,
+                                    ? null
+                                    : Colors.white.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(999),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.18),
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                _likesCount.toString(),
-                                style: TextStyle(
-                                  color: _isLiked
-                                      ? Colors.white
-                                      : Colors.grey.shade800,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isLiked
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: _isLiked
+                                        ? Colors.white
+                                        : Colors.grey.shade800,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _likesCount.toString(),
+                                    style: TextStyle(
+                                      color: _isLiked
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  ),
-                  if (categoryName.toString().isNotEmpty)
-                    Positioned(
-                      right: 14,
-                      bottom: 14,
-                      child: _buildCategoryChip(
-                        context,
-                        categoryId,
-                        categoryName.toString(),
+                    if (categoryName.toString().isNotEmpty)
+                      Positioned(
+                        right: 14,
+                        bottom: 14,
+                        child: _buildCategoryChip(
+                          context,
+                          categoryId,
+                          categoryName.toString(),
+                        ),
                       ),
-                    ),
-                ],
-              ),
+                  ],
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(18),
@@ -810,12 +890,12 @@ class _RecipeCardState extends State<RecipeCard> {
                     GestureDetector(
                       onTap: authorUserId != null
                           ? () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProfileScreen(userId: authorUserId),
-                                ),
-                              )
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ProfileScreen(userId: authorUserId),
+                              ),
+                            )
                           : null,
                       child: Row(
                         children: [
@@ -833,14 +913,18 @@ class _RecipeCardState extends State<RecipeCard> {
                                   ? Image.network(
                                       avatarUrl,
                                       fit: BoxFit.cover,
+                                      cacheWidth: avatarCacheWidth,
                                       errorBuilder: (_, _, _) => const Icon(
                                         Icons.person_rounded,
                                         size: 18,
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Icon(Icons.person_rounded,
-                                      size: 18, color: Colors.white),
+                                  : const Icon(
+                                      Icons.person_rounded,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -859,7 +943,9 @@ class _RecipeCardState extends State<RecipeCard> {
                           if (profile?['role'] == 'admin')
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: AppTheme.adminGradient,
                                 borderRadius: BorderRadius.circular(999),
@@ -894,8 +980,11 @@ class _RecipeCardState extends State<RecipeCard> {
     return Container(
       color: AppTheme.subtleSurfaceColor,
       child: Center(
-        child:
-            Icon(Icons.restaurant_rounded, size: 48, color: AppTheme.textMuted),
+        child: Icon(
+          Icons.restaurant_rounded,
+          size: 48,
+          color: AppTheme.textMuted,
+        ),
       ),
     );
   }
@@ -944,8 +1033,8 @@ class _RecipeCardState extends State<RecipeCard> {
             final icon = rating >= value
                 ? Icons.star_rounded
                 : rating >= value - 0.5
-                    ? Icons.star_half_rounded
-                    : Icons.star_outline_rounded;
+                ? Icons.star_half_rounded
+                : Icons.star_outline_rounded;
             return Icon(icon, size: 14, color: AppTheme.primaryYellow);
           }),
           const SizedBox(width: 6),
@@ -1025,18 +1114,21 @@ class _RecipeCardState extends State<RecipeCard> {
   }
 
   Widget _buildCategoryChip(
-      BuildContext context, dynamic categoryId, String categoryName) {
+    BuildContext context,
+    dynamic categoryId,
+    String categoryName,
+  ) {
     return GestureDetector(
       onTap: categoryId != null
           ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SearchingScreen(
-                    initialCategoryId: categoryId,
-                    initialCategoryName: categoryName,
-                  ),
+              context,
+              MaterialPageRoute(
+                builder: (context) => SearchingScreen(
+                  initialCategoryId: categoryId,
+                  initialCategoryName: categoryName,
                 ),
-              )
+              ),
+            )
           : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1063,14 +1155,14 @@ class _RecipeCardState extends State<RecipeCard> {
     return GestureDetector(
       onTap: tagId != null
           ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SearchingScreen(
-                    initialTagId: tagId,
-                    initialTagName: tagName,
-                  ),
+              context,
+              MaterialPageRoute(
+                builder: (context) => SearchingScreen(
+                  initialTagId: tagId,
+                  initialTagName: tagName,
                 ),
-              )
+              ),
+            )
           : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

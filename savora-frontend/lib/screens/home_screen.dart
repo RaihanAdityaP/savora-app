@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math' as math;
 import '../services/api_service.dart';
 import '../services/app_settings_service.dart';
 import '../services/notification_service.dart';
@@ -29,12 +31,12 @@ class _HomeScreenState extends State<HomeScreen>
   int _followersCount = 0;
 
   // ── Feed ──
-  final List<Map<String, dynamic>> _feed          = [];
-  final Map<String, double>        _recipeRatings = {};
-  bool _isLoading     = true;
+  final List<Map<String, dynamic>> _feed = [];
+  final Map<String, double> _recipeRatings = {};
+  bool _isLoading = true;
   bool _isLoadingMore = false;
-  bool _hasMore       = true;
-  int  _currentOffset = 0;
+  bool _hasMore = true;
+  int _currentOffset = 0;
   static const int _pageSize = 10;
 
   // ── Scroll ──
@@ -42,8 +44,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Animation ──
   late AnimationController _animController;
-  late Animation<double>   _fadeAnim;
-  late Animation<Offset>   _slideAnim;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
@@ -88,13 +90,10 @@ class _HomeScreenState extends State<HomeScreen>
       parent: _animController,
       curve: Curves.easeInOut,
     );
-    _slideAnim =
-        Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _animController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     _loadUserData();
     _loadFeed(refresh: true);
@@ -121,14 +120,14 @@ class _HomeScreenState extends State<HomeScreen>
         return;
       }
       _currentUserId = userId;
-      await NotificationService().syncDeviceTokenForCurrentUser();
+      unawaited(NotificationService().syncDeviceTokenForCurrentUser());
 
       final profile = await UserClient.getProfile(userId);
       if (mounted && profile != null) {
         setState(() {
-          _avatarUrl      = profile['avatar_url'];
-          _username       = profile['username'];
-          _myRecipesCount = profile['total_recipes']  ?? 0;
+          _avatarUrl = profile['avatar_url'];
+          _username = profile['username'];
+          _myRecipesCount = profile['total_recipes'] ?? 0;
           _bookmarksCount = profile['total_bookmarks'] ?? 0;
           _followersCount = _toInt(
             profile['followers_count'] ?? profile['total_followers'],
@@ -147,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen>
       final profile = await UserClient.getProfile(userId);
       if (mounted && profile != null) {
         setState(() {
-          _myRecipesCount = profile['total_recipes']  ?? 0;
+          _myRecipesCount = profile['total_recipes'] ?? 0;
           _bookmarksCount = profile['total_bookmarks'] ?? 0;
           _followersCount = _toInt(
             profile['followers_count'] ?? profile['total_followers'],
@@ -169,9 +168,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadFeed({bool refresh = false}) async {
     if (refresh) {
       setState(() {
-        _isLoading     = true;
+        _isLoading = true;
         _currentOffset = 0;
-        _hasMore       = true;
+        _hasMore = true;
         _feed.clear();
         _recipeRatings.clear();
       });
@@ -184,8 +183,8 @@ class _HomeScreenState extends State<HomeScreen>
           _feed.addAll(result.recipes);
           _recipeRatings.addAll(result.ratings);
           _currentOffset = result.recipes.length;
-          _hasMore       = result.hasMore;
-          _isLoading     = false;
+          _hasMore = result.hasMore;
+          _isLoading = false;
         });
         _animController.forward(from: 0);
       }
@@ -206,8 +205,8 @@ class _HomeScreenState extends State<HomeScreen>
           _feed.addAll(result.recipes);
           _recipeRatings.addAll(result.ratings);
           _currentOffset += result.recipes.length;
-          _hasMore        = result.hasMore;
-          _isLoadingMore  = false;
+          _hasMore = result.hasMore;
+          _isLoadingMore = false;
         });
       }
     } catch (e) {
@@ -218,41 +217,43 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<_FeedPage> _fetchPage(int offset) async {
     Map<String, dynamic> response;
+    final publicEndpoint = _publicFeedEndpoint(offset);
+    final personalizedEndpoint = '/feed?limit=$_pageSize&offset=$offset';
 
     try {
-      response = await ApiService.get(
-        '/feed?limit=$_pageSize&offset=$offset',
-      );
+      response = await ApiService.get(personalizedEndpoint);
     } catch (_) {
-      response = await ApiService.get(
-        '/recipes?limit=$_pageSize&offset=$offset',
-      );
+      response = await ApiService.get(publicEndpoint);
     }
 
     if (response['success'] != true) {
-      response = await ApiService.get(
-        '/recipes?limit=$_pageSize&offset=$offset',
-      );
+      response = await ApiService.get(publicEndpoint);
     }
 
     if (response['success'] != true) {
-      throw Exception(response['message'] ?? _t('Failed to load feed', 'Gagal memuat feed'));
+      throw Exception(
+        response['message'] ?? _t('Failed to load feed', 'Gagal memuat feed'),
+      );
     }
 
     var list = (response['data'] as List? ?? [])
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
+    var feedMode = response['feed_mode']?.toString();
 
     if (list.isEmpty) {
-      final fallback = await ApiService.get(
-        '/recipes?limit=$_pageSize&offset=$offset',
-      );
+      final fallback = await ApiService.get(publicEndpoint);
       if (fallback['success'] == true) {
         response = fallback;
+        feedMode = fallback['feed_mode']?.toString();
         list = (fallback['data'] as List? ?? [])
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
       }
+    }
+
+    if (feedMode == 'scored') {
+      _applyScoredFeedOrder(list);
     }
 
     final Map<String, double> ratings = {};
@@ -267,25 +268,73 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     final pagination = response['pagination'] as Map?;
-    final hasMore    = pagination?['has_more'] ?? (list.length == _pageSize);
+    final hasMore = pagination?['has_more'] ?? (list.length == _pageSize);
 
-    return _FeedPage(
-      recipes: list,
-      ratings: ratings,
-      hasMore: hasMore as bool,
-    );
+    return _FeedPage(recipes: list, ratings: ratings, hasMore: hasMore as bool);
+  }
+
+  String _publicFeedEndpoint(int offset) {
+    return '/recipes?limit=$_pageSize&offset=$offset'
+        '&order_by=views_count&order_direction=desc';
   }
 
   // ── Quote helpers ─────────────────────────────────────────────
+  void _applyScoredFeedOrder(List<Map<String, dynamic>> recipes) {
+    for (final recipe in recipes) {
+      recipe['ranking_score'] = _feedScore(recipe);
+    }
+
+    recipes.sort((a, b) {
+      final bScore = _toDouble(b['ranking_score']);
+      final aScore = _toDouble(a['ranking_score']);
+      return bScore.compareTo(aScore);
+    });
+  }
+
+  double _feedScore(Map<String, dynamic> recipe) {
+    final existingScore = recipe['ranking_score'];
+    if (existingScore != null) return _toDouble(existingScore);
+
+    final likes = _toInt(recipe['likes_count']);
+    final ratingInfo = recipe['rating_info'];
+    final ratingAvg = ratingInfo is Map
+        ? _toDouble(ratingInfo['average'])
+        : _toDouble(recipe['rating_avg']);
+    final viewsScore = math.log(_toInt(recipe['views_count']) + 1);
+    final freshnessScore = 12 / math.sqrt(_ageHours(recipe['created_at']));
+    final signalScore = _toDouble(recipe['signal_score']);
+    final randomScore = _toDouble(recipe['random_score']);
+
+    return (likes * 4) +
+        (ratingAvg * 2) +
+        viewsScore +
+        freshnessScore +
+        signalScore +
+        randomScore;
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  int _ageHours(dynamic value) {
+    final createdAt = DateTime.tryParse(value?.toString() ?? '');
+    if (createdAt == null) return 1;
+    return math.max(1, DateTime.now().difference(createdAt).inHours);
+  }
+
   String _quote() {
-    final day =
-        DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final day = DateTime.now()
+        .difference(DateTime(DateTime.now().year, 1, 1))
+        .inDays;
     return _quotes[day % _quotes.length]['q']!;
   }
 
   String _quoteAuthor() {
-    final day =
-        DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final day = DateTime.now()
+        .difference(DateTime(DateTime.now().year, 1, 1))
+        .inDays;
     return _quotes[day % _quotes.length]['a']!;
   }
 
@@ -300,9 +349,7 @@ class _HomeScreenState extends State<HomeScreen>
           : RefreshIndicator(
               onRefresh: () => _loadFeed(refresh: true),
               color: AppTheme.primaryCoral,
-              child: _feed.isEmpty
-                  ? _buildEmptyState()
-                  : _buildContent(),
+              child: _feed.isEmpty ? _buildEmptyState() : _buildContent(),
             ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
@@ -330,8 +377,9 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             child: const Center(
               child: CircularProgressIndicator(
-                valueColor:
-                    AlwaysStoppedAnimation<Color>(AppTheme.primaryCoral),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppTheme.primaryCoral,
+                ),
                 strokeWidth: 3,
               ),
             ),
@@ -369,24 +417,21 @@ class _HomeScreenState extends State<HomeScreen>
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
             sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final recipe = _feed[index];
-                  return RecipeCard(
-                    recipe: recipe,
-                    rating: _recipeRatings[recipe['id'].toString()],
-                    currentUserId: _currentUserId,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            DetailScreen(recipeId: recipe['id'].toString()),
-                      ),
-                    ).then((_) => _loadUserStats()),
-                  );
-                },
-                childCount: _feed.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final recipe = _feed[index];
+                return RecipeCard(
+                  recipe: recipe,
+                  rating: _recipeRatings[recipe['id'].toString()],
+                  currentUserId: _currentUserId,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          DetailScreen(recipeId: recipe['id'].toString()),
+                    ),
+                  ).then((_) => _loadUserStats()),
+                );
+              }, childCount: _feed.length),
             ),
           ),
 
@@ -418,40 +463,15 @@ class _HomeScreenState extends State<HomeScreen>
 
           // Title — Expanded agar tidak overflow
           Expanded(
-            child: Text(_t('For You', 'Untuk Kamu'), style: AppTheme.headingMedium),
-          ),
-
-          // FYP badge — teks saja, tanpa icon
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryCoral.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: const Text(
-              'FYP',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+            child: Text(
+              _t('For You', 'Untuk Kamu'),
+              style: AppTheme.headingMedium,
             ),
           ),
-          const SizedBox(width: 8),
 
           // Recipe count badge
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               gradient: AppTheme.cardGradient,
               borderRadius: BorderRadius.circular(20),
@@ -462,8 +482,11 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.restaurant_rounded,
-                    size: 12, color: AppTheme.primaryCoral),
+                Icon(
+                  Icons.restaurant_rounded,
+                  size: 12,
+                  color: AppTheme.primaryCoral,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${_feed.length}',
@@ -511,7 +534,8 @@ class _HomeScreenState extends State<HomeScreen>
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                          AppTheme.primaryCoral),
+                        AppTheme.primaryCoral,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -537,8 +561,7 @@ class _HomeScreenState extends State<HomeScreen>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          AppTheme.primaryCoral.withValues(alpha: 0.35),
+                      color: AppTheme.primaryCoral.withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -547,8 +570,11 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.expand_more_rounded,
-                        color: Colors.white, size: 22),
+                    const Icon(
+                      Icons.expand_more_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       _t('Load More', 'Muat Lebih Banyak'),
@@ -587,7 +613,10 @@ class _HomeScreenState extends State<HomeScreen>
           // Flexible mencegah overflow
           Flexible(
             child: Text(
-              _t('You have seen all recipes for you', 'Kamu sudah melihat semua resep untukmu'),
+              _t(
+                'You have seen all recipes for you',
+                'Kamu sudah melihat semua resep untukmu',
+              ),
               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
@@ -617,14 +646,8 @@ class _HomeScreenState extends State<HomeScreen>
       child: Stack(
         children: [
           // Decorative circles
-          Positioned(
-            top: -40, right: -40,
-            child: _decorCircle(120, 0.1),
-          ),
-          Positioned(
-            bottom: -60, left: -60,
-            child: _decorCircle(150, 0.08),
-          ),
+          Positioned(top: -40, right: -40, child: _decorCircle(120, 0.1)),
+          Positioned(bottom: -60, left: -60, child: _decorCircle(150, 0.08)),
 
           Column(
             children: [
@@ -670,11 +693,13 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                _t('Welcome back to Savora', 'Selamat datang kembali di Savora'),
+                                _t(
+                                  'Welcome back to Savora',
+                                  'Selamat datang kembali di Savora',
+                                ),
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color:
-                                      Colors.white.withValues(alpha: 0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                 ),
                               ),
                             ],
@@ -734,8 +759,7 @@ class _HomeScreenState extends State<HomeScreen>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color:
-                                Colors.white.withValues(alpha: 0.25),
+                            color: Colors.white.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
@@ -750,8 +774,7 @@ class _HomeScreenState extends State<HomeScreen>
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color:
-                                Colors.white.withValues(alpha: 0.95),
+                            color: Colors.white.withValues(alpha: 0.95),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -775,8 +798,7 @@ class _HomeScreenState extends State<HomeScreen>
                           width: 3,
                           height: 16,
                           decoration: BoxDecoration(
-                            color:
-                                Colors.white.withValues(alpha: 0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -786,8 +808,7 @@ class _HomeScreenState extends State<HomeScreen>
                             _quoteAuthor(),
                             style: TextStyle(
                               fontSize: 13,
-                              color:
-                                  Colors.white.withValues(alpha: 0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -817,8 +838,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _statChip(IconData icon, String value, String label) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(14),
@@ -862,8 +882,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Center(
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -916,9 +935,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: InkWell(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const CreateRecipeScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const CreateRecipeScreen()),
                 ),
                 borderRadius: BorderRadius.circular(16),
                 child: Ink(
@@ -931,8 +948,11 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_rounded,
-                            color: Colors.white, size: 24),
+                        const Icon(
+                          Icons.add_circle_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           _t('Create First Recipe', 'Buat Resep Pertama'),
@@ -954,8 +974,8 @@ class _HomeScreenState extends State<HomeScreen>
 // ── Data class ───────────────────────────────────────────────────────────────
 class _FeedPage {
   final List<Map<String, dynamic>> recipes;
-  final Map<String, double>        ratings;
-  final bool                       hasMore;
+  final Map<String, double> ratings;
+  final bool hasMore;
 
   const _FeedPage({
     required this.recipes,

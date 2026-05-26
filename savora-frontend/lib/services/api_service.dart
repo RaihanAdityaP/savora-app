@@ -21,9 +21,12 @@ class ApiService {
   //   HP via USB/WiFi   → 'http://192.168.1.9:8000/api/v1'  ← ganti IP
   //   Railway           → 'https://savora-app.up.railway.app/api/v1'
   // ─────────────────────────────────────────────
-  static const String _configuredBaseUrl =
-      String.fromEnvironment('API_BASE_URL', defaultValue: '');
-  static const String _baseUrlDebug = 'https://savora-app.up.railway.app/api/v1';
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: '',
+  );
+  static const String _baseUrlDebug =
+      'https://savora-app.up.railway.app/api/v1';
   static const String _baseUrlProd = 'https://savora-app.up.railway.app/api/v1';
 
   static String get _baseUrl {
@@ -34,7 +37,8 @@ class ApiService {
   }
 
   static String get activeBaseUrl => _normalizeBaseUrl(_baseUrl);
-  static List<String> get activeBaseUrlCandidates => List.unmodifiable(_baseUrlCandidates);
+  static List<String> get activeBaseUrlCandidates =>
+      List.unmodifiable(_baseUrlCandidates);
 
   static List<String> get _baseUrlCandidates {
     final primary = _normalizeBaseUrl(_baseUrl);
@@ -59,7 +63,8 @@ class ApiService {
     try {
       final decoded = json.decode(response.body) as Map<String, dynamic>;
       final message = decoded['message']?.toString().toLowerCase() ?? '';
-      return message.contains('route') && message.contains('could not be found');
+      return message.contains('route') &&
+          message.contains('could not be found');
     } catch (_) {
       return false;
     }
@@ -74,7 +79,8 @@ class ApiService {
   static String _socketExceptionMessage(SocketException e) {
     final raw = e.message.toLowerCase();
 
-    if (raw.contains('failed host lookup') || raw.contains('name or service not known')) {
+    if (raw.contains('failed host lookup') ||
+        raw.contains('name or service not known')) {
       return 'Server API tidak ditemukan. Cek IP/domain API backend.';
     }
 
@@ -145,7 +151,9 @@ class ApiService {
 
         final isLastAttempt = i == _baseUrlCandidates.length - 1;
         if (!isLastAttempt && _isRouteNotFoundResponse(response)) {
-          debugPrint('[API] Route not found on $base, retrying fallback base URL...');
+          debugPrint(
+            '[API] Route not found on $base, retrying fallback base URL...',
+          );
           continue;
         }
 
@@ -190,7 +198,9 @@ class ApiService {
 
         final isLastAttempt = i == _baseUrlCandidates.length - 1;
         if (!isLastAttempt && _isRouteNotFoundResponse(response)) {
-          debugPrint('[API] Route not found on $base, retrying fallback base URL...');
+          debugPrint(
+            '[API] Route not found on $base, retrying fallback base URL...',
+          );
           continue;
         }
 
@@ -250,8 +260,7 @@ class ApiService {
     try {
       debugPrint('[API] DELETE $_baseUrl$endpoint');
 
-      final request =
-          http.Request('DELETE', _buildUri(_baseUrl, endpoint));
+      final request = http.Request('DELETE', _buildUri(_baseUrl, endpoint));
       request.headers.addAll(_buildHeaders());
       if (body != null) request.body = json.encode(body);
 
@@ -292,8 +301,7 @@ class ApiService {
         request.headers['Authorization'] = 'Bearer $_authToken';
       }
       request.headers['Accept'] = 'application/json';
-      request.files.add(
-          await http.MultipartFile.fromPath(fileField, filePath));
+      request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
       if (fields != null) request.fields.addAll(fields);
 
       final streamed = await request.send().timeout(_timeout);
@@ -342,7 +350,8 @@ class ApiService {
       throw Exception(message);
     } on FormatException {
       throw Exception(
-          'Response bukan JSON valid (status ${response.statusCode})');
+        'Response bukan JSON valid (status ${response.statusCode})',
+      );
     }
   }
 }

@@ -52,29 +52,29 @@ class AppSettings {
   }
 
   Map<String, dynamic> toMap() => {
-        'theme': theme,
-        'language': language,
-        'fontSize': fontSize,
-        'font_size': fontSize,
-        'notify_likes': notifyLikes,
-        'notify_comments': notifyComments,
-        'notify_follows': notifyFollows,
-        'allow_analytics': allowAnalytics,
-        'profile_public': profilePublic,
-        'auto_save_drafts': autoSaveDrafts,
-      };
+    'theme': theme,
+    'language': language,
+    'fontSize': fontSize,
+    'font_size': fontSize,
+    'notify_likes': notifyLikes,
+    'notify_comments': notifyComments,
+    'notify_follows': notifyFollows,
+    'allow_analytics': allowAnalytics,
+    'profile_public': profilePublic,
+    'auto_save_drafts': autoSaveDrafts,
+  };
 
   Map<String, dynamic> toApiMap() => {
-        'theme': theme,
-        'language': language,
-        'font_size': fontSize,
-        'notify_likes': notifyLikes,
-        'notify_comments': notifyComments,
-        'notify_follows': notifyFollows,
-        'allow_analytics': allowAnalytics,
-        'profile_public': profilePublic,
-        'auto_save_drafts': autoSaveDrafts,
-      };
+    'theme': theme,
+    'language': language,
+    'font_size': fontSize,
+    'notify_likes': notifyLikes,
+    'notify_comments': notifyComments,
+    'notify_follows': notifyFollows,
+    'allow_analytics': allowAnalytics,
+    'profile_public': profilePublic,
+    'auto_save_drafts': autoSaveDrafts,
+  };
 
   factory AppSettings.fromMap(Map<String, dynamic> map) {
     return AppSettings(
@@ -107,8 +107,9 @@ class AppSettings {
 }
 
 class AppSettingsService {
-  static final ValueNotifier<AppSettings> notifier =
-      ValueNotifier<AppSettings>(const AppSettings());
+  static final ValueNotifier<AppSettings> notifier = ValueNotifier<AppSettings>(
+    const AppSettings(),
+  );
 
   static AppSettings get current => notifier.value;
 

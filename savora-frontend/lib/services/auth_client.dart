@@ -4,7 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
-import 'auth_storage.dart';   // ← NEW
+import 'auth_storage.dart'; // ← NEW
 
 /// AuthClient - Handle Supabase Auth + Sanctum Token Exchange
 class AuthClient {
@@ -78,10 +78,12 @@ class AuthClient {
         password: password,
       );
 
-      if (authResponse.session == null) throw Exception('Login failed - no session');
+      if (authResponse.session == null) {
+        throw Exception('Login failed - no session');
+      }
 
       final supabaseToken = authResponse.session!.accessToken;
-      final userId        = authResponse.user!.id;
+      final userId = authResponse.user!.id;
 
       debugPrint('AuthClient: Got Supabase token, exchanging...');
 
@@ -139,7 +141,7 @@ class AuthClient {
       if (googleUser == null) throw Exception('Google Sign In cancelled');
 
       final googleAuth = await googleUser.authentication;
-      final idToken    = googleAuth.idToken;
+      final idToken = googleAuth.idToken;
       final accessToken = googleAuth.accessToken;
 
       if (idToken == null || idToken.isEmpty) {
@@ -149,13 +151,15 @@ class AuthClient {
       }
 
       final authResponse = await _supabase.auth.signInWithIdToken(
-        provider   : OAuthProvider.google,
-        idToken    : idToken,
+        provider: OAuthProvider.google,
+        idToken: idToken,
         accessToken: accessToken,
       );
 
       final session = authResponse.session ?? _supabase.auth.currentSession;
-      if (session == null) throw Exception('No Supabase session after native Google Sign In');
+      if (session == null) {
+        throw Exception('No Supabase session after native Google Sign In');
+      }
 
       return _exchangeSupabaseSession(session);
     } catch (e) {
@@ -168,7 +172,9 @@ class AuthClient {
       } else if (msg.contains('Invalid or expired') || msg.contains('401')) {
         throw Exception('Sesi Google tidak valid. Silakan coba lagi.');
       } else if (msg.contains('ID token')) {
-        throw Exception('Gagal mendapatkan token Google. Pastikan Google Play Services aktif.');
+        throw Exception(
+          'Gagal mendapatkan token Google. Pastikan Google Play Services aktif.',
+        );
       }
       throw Exception('Login Google gagal. Silakan coba beberapa saat lagi.');
     }
@@ -190,9 +196,11 @@ class AuthClient {
     return _exchangeSupabaseSession(session);
   }
 
-  static Future<Map<String, dynamic>> _exchangeSupabaseSession(Session session) async {
+  static Future<Map<String, dynamic>> _exchangeSupabaseSession(
+    Session session,
+  ) async {
     final supabaseToken = session.accessToken;
-    final userId        = session.user.id;
+    final userId = session.user.id;
 
     final exchangeResponse = await ApiService.post('/auth/token', {
       'supabase_token': supabaseToken,
@@ -232,7 +240,9 @@ class AuthClient {
       final expiresAt = session.expiresAt;
       final nowInSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       if (expiresAt != null && expiresAt <= nowInSeconds + 60) {
-        debugPrint('AuthClient: Supabase session expired/near expiry, refreshing...');
+        debugPrint(
+          'AuthClient: Supabase session expired/near expiry, refreshing...',
+        );
         final refreshed = await _supabase.auth.refreshSession();
         session = refreshed.session ?? _supabase.auth.currentSession;
       }
@@ -266,10 +276,7 @@ class AuthClient {
     try {
       await _supabase.auth.signOut();
 
-
-
       // ── HAPUS dari disk ──
-
     } catch (e) {
       debugPrint('AuthClient.logout Supabase error: $e');
     }

@@ -10,11 +10,7 @@ class LikedRecipesScreen extends StatefulWidget {
   final String userId;
   final String? username;
 
-  const LikedRecipesScreen({
-    super.key,
-    required this.userId,
-    this.username,
-  });
+  const LikedRecipesScreen({super.key, required this.userId, this.username});
 
   @override
   State<LikedRecipesScreen> createState() => _LikedRecipesScreenState();
@@ -52,7 +48,10 @@ class _LikedRecipesScreenState extends State<LikedRecipesScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_t('Liked Recipes', 'Resep Disukai'), style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              _t('Liked Recipes', 'Resep Disukai'),
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             if (widget.username != null)
               Text(
                 widget.username!,
@@ -65,40 +64,49 @@ class _LikedRecipesScreenState extends State<LikedRecipesScreen> {
         onRefresh: _loadLikedRecipes,
         color: AppTheme.primaryCoral,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryCoral))
+            ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryCoral),
+              )
             : _recipes.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      const SizedBox(height: 120),
-                      AppTheme.buildEmptyState(
-                        icon: Icons.favorite_border_rounded,
-                        title: _t('No liked recipes yet', 'Belum ada resep disukai'),
-                        subtitle: _t('Liked recipes will appear here.', 'Resep yang disukai akan muncul di sini.'),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                    itemCount: _recipes.length,
-                    itemBuilder: (context, index) {
-                      final recipe = _recipes[index];
-                      return RecipeCard(
-                        recipe: recipe,
-                        currentUserId: ApiService.currentUserId,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => DetailScreen(recipeId: recipe['id'].toString()),
-                            ),
-                          ).then((_) => _loadLikedRecipes());
-                        },
-                      );
-                    },
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                children: [
+                  const SizedBox(height: 120),
+                  AppTheme.buildEmptyState(
+                    icon: Icons.favorite_border_rounded,
+                    title: _t(
+                      'No liked recipes yet',
+                      'Belum ada resep disukai',
+                    ),
+                    subtitle: _t(
+                      'Liked recipes will appear here.',
+                      'Resep yang disukai akan muncul di sini.',
+                    ),
                   ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                itemCount: _recipes.length,
+                itemBuilder: (context, index) {
+                  final recipe = _recipes[index];
+                  return RecipeCard(
+                    recipe: recipe,
+                    currentUserId: ApiService.currentUserId,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DetailScreen(recipeId: recipe['id'].toString()),
+                        ),
+                      ).then((_) => _loadLikedRecipes());
+                    },
+                  );
+                },
+              ),
       ),
     );
   }

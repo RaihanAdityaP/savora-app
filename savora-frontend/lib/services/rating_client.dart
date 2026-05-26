@@ -5,9 +5,7 @@ import 'api_service.dart';
 /// Taruh di: lib/services/rating_client.dart
 class RatingClient {
   /// Get semua rating untuk sebuah resep
-  static Future<Map<String, dynamic>> getRecipeRatings(
-    String recipeId,
-  ) async {
+  static Future<Map<String, dynamic>> getRecipeRatings(String recipeId) async {
     try {
       final response = await ApiService.get('/ratings/recipe/$recipeId');
       if (response['success'] == true) {
@@ -27,8 +25,9 @@ class RatingClient {
   /// Get average rating saja (ringan, tanpa daftar)
   static Future<double> getAverageRating(String recipeId) async {
     try {
-      final response =
-          await ApiService.get('/ratings/recipe/$recipeId/average');
+      final response = await ApiService.get(
+        '/ratings/recipe/$recipeId/average',
+      );
       if (response['success'] == true) {
         final avg = response['data']?['average_rating'];
         return (avg as num?)?.toDouble() ?? 0.0;
@@ -43,8 +42,7 @@ class RatingClient {
   /// Get rating statistik (distribusi 1–5 bintang)
   static Future<Map<String, dynamic>> getRatingStats(String recipeId) async {
     try {
-      final response =
-          await ApiService.get('/ratings/recipe/$recipeId/stats');
+      final response = await ApiService.get('/ratings/recipe/$recipeId/stats');
       if (response['success'] == true) {
         return Map<String, dynamic>.from(response['data']);
       }

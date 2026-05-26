@@ -30,7 +30,7 @@ Future<void> main() async {
 
   await dotenv.load(fileName: '.env');
 
-  final supabaseUrl     = dotenv.env['SUPABASE_URL'];
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
 
   if (supabaseUrl == null ||
@@ -69,7 +69,8 @@ Future<void> main() async {
       debugPrint('Restored Sanctum token is valid');
     } catch (e) {
       final message = e.toString().toLowerCase();
-      final isUnauthorized = message.contains('unauthenticated') ||
+      final isUnauthorized =
+          message.contains('unauthenticated') ||
           message.contains('401') ||
           message.contains('invalid');
 
@@ -117,7 +118,9 @@ class _DeepLinkParser {
         case 'recipes':
           final id = uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
           const blockedRecipeSlugs = {'create', 'new', 'edit'};
-          if (id != null && id.isNotEmpty && !blockedRecipeSlugs.contains(id.toLowerCase())) {
+          if (id != null &&
+              id.isNotEmpty &&
+              !blockedRecipeSlugs.contains(id.toLowerCase())) {
             return _DeepLinkTarget.recipe(id);
           }
           break;
@@ -152,13 +155,15 @@ class _DeepLinkParser {
       }
 
       // /p/{id} adalah share link profile; /profile/{id} tetap diterima sebagai fallback lama.
-      if (segments.length >= 2 && (segments[0] == 'p' || segments[0] == 'profile')) {
+      if (segments.length >= 2 &&
+          (segments[0] == 'p' || segments[0] == 'profile')) {
         final id = segments[1];
         if (id.isNotEmpty) return _DeepLinkTarget.profile(id);
       }
 
       // /s adalah app-link search; /search tetap diterima sebagai fallback lama.
-      if (segments.isNotEmpty && (segments[0] == 's' || segments[0] == 'search')) {
+      if (segments.isNotEmpty &&
+          (segments[0] == 's' || segments[0] == 'search')) {
         return _DeepLinkTarget.search();
       }
     }
@@ -174,12 +179,17 @@ class _DeepLinkTarget {
 
   const _DeepLinkTarget._(this.type, [this.id]);
 
-  factory _DeepLinkTarget.recipe(String id)  => _DeepLinkTarget._(_DeepLinkType.recipe, id);
-  factory _DeepLinkTarget.profile(String id) => _DeepLinkTarget._(_DeepLinkType.profile, id);
-  factory _DeepLinkTarget.search()           => const _DeepLinkTarget._(_DeepLinkType.search);
-  factory _DeepLinkTarget.home()             => const _DeepLinkTarget._(_DeepLinkType.home);
-  factory _DeepLinkTarget.settings()        => const _DeepLinkTarget._(_DeepLinkType.settings);
-  factory _DeepLinkTarget.notifications()   => const _DeepLinkTarget._(_DeepLinkType.notifications);
+  factory _DeepLinkTarget.recipe(String id) =>
+      _DeepLinkTarget._(_DeepLinkType.recipe, id);
+  factory _DeepLinkTarget.profile(String id) =>
+      _DeepLinkTarget._(_DeepLinkType.profile, id);
+  factory _DeepLinkTarget.search() =>
+      const _DeepLinkTarget._(_DeepLinkType.search);
+  factory _DeepLinkTarget.home() => const _DeepLinkTarget._(_DeepLinkType.home);
+  factory _DeepLinkTarget.settings() =>
+      const _DeepLinkTarget._(_DeepLinkType.settings);
+  factory _DeepLinkTarget.notifications() =>
+      const _DeepLinkTarget._(_DeepLinkType.notifications);
 }
 
 enum _DeepLinkType { recipe, profile, search, home, settings, notifications }
@@ -201,7 +211,8 @@ class _MyAppState extends State<MyApp> {
   _DeepLinkTarget? _initialTarget;
   bool _isCheckingVersion = true;
   bool _forceUpdate = false;
-  String _updateMessage = 'A new Savora update is available. Please update to continue.';
+  String _updateMessage =
+      'A new Savora update is available. Please update to continue.';
   String _updateUrl = 'https://savora-app.up.railway.app/';
 
   @override
@@ -225,15 +236,18 @@ class _MyAppState extends State<MyApp> {
     try {
       final response = await ApiService.get('/app-version');
       final data = Map<String, dynamic>.from(response['data'] ?? {});
-      final minSupportedBuild = (data['min_supported_build'] as num?)?.toInt() ?? 0;
+      final minSupportedBuild =
+          (data['min_supported_build'] as num?)?.toInt() ?? 0;
       final forceUpdate = data['force_update'] == true;
-      final shouldBlock = forceUpdate && _currentBuildNumber < minSupportedBuild;
+      final shouldBlock =
+          forceUpdate && _currentBuildNumber < minSupportedBuild;
 
       if (!mounted) return;
       setState(() {
         _forceUpdate = shouldBlock;
         _updateMessage = data['message']?.toString() ?? _updateMessage;
-        _updateUrl = data['download_url']?.toString() ??
+        _updateUrl =
+            data['download_url']?.toString() ??
             data['landing_url']?.toString() ??
             _updateUrl;
         _isCheckingVersion = false;
@@ -282,7 +296,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadInitialDeepLink() async {
     try {
       final appLinks = AppLinks();
-      final uri      = await appLinks.getInitialLink();
+      final uri = await appLinks.getInitialLink();
       if (uri == null) return;
 
       debugPrint('Initial deep link: $uri');
@@ -297,19 +311,16 @@ class _MyAppState extends State<MyApp> {
 
   // ── Hot / warm start (app sudah buka) ────────────────────
   void _listenIncomingDeepLinks() {
-    AppLinks().uriLinkStream.listen(
-      (uri) {
-        debugPrint('Incoming deep link: $uri');
-        final target = _DeepLinkParser.parse(uri);
-        if (target == null) return;
+    AppLinks().uriLinkStream.listen((uri) {
+      debugPrint('Incoming deep link: $uri');
+      final target = _DeepLinkParser.parse(uri);
+      if (target == null) return;
 
-        // Tunggu sampai frame siap baru navigate
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateTo(target);
-        });
-      },
-      onError: (e) => debugPrint('Deep link stream error: $e'),
-    );
+      // Tunggu sampai frame siap baru navigate
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateTo(target);
+      });
+    }, onError: (e) => debugPrint('Deep link stream error: $e'));
   }
 
   // ── Navigator helper ─────────────────────────────────────
@@ -408,16 +419,18 @@ class _MyAppState extends State<MyApp> {
           title: 'Savora',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
-            brightness:
-                appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+            brightness: appSettings.isDarkMode
+                ? Brightness.dark
+                : Brightness.light,
             scaffoldBackgroundColor: backgroundColor,
             canvasColor: backgroundColor,
             cardColor: surfaceColor,
             dividerColor: borderColor,
             colorScheme: ColorScheme.fromSeed(
               seedColor: const Color(0xFFE76F51),
-              brightness:
-                  appSettings.isDarkMode ? Brightness.dark : Brightness.light,
+              brightness: appSettings.isDarkMode
+                  ? Brightness.dark
+                  : Brightness.light,
               surface: surfaceColor,
             ),
             appBarTheme: AppBarTheme(
@@ -428,12 +441,10 @@ class _MyAppState extends State<MyApp> {
               surfaceTintColor: Colors.transparent,
             ),
             textTheme: ThemeData(
-              brightness:
-                  appSettings.isDarkMode ? Brightness.dark : Brightness.light,
-            ).textTheme.apply(
-                  bodyColor: textColor,
-                  displayColor: textColor,
-                ),
+              brightness: appSettings.isDarkMode
+                  ? Brightness.dark
+                  : Brightness.light,
+            ).textTheme.apply(bodyColor: textColor, displayColor: textColor),
             inputDecorationTheme: InputDecorationTheme(
               hintStyle: TextStyle(color: secondaryTextColor),
               filled: true,
@@ -488,9 +499,9 @@ class _MyAppState extends State<MyApp> {
           ),
           builder: (context, child) {
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(textScale.toDouble()),
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale.toDouble())),
               child: child ?? const SizedBox.shrink(),
             );
           },
@@ -535,9 +546,7 @@ class _StartupLoadingScreen extends StatelessWidget {
       backgroundColor: AppSettingsService.current.isDarkMode
           ? const Color(0xFF0F1318)
           : const Color(0xFFF5F7FA),
-      body: Center(
-        child: CircularProgressIndicator(color: Color(0xFFE76F51)),
-      ),
+      body: Center(child: CircularProgressIndicator(color: Color(0xFFE76F51))),
     );
   }
 }
@@ -546,10 +555,7 @@ class _ForceUpdateScreen extends StatelessWidget {
   final String message;
   final String updateUrl;
 
-  const _ForceUpdateScreen({
-    required this.message,
-    required this.updateUrl,
-  });
+  const _ForceUpdateScreen({required this.message, required this.updateUrl});
 
   Future<void> _openUpdateUrl() async {
     final uri = Uri.tryParse(updateUrl);
@@ -561,8 +567,9 @@ class _ForceUpdateScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = AppSettingsService.current.isDarkMode;
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0F1318) : const Color(0xFFF5F7FA),
+      backgroundColor: isDark
+          ? const Color(0xFF0F1318)
+          : const Color(0xFFF5F7FA),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -591,10 +598,7 @@ class _ForceUpdateScreen extends StatelessWidget {
                   const Text(
                     'Update Required',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 12),
                   Text(

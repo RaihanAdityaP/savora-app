@@ -4,17 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
+use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class FeedController extends Controller
 {
     private $supabase;
+    private UserSettingsService $settingsService;
 
-    public function __construct(SupabaseService $supabase)
+    public function __construct(SupabaseService $supabase, UserSettingsService $settingsService)
     {
         $this->supabase = $supabase;
+        $this->settingsService = $settingsService;
     }
 
     /**
@@ -24,35 +26,42 @@ class FeedController extends Controller
     {
         $limit  = max(1, min(50, (int) $request->input('limit', 10)));
         $offset = max(0, (int) $request->input('offset', 0));
+        $poolLimit = $limit * 4;
 
         try {
             $userId   = $this->getSupabaseUserIdFromRequest($request);
-            $scored   = Cache::remember(
-                "feed:scored:{$userId}",
-                now()->addMinutes(2),
-                fn () => $this->buildScoredFeed($userId)
+
+            if (! $this->settingsService->enabled($userId, 'allow_analytics')) {
+                return $this->fallbackFeed($limit, $offset, $userId);
+            }
+
+            $feed = $this->supabase->select(
+                'recipes',
+                ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
+                ['status' => 'approved'],
+                ['order' => 'created_at.desc', 'limit' => $poolLimit, 'offset' => $offset]
             );
-            $total    = count($scored);
-            $pageIds  = array_slice(array_keys($scored), $offset, $limit);
+            $rawFeedCount = count($feed);
 
-            if (empty($pageIds)) {
+            if (empty($feed)) {
                 return $this->fallbackFeed($limit, $offset, $userId);
             }
 
-            $recipes = $this->fetchRecipesByIds($pageIds, $userId);
-
-            if (empty($recipes)) {
-                return $this->fallbackFeed($limit, $offset, $userId);
-            }
+            $feed = $this->injectRandomRecipes($feed);
+            $feed = $this->attachHomeFeedMetrics($feed, $userId, true);
+            usort($feed, fn ($a, $b) => ($b['ranking_score'] ?? 0) <=> ($a['ranking_score'] ?? 0));
+            $feed = array_slice($feed, 0, $limit);
+            $feed = $this->attachSavedState($feed, $userId);
 
             return response()->json([
                 'success'    => true,
-                'data'       => $recipes,
+                'feed_mode'  => 'scored',
+                'data'       => $feed,
                 'pagination' => [
                     'limit'    => $limit,
                     'offset'   => $offset,
-                    'total'    => $total,
-                    'has_more' => ($offset + $limit) < $total,
+                    'total'    => null,
+                    'has_more' => $rawFeedCount >= $poolLimit || count($feed) === $limit,
                 ],
             ]);
 
@@ -513,7 +522,270 @@ class FeedController extends Controller
         return $recipes;
     }
 
-    // ── Fallback ─────────────────────────────────────────────
+    // Metrics and ranking follow the Laravel web home feed.
+    private function attachHomeFeedMetrics(array $feed, ?string $userId, bool $withRankingScore): array
+    {
+        $recipeIds = array_values(array_filter(array_column($feed, 'id')));
+
+        if (empty($recipeIds)) {
+            return $feed;
+        }
+
+        $signals = $withRankingScore ? $this->buildPersonalSignals($userId) : [];
+        $ratingSums = [];
+        $ratingCounts = [];
+        $likeCounts = [];
+        $likedRecipeIds = [];
+
+        try {
+            $ratingRows = $this->supabase->select(
+                'recipe_ratings',
+                ['recipe_id', 'rating'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($ratingRows as $row) {
+                $recipeId = $row['recipe_id'] ?? null;
+                if ($recipeId === null) {
+                    continue;
+                }
+
+                $ratingSums[$recipeId] = ($ratingSums[$recipeId] ?? 0.0) + (float) ($row['rating'] ?? 0);
+                $ratingCounts[$recipeId] = ($ratingCounts[$recipeId] ?? 0) + 1;
+            }
+        } catch (Exception) {
+        }
+
+        try {
+            $likeRows = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'user_id'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($likeRows as $row) {
+                $recipeId = $row['recipe_id'] ?? null;
+                if (! $recipeId) {
+                    continue;
+                }
+
+                $likeCounts[$recipeId] = ($likeCounts[$recipeId] ?? 0) + 1;
+                if ($userId && ($row['user_id'] ?? null) === $userId) {
+                    $likedRecipeIds[$recipeId] = true;
+                }
+            }
+        } catch (Exception) {
+        }
+
+        foreach ($feed as $index => $row) {
+            $recipeId = $row['id'] ?? null;
+            $ratingCount = $recipeId ? (int) ($ratingCounts[$recipeId] ?? 0) : 0;
+            $ratingAvg = $ratingCount > 0
+                ? round(($ratingSums[$recipeId] ?? 0) / $ratingCount, 1)
+                : null;
+            $likes = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
+
+            $feed[$index]['rating_avg'] = $ratingAvg;
+            $feed[$index]['rating_count'] = $ratingCount;
+            $feed[$index]['rating_info'] = [
+                'average' => $ratingAvg ?? 0,
+                'total' => $ratingCount,
+            ];
+            $feed[$index]['likes_count'] = $likes;
+            $feed[$index]['is_liked'] = $recipeId ? ! empty($likedRecipeIds[$recipeId]) : false;
+
+            if ($withRankingScore) {
+                $ratingScore = $ratingAvg ? ((float) $ratingAvg * 2) : 0;
+                $viewsScore = log(((int) ($row['views_count'] ?? 0)) + 1);
+                $ageHours = max(1, now()->diffInHours(\Carbon\Carbon::parse($row['created_at'] ?? now())));
+                $freshnessScore = 12 / sqrt($ageHours);
+                $signalScore = $this->personalSignalScore($row, $signals);
+                $randomScore = (float) ($row['_random_score'] ?? 0);
+                $feed[$index]['signal_score'] = $signalScore;
+                $feed[$index]['random_score'] = $randomScore;
+                $feed[$index]['ranking_score'] = ($likes * 4) + $ratingScore + $viewsScore + $freshnessScore + $signalScore + $randomScore;
+            }
+        }
+
+        return $feed;
+    }
+
+    private function injectRandomRecipes(array $feed): array
+    {
+        try {
+            $existing = array_fill_keys(array_filter(array_column($feed, 'id')), true);
+            $randomRecipes = $this->supabase->select(
+                'recipes',
+                ['*', 'profiles!recipes_user_id_fkey(*)', 'categories(*)', 'recipe_tags(tags(*))'],
+                ['status' => 'approved'],
+                ['limit' => 200]
+            );
+
+            shuffle($randomRecipes);
+            $injectCount = max(3, min(15, (int) ceil(count($feed) * 0.15)));
+
+            foreach ($randomRecipes as $recipe) {
+                $recipeId = $recipe['id'] ?? null;
+                if (! $recipeId || isset($existing[$recipeId])) {
+                    continue;
+                }
+
+                $recipe['_random_score'] = round(mt_rand(10, 90) / 100, 2);
+                $feed[] = $recipe;
+                $existing[$recipeId] = true;
+
+                if (--$injectCount <= 0) {
+                    break;
+                }
+            }
+        } catch (Exception) {
+        }
+
+        return $feed;
+    }
+
+    private function buildPersonalSignals(?string $userId): array
+    {
+        $signals = [
+            'following_ids' => [],
+            'saved_recipe_ids' => [],
+            'commented_recipe_ids' => [],
+            'follower_saved_recipe_ids' => [],
+            'category_counts' => [],
+            'tag_counts' => [],
+        ];
+
+        if (! $userId) {
+            return $signals;
+        }
+
+        try {
+            $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $userId]);
+            $signals['following_ids'] = array_fill_keys(array_filter(array_column($following, 'following_id')), true);
+        } catch (Exception) {
+        }
+
+        try {
+            $comments = $this->supabase->select('comments', ['recipe_id'], ['user_id' => $userId], ['limit' => 50]);
+            $signals['commented_recipe_ids'] = array_fill_keys(array_filter(array_column($comments, 'recipe_id')), true);
+        } catch (Exception) {
+        }
+
+        try {
+            $ratings = $this->supabase->select('recipe_ratings', ['recipe_id'], ['user_id' => $userId], ['limit' => 50]);
+            $interactedIds = array_unique(array_merge(
+                array_keys($signals['commented_recipe_ids']),
+                array_filter(array_column($ratings, 'recipe_id'))
+            ));
+            $this->addCategoryAndTagCounts($interactedIds, $signals, 1);
+        } catch (Exception) {
+        }
+
+        try {
+            $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $userId]);
+            $savedRecipeIds = $this->recipeIdsFromBoards(array_column($boards, 'id'), 50);
+            $signals['saved_recipe_ids'] = array_fill_keys($savedRecipeIds, true);
+            $this->addCategoryAndTagCounts($savedRecipeIds, $signals, 2);
+        } catch (Exception) {
+        }
+
+        try {
+            $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $userId]);
+            $followerIds = array_slice(array_filter(array_column($followers, 'follower_id')), 0, 20);
+            $followerSaved = [];
+            foreach ($followerIds as $followerId) {
+                $boards = $this->supabase->select('recipe_boards', ['id'], ['user_id' => $followerId]);
+                $followerSaved = array_merge($followerSaved, $this->recipeIdsFromBoards(array_column($boards, 'id'), 10));
+            }
+            $signals['follower_saved_recipe_ids'] = array_fill_keys(array_unique($followerSaved), true);
+        } catch (Exception) {
+        }
+
+        return $signals;
+    }
+
+    private function recipeIdsFromBoards(array $boardIds, int $limit): array
+    {
+        $recipeIds = [];
+        foreach (array_filter($boardIds) as $boardId) {
+            $rows = $this->supabase->select('board_recipes', ['recipe_id'], ['board_id' => $boardId], ['limit' => $limit]);
+            $recipeIds = array_merge($recipeIds, array_filter(array_column($rows, 'recipe_id')));
+        }
+
+        return array_values(array_unique($recipeIds));
+    }
+
+    private function addCategoryAndTagCounts(array $recipeIds, array &$signals, int $weight): void
+    {
+        foreach (array_slice(array_filter($recipeIds), 0, 30) as $recipeId) {
+            try {
+                $recipes = $this->supabase->select('recipes', ['category_id'], ['id' => $recipeId]);
+                $categoryId = $recipes[0]['category_id'] ?? null;
+                if ($categoryId) {
+                    $signals['category_counts'][$categoryId] = ($signals['category_counts'][$categoryId] ?? 0) + $weight;
+                }
+            } catch (Exception) {
+            }
+
+            try {
+                $tags = $this->supabase->select('recipe_tags', ['tag_id'], ['recipe_id' => $recipeId]);
+                foreach ($tags as $tag) {
+                    $tagId = $tag['tag_id'] ?? null;
+                    if ($tagId) {
+                        $signals['tag_counts'][$tagId] = ($signals['tag_counts'][$tagId] ?? 0) + $weight;
+                    }
+                }
+            } catch (Exception) {
+            }
+        }
+    }
+
+    private function personalSignalScore(array $recipe, array $signals): float
+    {
+        $score = 0.0;
+        $recipeId = $recipe['id'] ?? null;
+        $ownerId = $recipe['user_id'] ?? null;
+        $categoryId = $recipe['category_id'] ?? null;
+
+        if ($ownerId && ! empty($signals['following_ids'][$ownerId])) {
+            $score += 4;
+        }
+        if ($recipeId && ! empty($signals['follower_saved_recipe_ids'][$recipeId])) {
+            $score += 2;
+        }
+        if ($recipeId && ! empty($signals['commented_recipe_ids'][$recipeId])) {
+            $score += 2;
+        }
+        if ($recipeId && ! empty($signals['saved_recipe_ids'][$recipeId])) {
+            $score += 3;
+        }
+        if ($categoryId && ! empty($signals['category_counts'][$categoryId])) {
+            $score += min(9, $signals['category_counts'][$categoryId] * 3);
+        }
+
+        foreach ($this->extractTagIds($recipe) as $tagId) {
+            if (! empty($signals['tag_counts'][$tagId])) {
+                $score += min(5, $signals['tag_counts'][$tagId] * 0.5);
+            }
+        }
+
+        return $score;
+    }
+
+    private function extractTagIds(array $recipe): array
+    {
+        $ids = [];
+        foreach (($recipe['recipe_tags'] ?? []) as $recipeTag) {
+            $tag = $recipeTag['tags'] ?? null;
+            $tagId = is_array($tag) ? ($tag['id'] ?? null) : ($recipeTag['tag_id'] ?? null);
+            if ($tagId) {
+                $ids[] = $tagId;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
     private function fallbackFeed(int $limit, int $offset, ?string $userId): \Illuminate\Http\JsonResponse
     {
         try {
@@ -523,9 +795,13 @@ class FeedController extends Controller
                 ['status' => 'approved'],
                 ['order' => 'views_count.desc', 'limit' => $limit, 'offset' => $offset]
             );
-            $recipes = $this->attachSavedState($this->attachLikes($recipes, $userId), $userId);
+            $recipes = $this->attachSavedState(
+                $this->attachHomeFeedMetrics($recipes, $userId, false),
+                $userId
+            );
             return response()->json([
                 'success'    => true,
+                'feed_mode'  => 'popular',
                 'data'       => $recipes,
                 'pagination' => [
                     'limit'    => $limit,

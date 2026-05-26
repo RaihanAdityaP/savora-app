@@ -1,5 +1,6 @@
 @php
     $isEnglish = session('user_language', 'en') === 'en';
+    $isDarkTheme = session('user_theme', 'light') === 'dark';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $isEnglish ? 'en' : 'id' }}">
@@ -42,22 +43,109 @@
             margin: 12px auto 4px;
         }
 
+        .profile-web-page {
+            background: var(--profile-page-bg);
+            color: var(--profile-text-primary);
+        }
+
+        .profile-theme-light {
+            --profile-page-bg: var(--color-bg-light);
+            --profile-surface-bg: var(--color-card-bg);
+            --profile-surface-border: var(--color-card-border);
+            --profile-text-primary: var(--color-text-primary);
+            --profile-text-secondary: var(--color-text-secondary);
+            --profile-text-muted: var(--color-text-muted);
+            --profile-accent: var(--color-primary-coral);
+            --profile-stat-divider: rgba(231,111,81,0.18);
+            --profile-avatar-shadow: 0 10px 26px rgba(231,111,81,0.16);
+        }
+
+        .profile-theme-dark {
+            --color-bg-light: #0b1017;
+            --color-card-bg: #172433;
+            --color-card-border: #314456;
+            --color-chip-bg: rgba(231,111,81,0.12);
+            --color-separator: rgba(203,213,225,0.16);
+            --color-text-primary: #f8fafc;
+            --color-text-secondary: #a8b3c2;
+            --color-text-muted: #7d8b9d;
+            --shadow-card: 0 12px 34px rgba(0,0,0,0.24);
+            --profile-page-bg: #0b1017;
+            --profile-surface-bg: #172433;
+            --profile-surface-border: #314456;
+            --profile-text-primary: #f8fafc;
+            --profile-text-secondary: #a8b3c2;
+            --profile-text-muted: #7d8b9d;
+            --profile-accent: #ff8067;
+            --profile-stat-divider: rgba(203,213,225,0.55);
+            --profile-avatar-shadow: 0 0 30px rgba(231,111,81,0.30);
+        }
+
+        .profile-hero-card {
+            background: var(--profile-page-bg);
+            color: var(--profile-text-primary);
+            border: none;
+            box-shadow: none;
+        }
+
+        .profile-avatar-ring {
+            border-color: rgba(231,111,81,0.65);
+            box-shadow: var(--profile-avatar-shadow);
+        }
+
+        .profile-muted { color: var(--profile-text-secondary); }
+
+        .profile-role-badge {
+            background: rgba(231,111,81,0.10);
+            border-color: rgba(231,111,81,0.45);
+            color: var(--profile-accent);
+        }
+
+        .profile-info-box {
+            background: var(--profile-surface-bg);
+            border: 1.5px solid var(--profile-surface-border);
+            color: var(--profile-text-secondary);
+        }
+
         .stat-card {
-            border-radius: 16px;
-            padding: 12px;
-            border-width: 2px;
-            border-style: solid;
+            padding: 14px 6px;
             text-align: center;
-            background: rgba(255,255,255,0.25);
-            border-color: rgba(255,255,255,0.40);
+            border-right: 1px solid var(--profile-stat-divider);
             cursor: pointer;
             transition: background 0.2s;
         }
-        .stat-card:hover { background: rgba(255,255,255,0.35); }
+        .stat-card:last-child { border-right: 0; }
+        .stat-card:hover { background: var(--color-chip-bg); }
+
+        .profile-action-primary {
+            background: var(--gradient-accent);
+            color: #ffffff;
+            box-shadow: 0 12px 30px rgba(231,111,81,0.25);
+        }
+
+        .profile-action-outline {
+            background: transparent;
+            border: 1.5px solid rgba(231,111,81,0.45);
+            color: var(--profile-accent);
+        }
+
+        .profile-action-outline:hover {
+            background: rgba(231,111,81,0.08);
+            color: var(--profile-accent);
+        }
+
+        .profile-section-title .header-title { color: var(--profile-text-primary); }
+
+        .profile-section-count {
+            background: rgba(231,111,81,0.10);
+            border: 1px solid rgba(231,111,81,0.30);
+            color: var(--profile-accent);
+            box-shadow: none;
+        }
     </style>
 </head>
 
-<body>
+<body class="profile-web-page {{ $isDarkTheme ? 'profile-theme-dark' : 'profile-theme-light' }}">
 
     <x-unified-navigation
         :avatar-url="session('user_avatar') ?? null"
@@ -67,8 +155,6 @@
 
     @php
         $isAdmin     = ($profile['role'] ?? 'user') === 'admin';
-        $useGradient = $isOwnProfile && $isAdmin;
-        $headerBg    = $useGradient ? 'var(--gradient-admin)' : 'var(--gradient-accent)';
         $canViewProfile = $canViewProfile ?? true;
         $followRequestStatus = $followRequestStatus ?? null;
         $isFollowPending = $followRequestStatus === 'pending';
@@ -82,16 +168,11 @@
     <div class="max-w-3xl mx-auto px-4 py-6 pb-24 md:pb-10">
 
         {{-- ===================== Profile Header Card ===================== --}}
-        <div class="relative rounded-3xl overflow-hidden mb-6 shadow-xl p-6 text-white"
-             style="background: {{ $headerBg }}">
-
-            {{-- Decorative blobs --}}
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full pointer-events-none"></div>
-            <div class="absolute -bottom-12 -left-12 w-40 h-40 bg-white opacity-[0.08] rounded-full pointer-events-none"></div>
+        <div class="profile-hero-card relative mb-6 p-0 text-white">
 
             <button type="button"
                     class="absolute top-4 right-4 z-10 w-11 h-11 rounded-2xl flex items-center justify-center text-white border transition-all hover:bg-white/25 active:scale-95"
-                    style="background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.35);"
+                    style="background: #172433; border-color: #314456;"
                     data-share-title="{{ $isEnglish ? 'Savora Profile' : 'Profil Savora' }}"
                     data-share-text="{{ e($shareText) }}"
                     data-share-url="{{ e($shareUrl) }}"
@@ -106,12 +187,12 @@
 
                 {{-- Avatar --}}
                 <div class="relative mb-4">
-                    <div class="w-24 h-24 rounded-3xl overflow-hidden border-4 shadow-xl" style="border-color: rgba(255,255,255,0.50)">
+                    <div class="profile-avatar-ring w-28 h-28 rounded-full overflow-hidden border-4 shadow-xl">
                         @if(!empty($profile['avatar_url']))
                             <img src="{{ $profile['avatar_url'] }}" alt="{{ $profile['username'] }}" class="w-full h-full object-cover">
                         @else
-                            <div class="w-full h-full flex items-center justify-center" style="background: rgba(255,255,255,0.25)">
-                                <svg class="w-12 h-12" style="color: rgba(255,255,255,0.80)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-full h-full flex items-center justify-center" style="background: #b8b8b8">
+                                <svg class="w-12 h-12" style="color: #ffffff" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
                             </div>
@@ -127,15 +208,14 @@
                 </div>
 
                 {{-- Name --}}
-                <h1 class="text-2xl font-bold text-white mb-1">{{ $profile['username'] ?? 'Unknown' }}</h1>
+                <h1 class="text-3xl font-bold mb-1" style="color: var(--profile-text-primary);">{{ $profile['username'] ?? 'Unknown' }}</h1>
                 @if(!empty($profile['full_name']))
-                    <p class="text-sm mb-2" style="color: rgba(255,255,255,0.90)">{{ $profile['full_name'] }}</p>
+                    <p class="profile-muted text-base mb-4">{{ $profile['full_name'] }}</p>
                 @endif
 
                 {{-- Role badge --}}
-                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-4"
-                     style="background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.40)">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="profile-role-badge inline-flex items-center gap-2 px-5 py-2 rounded-full border mb-5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         @if($isAdmin)
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         @elseif($profile['is_premium'] ?? false)
@@ -144,49 +224,48 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         @endif
                     </svg>
-                    <span class="text-white text-xs font-bold tracking-wide">
+                    <span class="text-xs font-bold tracking-wide">
                         {{ $isAdmin ? 'Admin' : (($profile['is_premium'] ?? false) ? 'Premium' : 'Member') }}
                     </span>
                 </div>
 
                 {{-- Bio --}}
                 @if($canViewProfile && !empty($profile['bio']))
-                    <div class="w-full rounded-2xl p-4 border mb-4 text-left"
-                         style="background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.30)">
-                        <p class="text-sm leading-relaxed" style="color: rgba(255,255,255,0.95)">{{ $profile['bio'] }}</p>
+                    <div class="profile-info-box w-full rounded-2xl p-4 mb-6 text-center">
+                        <p class="text-sm leading-relaxed">{{ $profile['bio'] }}</p>
                     </div>
                 @endif
 
                 {{-- Stats --}}
-                <div class="w-full grid grid-cols-4 gap-3">
+                <div class="profile-info-box w-full grid grid-cols-4 gap-0 rounded-2xl overflow-hidden mb-6">
                     <div class="stat-card">
-                        <p class="text-xl font-bold leading-none text-white">{{ $recipesCount }}</p>
-                        <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Recipes' : 'Resep' }}</p>
+                        <p class="text-xl font-bold leading-none" style="color: var(--profile-text-primary);">{{ $recipesCount }}</p>
+                        <p class="profile-muted text-xs mt-1 font-semibold">{{ $isEnglish ? 'Recipes' : 'Resep' }}</p>
                     </div>
                     <a href="{{ $canViewProfile ? route('app.profile.followers', $profile['id']) : '#' }}" class="stat-card">
-                        <p class="text-xl font-bold leading-none text-white">{{ $followersCount }}</p>
-                        <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Followers' : 'Pengikut' }}</p>
+                        <p class="text-xl font-bold leading-none" style="color: var(--profile-text-primary);">{{ $followersCount }}</p>
+                        <p class="profile-muted text-xs mt-1 font-semibold">{{ $isEnglish ? 'Followers' : 'Pengikut' }}</p>
                     </a>
                     <a href="{{ $canViewProfile ? route('app.profile.following', $profile['id']) : '#' }}" class="stat-card">
-                        <p class="text-xl font-bold leading-none text-white">{{ $followingCount }}</p>
-                        <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">{{ $isEnglish ? 'Following' : 'Mengikuti' }}</p>
+                        <p class="text-xl font-bold leading-none" style="color: var(--profile-text-primary);">{{ $followingCount }}</p>
+                        <p class="profile-muted text-xs mt-1 font-semibold">{{ $isEnglish ? 'Following' : 'Mengikuti' }}</p>
                     </a>
                     <a href="{{ $canViewProfile ? route('app.profile.likes', $profile['id']) : '#' }}" class="stat-card">
-                        <p class="text-xl font-bold leading-none text-white">{{ $likedCount ?? 0 }}</p>
-                        <p class="text-xs mt-1 font-semibold" style="color: rgba(255,255,255,0.90)">Like</p>
+                        <p class="text-xl font-bold leading-none" style="color: var(--profile-text-primary);">{{ $likedCount ?? 0 }}</p>
+                        <p class="profile-muted text-xs mt-1 font-semibold">Likes</p>
                     </a>
                 </div>
 
                 {{-- Follow / Edit buttons --}}
-                <div class="flex gap-3 mt-4 w-full">
+                <div class="flex flex-col gap-3 w-full">
                     @if($isOwnProfile)
-                        <a href="{{ route('app.profile.edit') }}" class="btn-outlined-savora flex-1 py-3 text-sm text-center">
+                        <a href="{{ route('app.profile.edit') }}" class="profile-action-outline w-full py-3.5 rounded-2xl text-sm font-bold text-center">
                             {{ $isEnglish ? 'Edit Profile' : 'Edit Profil' }}
                         </a>
-                        <a href="{{ route('app.favorites') }}" class="btn-outlined-savora flex-1 py-3 text-sm text-center">
+                        <a href="{{ route('app.favorites') }}" class="profile-action-outline w-full py-3.5 rounded-2xl text-sm font-bold text-center">
                             {{ $isEnglish ? 'Collections' : 'Koleksi' }}
                         </a>
-                        <a href="{{ route('app.profile.likes', $profile['id']) }}" class="btn-outlined-savora flex-1 py-3 text-sm text-center">
+                        <a href="{{ route('app.profile.likes', $profile['id']) }}" class="profile-action-outline w-full py-3.5 rounded-2xl text-sm font-bold text-center">
                             {{ $isEnglish ? 'Liked' : 'Disukai' }}
                         </a>
                     @else
@@ -194,7 +273,7 @@
                               method="POST" class="flex-1">
                             @csrf
                             @if($isFollowing)
-                                <button type="submit" class="btn-outlined-savora w-full py-3 text-sm">
+                                <button type="submit" class="profile-action-outline w-full py-3.5 rounded-2xl text-sm font-bold">
                                     {{ $isEnglish ? 'Unfollow' : 'Berhenti Mengikuti' }}
                                 </button>
                             @elseif($isFollowPending)
@@ -205,8 +284,7 @@
                                 </button>
                             @else
                                 <button type="submit"
-                                        class="w-full py-3 font-bold rounded-2xl text-sm transition-all"
-                                        style="background: #ffffff; color: var(--color-primary-coral);"
+                                        class="profile-action-primary w-full py-3.5 font-bold rounded-2xl text-base transition-all"
                                         onmouseover="this.style.opacity='0.90'"
                                         onmouseout="this.style.opacity='1'">
                                     {{ $canViewProfile ? ($isEnglish ? 'Follow' : 'Ikuti') : ($isEnglish ? 'Request Follow' : 'Minta Follow') }}
@@ -250,13 +328,13 @@
             </div>
         @else
         {{-- ===================== Recipes Section ===================== --}}
-        <div class="card-savora p-6">
-            <div class="flex items-center gap-3 mb-5">
+        <div>
+            <div class="profile-section-title flex items-center gap-3 mb-5">
                 <x-app-theme.section-header
                     title="{{ $isEnglish ? 'Latest Recipes' : 'Resep Terbaru' }}"
                     icon='<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
                 />
-                <span class="ml-auto badge-savora">{{ $recipesCount }}</span>
+                <span class="profile-section-count ml-auto badge-savora">{{ $recipesCount }}</span>
             </div>
 
             @forelse($recipes ?? [] as $recipe)

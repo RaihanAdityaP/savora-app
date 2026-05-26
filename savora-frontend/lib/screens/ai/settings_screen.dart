@@ -11,20 +11,20 @@ class AISettingsScreen extends StatefulWidget {
 }
 
 class _AISettingsScreenState extends State<AISettingsScreen> {
-  final _openRouterKeyController   = TextEditingController();
+  final _openRouterKeyController = TextEditingController();
   final _openRouterModelController = TextEditingController();
 
-  bool   _isLoading      = true;
-  bool   _isSaving       = false;
-  bool   _isTesting      = false;
-  bool   _obscureApiKey  = true;
-  String _testResult     = '';
-  bool   _testSuccess    = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  bool _isTesting = false;
+  bool _obscureApiKey = true;
+  String _testResult = '';
+  bool _testSuccess = false;
 
-  String _activeProvider      = 'default';
-  bool   _hasOpenRouterApiKey = false;
-  String _groqModel           = '';
-  String _openRouterModel     = '';
+  String _activeProvider = 'default';
+  bool _hasOpenRouterApiKey = false;
+  String _groqModel = '';
+  String _openRouterModel = '';
 
   String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
 
@@ -53,11 +53,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         if (settings != null) {
           // Backend simpan 'groq' tapi UI tampilkan sebagai 'default'
           final provider = settings['is_active_provider'] ?? 'groq';
-          _activeProvider      = (provider == 'groq') ? 'default' : provider;
-          _hasOpenRouterApiKey = settings['openrouter_api_key'] == '***SAVED***';
-          _groqModel           = settings['groq_model']?.toString() ?? '';
-          _openRouterModel     = settings['openrouter_model']?.toString() ?? '';
-          final savedModel     = _openRouterModel;
+          _activeProvider = (provider == 'groq') ? 'default' : provider;
+          _hasOpenRouterApiKey =
+              settings['openrouter_api_key'] == '***SAVED***';
+          _groqModel = settings['groq_model']?.toString() ?? '';
+          _openRouterModel = settings['openrouter_model']?.toString() ?? '';
+          final savedModel = _openRouterModel;
           if (savedModel.isNotEmpty) {
             _openRouterModelController.text = savedModel;
           }
@@ -73,34 +74,51 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Future<void> _save() async {
     if (_activeProvider == 'openrouter') {
-      final model  = _openRouterModelController.text.trim();
+      final model = _openRouterModelController.text.trim();
       final apiKey = _openRouterKeyController.text.trim();
       if (model.isEmpty) {
-        _showSnackBar(_t('Model name is required for OpenRouter', 'Model name wajib diisi untuk OpenRouter'), isError: true);
+        _showSnackBar(
+          _t(
+            'Model name is required for OpenRouter',
+            'Model name wajib diisi untuk OpenRouter',
+          ),
+          isError: true,
+        );
         return;
       }
       if (!_hasOpenRouterApiKey && apiKey.isEmpty) {
-        _showSnackBar(_t('API key is required for OpenRouter', 'API key wajib diisi untuk OpenRouter'), isError: true);
+        _showSnackBar(
+          _t(
+            'API key is required for OpenRouter',
+            'API key wajib diisi untuk OpenRouter',
+          ),
+          isError: true,
+        );
         return;
       }
     }
 
-    setState(() { _isSaving = true; _testResult = ''; });
+    setState(() {
+      _isSaving = true;
+      _testResult = '';
+    });
 
-    final apiKey  = _openRouterKeyController.text.trim();
+    final apiKey = _openRouterKeyController.text.trim();
     final orModel = _openRouterModelController.text.trim();
 
     final success = await AIChatClient.saveSettings(
       // UI pakai 'default' tapi backend tetap expect 'groq'
-      activeProvider   : _activeProvider == 'default' ? 'groq' : _activeProvider,
-      openRouterModel  : orModel.isNotEmpty ? orModel : null,
-      openRouterApiKey : apiKey.isNotEmpty ? apiKey : null,
+      activeProvider: _activeProvider == 'default' ? 'groq' : _activeProvider,
+      openRouterModel: orModel.isNotEmpty ? orModel : null,
+      openRouterApiKey: apiKey.isNotEmpty ? apiKey : null,
     );
 
     if (mounted) {
       setState(() => _isSaving = false);
       _showSnackBar(
-        success ? _t('Settings saved!', 'Settings berhasil disimpan!') : _t('Failed to save settings', 'Gagal menyimpan settings'),
+        success
+            ? _t('Settings saved!', 'Settings berhasil disimpan!')
+            : _t('Failed to save settings', 'Gagal menyimpan settings'),
         isError: !success,
       );
       if (success && apiKey.isNotEmpty) {
@@ -118,43 +136,69 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Future<void> _testConnection() async {
     if (_activeProvider == 'openrouter') {
-      final model  = _openRouterModelController.text.trim();
+      final model = _openRouterModelController.text.trim();
       final apiKey = _openRouterKeyController.text.trim();
       if (model.isEmpty) {
-        _showSnackBar(_t('Enter the model name before testing', 'Isi model name dulu sebelum test'), isError: true);
+        _showSnackBar(
+          _t(
+            'Enter the model name before testing',
+            'Isi model name dulu sebelum test',
+          ),
+          isError: true,
+        );
         return;
       }
       if (!_hasOpenRouterApiKey && apiKey.isEmpty) {
-        _showSnackBar(_t('Enter the API key before testing', 'Isi API key dulu sebelum test'), isError: true);
+        _showSnackBar(
+          _t(
+            'Enter the API key before testing',
+            'Isi API key dulu sebelum test',
+          ),
+          isError: true,
+        );
         return;
       }
     }
 
-    setState(() { _isTesting = true; _testResult = ''; });
+    setState(() {
+      _isTesting = true;
+      _testResult = '';
+    });
 
-    final backendProvider = _activeProvider == 'default' ? 'groq' : _activeProvider;
-    final model  = _activeProvider == 'openrouter'
+    final backendProvider = _activeProvider == 'default'
+        ? 'groq'
+        : _activeProvider;
+    final model = _activeProvider == 'openrouter'
         ? _openRouterModelController.text.trim()
         : _groqModel;
     if (model.isEmpty) {
-      _showSnackBar(_t('Default AI model is not loaded yet', 'Model AI default belum terbaca'), isError: true);
+      _showSnackBar(
+        _t(
+          'Default AI model is not loaded yet',
+          'Model AI default belum terbaca',
+        ),
+        isError: true,
+      );
       setState(() => _isTesting = false);
       return;
     }
     final apiKey = _openRouterKeyController.text.trim();
 
     final result = await AIChatClient.testConnection(
-      provider         : backendProvider,
-      model            : model,
-      openRouterApiKey : apiKey.isNotEmpty ? apiKey : null,
+      provider: backendProvider,
+      model: model,
+      openRouterApiKey: apiKey.isNotEmpty ? apiKey : null,
     );
 
     if (mounted) {
       setState(() {
-        _isTesting   = false;
+        _isTesting = false;
         _testSuccess = result['success'] == true;
-        _testResult  = _testSuccess
-            ? _t('Connection successful! Provider is ready to use.', 'Koneksi berhasil! Provider siap digunakan.')
+        _testResult = _testSuccess
+            ? _t(
+                'Connection successful! Provider is ready to use.',
+                'Koneksi berhasil! Provider siap digunakan.',
+              )
             : '❌ ${result['message']}';
       });
     }
@@ -168,18 +212,26 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title  : Text(_t('Reset Settings', 'Reset Settings')),
-        content: Text(_t(
-          'Reset to default? This will switch back to server-managed Groq.',
-          'Reset ke default? Akan kembali menggunakan Groq dari server.',
-        )),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(_t('Reset Settings', 'Reset Settings')),
+        content: Text(
+          _t(
+            'Reset to default? This will switch back to server-managed Groq.',
+            'Reset ke default? Akan kembali menggunakan Groq dari server.',
+          ),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(_t('Cancel', 'Batal'))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(_t('Cancel', 'Batal')),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style    : ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            child    : const Text('Reset'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Reset'),
           ),
         ],
       ),
@@ -194,13 +246,15 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   void _showSnackBar(String msg, {required bool isError}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content        : Text(msg),
-      backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
-      behavior       : SnackBarBehavior.floating,
-      shape          : RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin         : const EdgeInsets.all(16),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────
@@ -211,35 +265,41 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
-      appBar         : AppBar(
+      appBar: AppBar(
         backgroundColor: AppTheme.surfaceColor,
-        elevation      : 1,
-        leading        : IconButton(
-          icon     : Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+        elevation: 1,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _t('AI Settings', 'Pengaturan AI'),
-          style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: _isLoading || _isSaving ? null : _reset,
-            child    : Text('Reset', style: TextStyle(color: Colors.grey.shade600)),
+            child: Text('Reset', style: TextStyle(color: Colors.grey.shade600)),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryCoral))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryCoral),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
-              child  : Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children          : [
+                children: [
                   _buildProviderSelector(),
                   const SizedBox(height: 20),
-                  if (_activeProvider == 'default')     _buildDefaultInfo(),
-                  if (_activeProvider == 'openrouter') _buildOpenRouterSettings(),
+                  if (_activeProvider == 'default') _buildDefaultInfo(),
+                  if (_activeProvider == 'openrouter')
+                    _buildOpenRouterSettings(),
                   const SizedBox(height: 20),
                   _buildTestSection(),
                   const SizedBox(height: 20),
@@ -257,32 +317,35 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Widget _buildProviderSelector() {
     return Container(
-      padding   : const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: AppTheme.cardDecoration,
-      child     : Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children          : [
+        children: [
           AppTheme.buildSectionHeader('Provider AI', Icons.hub_rounded),
           const SizedBox(height: 16),
           Column(
             children: [
               _providerChip(
-                value   : 'default',
-                label   : 'Default',
+                value: 'default',
+                label: 'Default',
                 subtitle: _t(
                   'Free - Groq text and vision from the server',
                   'Gratis - Groq teks dan vision dari server',
                 ),
-                icon    : Icons.verified_rounded,
-                color   : AppTheme.primaryTeal,
+                icon: Icons.verified_rounded,
+                color: AppTheme.primaryTeal,
               ),
               const SizedBox(height: 10),
               _providerChip(
-                value   : 'openrouter',
-                label   : 'OpenRouter',
-                subtitle: _t('Use your own API key and model', 'API key & model konfigurasi sendiri'),
-                icon    : Icons.route_rounded,
-                color   : Colors.purple,
+                value: 'openrouter',
+                label: 'OpenRouter',
+                subtitle: _t(
+                  'Use your own API key and model',
+                  'API key & model konfigurasi sendiri',
+                ),
+                icon: Icons.route_rounded,
+                color: Colors.purple,
               ),
             ],
           ),
@@ -292,61 +355,74 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   }
 
   Widget _providerChip({
-    required String   value,
-    required String   label,
-    required String   subtitle,
+    required String value,
+    required String label,
+    required String subtitle,
     required IconData icon,
-    required Color    color,
+    required Color color,
   }) {
     final isSelected = _activeProvider == value;
-    final selectedBg = color.withValues(alpha: AppTheme.isDarkMode ? 0.14 : 0.10);
+    final selectedBg = color.withValues(
+      alpha: AppTheme.isDarkMode ? 0.14 : 0.10,
+    );
     return GestureDetector(
-      onTap: () => setState(() { _activeProvider = value; _testResult = ''; }),
+      onTap: () => setState(() {
+        _activeProvider = value;
+        _testResult = '';
+      }),
       child: AnimatedContainer(
-        duration : const Duration(milliseconds: 200),
-        width    : double.infinity,
-        padding  : const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         decoration: BoxDecoration(
-          color       : isSelected ? selectedBg : AppTheme.subtleSurfaceColor,
+          color: isSelected ? selectedBg : AppTheme.subtleSurfaceColor,
           borderRadius: BorderRadius.circular(14),
-          border      : Border.all(
+          border: Border.all(
             color: isSelected ? color : AppTheme.borderColor,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 4))]
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
               : null,
         ),
         child: Row(
           children: [
             Container(
-              padding   : const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color       : isSelected
-                    ? color
-                    : color.withValues(alpha: 0.12),
+                color: isSelected ? color : color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: isSelected ? Colors.white : color, size: 20),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : color,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children          : [
+                children: [
                   Text(
                     label,
                     style: TextStyle(
-                      color     : AppTheme.textPrimary,
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.bold,
-                      fontSize  : 15,
+                      fontSize: 15,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color  : AppTheme.textSecondary,
+                      color: AppTheme.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -367,38 +443,47 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Widget _buildDefaultInfo() {
     return Container(
-      padding   : const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: AppTheme.cardDecoration,
-      child     : Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children          : [
-          AppTheme.buildSectionHeader(_t('Default Configuration', 'Konfigurasi Default'), Icons.info_outline_rounded),
+        children: [
+          AppTheme.buildSectionHeader(
+            _t('Default Configuration', 'Konfigurasi Default'),
+            Icons.info_outline_rounded,
+          ),
           const SizedBox(height: 16),
           _infoRow(
-            icon : Icons.flash_on_rounded,
+            icon: Icons.flash_on_rounded,
             color: AppTheme.primaryTeal,
             title: _t('Text Chat', 'Chat Teks'),
             value: _groqModel.isNotEmpty ? 'Groq — $_groqModel' : 'Groq',
           ),
           const SizedBox(height: 10),
           _infoRow(
-            icon : Icons.image_search_rounded,
+            icon: Icons.image_search_rounded,
             color: Colors.orange,
             title: _t('Image Analysis', 'Analisis Gambar'),
             value: 'Groq Vision',
           ),
           const SizedBox(height: 16),
           Container(
-            padding   : const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color       : AppTheme.primaryTeal.withValues(alpha: 0.08),
+              color: AppTheme.primaryTeal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border      : Border.all(color: AppTheme.primaryTeal.withValues(alpha: 0.25)),
+              border: Border.all(
+                color: AppTheme.primaryTeal.withValues(alpha: 0.25),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children          : [
-                Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 20),
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: AppTheme.primaryTeal,
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -408,8 +493,8 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                     ),
                     style: TextStyle(
                       fontSize: 13,
-                      color   : AppTheme.primaryTeal.withValues(alpha: 0.9),
-                      height  : 1.5,
+                      color: AppTheme.primaryTeal.withValues(alpha: 0.9),
+                      height: 1.5,
                     ),
                   ),
                 ),
@@ -423,23 +508,23 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Widget _infoRow({
     required IconData icon,
-    required Color    color,
-    required String   title,
-    required String   value,
+    required Color color,
+    required String title,
+    required String value,
   }) {
     return Container(
-      padding   : const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color       : AppTheme.subtleSurfaceColor,
+        color: AppTheme.subtleSurfaceColor,
         borderRadius: BorderRadius.circular(10),
-        border      : Border.all(color: AppTheme.borderColor),
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Row(
         children: [
           Container(
-            padding   : const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color       : color.withValues(alpha: 0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 16),
@@ -448,15 +533,23 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children          : [
+              children: [
                 Text(
                   title,
-                  style: TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: TextStyle(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -475,24 +568,32 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       children: [
         // Peringatan biaya
         Container(
-          padding   : const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color       : Colors.amber.shade50,
+            color: Colors.amber.shade50,
             borderRadius: BorderRadius.circular(14),
-            border      : Border.all(color: Colors.amber.shade300, width: 1.5),
+            border: Border.all(color: Colors.amber.shade300, width: 1.5),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children          : [
-              Icon(Icons.warning_amber_rounded, color: Colors.amber.shade700, size: 22),
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.amber.shade700,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children          : [
+                  children: [
                     Text(
                       _t('Cost Warning', 'Perhatian Biaya'),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade800, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade800,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -500,7 +601,11 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                         'Paid models require balance in your openrouter.ai account. Models labeled FREE can be used at no cost.',
                         'Model berbayar memerlukan saldo di akun openrouter.ai kamu. Model berlabel FREE bisa digunakan tanpa biaya.',
                       ),
-                      style: TextStyle(fontSize: 12, color: Colors.amber.shade800, height: 1.5),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber.shade800,
+                        height: 1.5,
+                      ),
                     ),
                   ],
                 ),
@@ -512,48 +617,68 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
         // API Key card
         Container(
-          padding   : const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: AppTheme.cardDecoration,
-          child     : Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children          : [
+            children: [
               AppTheme.buildSectionHeader('API Key', Icons.key_rounded),
               const SizedBox(height: 6),
               RichText(
                 text: TextSpan(
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500, height: 1.5),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    height: 1.5,
+                  ),
                   children: [
                     const TextSpan(text: 'Daftar gratis di '),
                     TextSpan(
-                      text : 'openrouter.ai',
-                      style: TextStyle(color: Colors.purple.shade600, fontWeight: FontWeight.bold),
+                      text: 'openrouter.ai',
+                      style: TextStyle(
+                        color: Colors.purple.shade600,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const TextSpan(text: ' → Settings → API Keys → Create Key.'),
+                    const TextSpan(
+                      text: ' → Settings → API Keys → Create Key.',
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
               if (_hasOpenRouterApiKey)
                 Container(
-                  padding   : const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color       : Colors.green.shade50,
+                    color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(10),
-                    border      : Border.all(color: Colors.green.shade200),
+                    border: Border.all(color: Colors.green.shade200),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded, color: Colors.green.shade600, size: 20),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green.shade600,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          _t('API key saved on the server', 'API key tersimpan di server'),
-                          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                          _t(
+                            'API key saved on the server',
+                            'API key tersimpan di server',
+                          ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade800,
+                          ),
                         ),
                       ),
                       TextButton(
-                        onPressed: () => setState(() => _hasOpenRouterApiKey = false),
-                        child    : Text(_t('Change', 'Ganti')),
+                        onPressed: () =>
+                            setState(() => _hasOpenRouterApiKey = false),
+                        child: Text(_t('Change', 'Ganti')),
                       ),
                     ],
                   ),
@@ -561,20 +686,32 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
               else
                 Container(
                   decoration: AppTheme.inputDecoration(Colors.purple),
-                  child     : TextField(
-                    controller  : _openRouterKeyController,
-                    obscureText : _obscureApiKey,
-                    style       : const TextStyle(fontSize: 14),
-                    decoration  : InputDecoration(
-                      hintText      : 'sk-or-v1-...',
-                      hintStyle     : TextStyle(color: Colors.grey.shade400),
-                      prefixIcon    : const Icon(Icons.key_rounded, color: Colors.purple, size: 20),
-                      suffixIcon    : IconButton(
-                        icon     : Icon(_obscureApiKey ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        onPressed: () => setState(() => _obscureApiKey = !_obscureApiKey),
+                  child: TextField(
+                    controller: _openRouterKeyController,
+                    obscureText: _obscureApiKey,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'sk-or-v1-...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      prefixIcon: const Icon(
+                        Icons.key_rounded,
+                        color: Colors.purple,
+                        size: 20,
                       ),
-                      border        : InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureApiKey
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () =>
+                            setState(() => _obscureApiKey = !_obscureApiKey),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -585,51 +722,83 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
         // Model name card
         Container(
-          padding   : const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           decoration: AppTheme.cardDecoration,
-          child     : Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children          : [
-              AppTheme.buildSectionHeader('Model Name', Icons.auto_awesome_rounded),
+            children: [
+              AppTheme.buildSectionHeader(
+                'Model Name',
+                Icons.auto_awesome_rounded,
+              ),
               const SizedBox(height: 6),
               Text(
-                _t('Enter the model ID from openrouter.ai/models', 'Masukkan model ID dari openrouter.ai/models'),
+                _t(
+                  'Enter the model ID from openrouter.ai/models',
+                  'Masukkan model ID dari openrouter.ai/models',
+                ),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
               const SizedBox(height: 14),
               Container(
                 decoration: AppTheme.inputDecoration(Colors.purple),
-                child     : TextField(
-                  controller : _openRouterModelController,
-                  style      : const TextStyle(fontSize: 13),
-                  decoration : InputDecoration(
-                    hintText      : _openRouterModel.isNotEmpty
+                child: TextField(
+                  controller: _openRouterModelController,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: _openRouterModel.isNotEmpty
                         ? _openRouterModel
                         : _t('OpenRouter model name', 'Nama model OpenRouter'),
-                    hintStyle     : TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                    prefixIcon    : const Icon(Icons.psychology_rounded, color: Colors.purple, size: 20),
-                    border        : InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 12,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.psychology_rounded,
+                      color: Colors.purple,
+                      size: 20,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                _t('Model examples (tap to fill):', 'Contoh model (tap untuk isi):'),
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                _t(
+                  'Model examples (tap to fill):',
+                  'Contoh model (tap untuk isi):',
+                ),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing   : 8,
+                spacing: 8,
                 runSpacing: 8,
-                children  : [
+                children: [
                   if (_openRouterModel.isNotEmpty)
-                    _modelSuggestion(_openRouterModel, isFree: _openRouterModel.contains(':free')),
-                  _modelSuggestion('deepseek/deepseek-chat:free',             isFree: true),
-                  _modelSuggestion('google/gemma-3-27b-it:free',              isFree: true),
-                  _modelSuggestion('mistralai/mistral-7b-instruct:free',      isFree: true),
-                  _modelSuggestion('anthropic/claude-3.5-sonnet',             isFree: false),
-                  _modelSuggestion('openai/gpt-4o',                           isFree: false),
+                    _modelSuggestion(
+                      _openRouterModel,
+                      isFree: _openRouterModel.contains(':free'),
+                    ),
+                  _modelSuggestion('deepseek/deepseek-chat:free', isFree: true),
+                  _modelSuggestion('google/gemma-3-27b-it:free', isFree: true),
+                  _modelSuggestion(
+                    'mistralai/mistral-7b-instruct:free',
+                    isFree: true,
+                  ),
+                  _modelSuggestion(
+                    'anthropic/claude-3.5-sonnet',
+                    isFree: false,
+                  ),
+                  _modelSuggestion('openai/gpt-4o', isFree: false),
                 ],
               ),
             ],
@@ -644,36 +813,44 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     return GestureDetector(
       onTap: () => setState(() => _openRouterModelController.text = modelId),
       child: Container(
-        padding   : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color       : isActive
+          color: isActive
               ? Colors.purple.shade100
-              : isFree ? Colors.green.shade50 : Colors.orange.shade50,
+              : isFree
+              ? Colors.green.shade50
+              : Colors.orange.shade50,
           borderRadius: BorderRadius.circular(8),
-          border      : Border.all(
+          border: Border.all(
             color: isActive
                 ? Colors.purple.shade400
-                : isFree ? Colors.green.shade200 : Colors.orange.shade200,
+                : isFree
+                ? Colors.green.shade200
+                : Colors.orange.shade200,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children    : [
+          children: [
             Icon(
               isFree ? Icons.lock_open_rounded : Icons.paid_rounded,
-              size : 12,
+              size: 12,
               color: isActive
                   ? Colors.purple.shade700
-                  : isFree ? Colors.green.shade700 : Colors.orange.shade700,
+                  : isFree
+                  ? Colors.green.shade700
+                  : Colors.orange.shade700,
             ),
             const SizedBox(width: 4),
             Text(
               modelId,
               style: TextStyle(
-                fontSize  : 11,
-                color     : isActive
+                fontSize: 11,
+                color: isActive
                     ? Colors.purple.shade800
-                    : isFree ? Colors.green.shade800 : Colors.orange.shade800,
+                    : isFree
+                    ? Colors.green.shade800
+                    : Colors.orange.shade800,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
@@ -690,15 +867,21 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Widget _buildTestSection() {
     return Container(
-      padding   : const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
       decoration: AppTheme.cardDecoration,
-      child     : Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children          : [
-          AppTheme.buildSectionHeader(_t('Test Connection', 'Test Koneksi'), Icons.wifi_tethering_rounded),
+        children: [
+          AppTheme.buildSectionHeader(
+            _t('Test Connection', 'Test Koneksi'),
+            Icons.wifi_tethering_rounded,
+          ),
           const SizedBox(height: 6),
           Text(
-            _t('Make sure the configuration is correct before saving.', 'Pastikan konfigurasi benar sebelum menyimpan.'),
+            _t(
+              'Make sure the configuration is correct before saving.',
+              'Pastikan konfigurasi benar sebelum menyimpan.',
+            ),
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
           const SizedBox(height: 16),
@@ -706,34 +889,46 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _isTesting ? null : _testConnection,
-              icon     : _isTesting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              icon: _isTesting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.bolt_rounded),
-              label    : Text(_isTesting ? 'Testing...' : _t('Test Now', 'Test Sekarang')),
-              style    : OutlinedButton.styleFrom(
-                padding        : const EdgeInsets.symmetric(vertical: 14),
-                side           : const BorderSide(color: AppTheme.primaryCoral),
+              label: Text(
+                _isTesting ? 'Testing...' : _t('Test Now', 'Test Sekarang'),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: const BorderSide(color: AppTheme.primaryCoral),
                 foregroundColor: AppTheme.primaryCoral,
-                shape          : RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
           if (_testResult.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
-              padding   : const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color       : _testSuccess ? Colors.green.shade50 : Colors.red.shade50,
+                color: _testSuccess ? Colors.green.shade50 : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(10),
-                border      : Border.all(
-                  color: _testSuccess ? Colors.green.shade200 : Colors.red.shade200,
+                border: Border.all(
+                  color: _testSuccess
+                      ? Colors.green.shade200
+                      : Colors.red.shade200,
                 ),
               ),
               child: Text(
                 _testResult,
                 style: TextStyle(
-                  color     : _testSuccess ? Colors.green.shade800 : Colors.red.shade800,
-                  fontSize  : 13,
+                  color: _testSuccess
+                      ? Colors.green.shade800
+                      : Colors.red.shade800,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -750,23 +945,35 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
   Widget _buildSaveButton() {
     return Container(
-      width     : double.infinity,
-      height    : 54,
+      width: double.infinity,
+      height: 54,
       decoration: BoxDecoration(
-        gradient    : AppTheme.accentGradient,
+        gradient: AppTheme.accentGradient,
         borderRadius: BorderRadius.circular(16),
-        boxShadow   : AppTheme.buttonShadow,
+        boxShadow: AppTheme.buttonShadow,
       ),
       child: ElevatedButton(
         onPressed: _isSaving ? null : _save,
-        style    : ElevatedButton.styleFrom(
+        style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-          shadowColor    : Colors.transparent,
-          shape          : RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: _isSaving
-            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-            : Text(_t('Save Settings', 'Simpan Settings'), style: AppTheme.buttonText),
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                _t('Save Settings', 'Simpan Settings'),
+                style: AppTheme.buttonText,
+              ),
       ),
     );
   }

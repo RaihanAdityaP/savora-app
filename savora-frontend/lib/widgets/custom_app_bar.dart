@@ -13,11 +13,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final String? userId;
 
-  const CustomAppBar({
-    super.key,
-    this.showBackButton = false,
-    this.userId,
-  });
+  const CustomAppBar({super.key, this.showBackButton = false, this.userId});
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -37,7 +33,7 @@ class _CustomAppBarState extends State<CustomAppBar>
     super.initState();
     _badgeController = AnimationController(
       duration: const Duration(milliseconds: 600),
-      vsync   : this,
+      vsync: this,
     );
     _badgeAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(parent: _badgeController, curve: Curves.elasticOut),
@@ -71,29 +67,39 @@ class _CustomAppBarState extends State<CustomAppBar>
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceColor,
         surfaceTintColor: Colors.transparent,
-        shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title  : Row(children: [
-          Container(
-            padding   : const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color        : Colors.red.shade50,
-              borderRadius : BorderRadius.circular(12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.logout_rounded,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
             ),
-            child: Icon(Icons.logout_rounded, color: Colors.red.shade600, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(_t('Sign Out', 'Keluar dari Akun'),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                _t('Sign Out', 'Keluar dari Akun'),
                 style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                )),
-          ),
-        ]),
+                ),
+              ),
+            ),
+          ],
+        ),
         content: Text(
-          _t('Are you sure you want to sign out of Savora?',
-              'Apakah Anda yakin ingin keluar dari akun Savora?'),
+          _t(
+            'Are you sure you want to sign out of Savora?',
+            'Apakah Anda yakin ingin keluar dari akun Savora?',
+          ),
           style: TextStyle(
             fontSize: 15,
             color: AppTheme.textSecondary,
@@ -103,17 +109,37 @@ class _CustomAppBarState extends State<CustomAppBar>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child    : Text(_t('Cancel', 'Batal'), style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600)),
+            child: Text(
+              _t('Cancel', 'Batal'),
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Container(
             decoration: BoxDecoration(
-              gradient    : LinearGradient(colors: [Colors.red.shade400, Colors.red.shade600]),
+              gradient: LinearGradient(
+                colors: [Colors.red.shade400, Colors.red.shade600],
+              ),
               borderRadius: BorderRadius.circular(12),
-              boxShadow   : [BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child    : Text(_t('Sign Out', 'Keluar'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: Text(
+                _t('Sign Out', 'Keluar'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -137,37 +163,41 @@ class _CustomAppBarState extends State<CustomAppBar>
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color    : AppTheme.surfaceColor,
+        color: AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
-            color     : Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
-            offset    : const Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: AppBar(
         backgroundColor: AppTheme.surfaceColor,
-        elevation      : 0,
-        leadingWidth   : widget.showBackButton ? kToolbarHeight : 160,
-        leading        : widget.showBackButton
+        elevation: 0,
+        leadingWidth: widget.showBackButton ? kToolbarHeight : 160,
+        leading: widget.showBackButton
             ? Padding(
                 padding: const EdgeInsets.all(8),
-                child  : Material(
-                  color        : AppTheme.subtleSurfaceColor,
-                  borderRadius : BorderRadius.circular(12),
-                  child        : InkWell(
-                    onTap        : () => Navigator.pop(context),
-                    borderRadius : BorderRadius.circular(12),
-                    child        : Center(
-                      child: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary, size: 22),
+                child: Material(
+                  color: AppTheme.subtleSurfaceColor,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Center(
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: AppTheme.textPrimary,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ),
               )
             : Padding(
                 padding: const EdgeInsets.only(left: 16),
-                child  : GestureDetector(
+                child: GestureDetector(
                   onTap: () => Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -175,32 +205,46 @@ class _CustomAppBarState extends State<CustomAppBar>
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children    : [
+                    children: [
                       Container(
-                        width     : 40, height: 40,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          gradient : AppTheme.logoGradient,
-                          shape    : BoxShape.circle,
+                          gradient: AppTheme.logoGradient,
+                          shape: BoxShape.circle,
                           boxShadow: AppTheme.logoBlueShadow,
                         ),
                         padding: const EdgeInsets.all(2),
-                        child  : Container(
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child     : ClipOval(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
                             child: Image.asset(
                               'assets/images/logo.png',
-                              fit         : BoxFit.cover,
-                              errorBuilder: (_, _, _) => const Icon(Icons.restaurant_rounded, size: 20, color: AppTheme.logoBlue),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
+                                Icons.restaurant_rounded,
+                                size: 20,
+                                color: AppTheme.logoBlue,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       ShaderMask(
-                        shaderCallback: (bounds) => AppTheme.logoGradient.createShader(bounds),
+                        shaderCallback: (bounds) =>
+                            AppTheme.logoGradient.createShader(bounds),
                         child: const Text(
                           'Savora',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
                     ],
@@ -208,17 +252,18 @@ class _CustomAppBarState extends State<CustomAppBar>
                 ),
               ),
         titleSpacing: 0,
-        actions     : [
+        actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child  : PopupMenuButton<String>(
-              icon        : Stack(
+            child: PopupMenuButton<String>(
+              icon: Stack(
                 clipBehavior: Clip.none,
-                children    : [
+                children: [
                   Container(
-                    width     : 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color       : AppTheme.subtleSurfaceColor,
+                      color: AppTheme.subtleSurfaceColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -229,21 +274,29 @@ class _CustomAppBarState extends State<CustomAppBar>
                   ),
                   if (_unreadCount > 0)
                     Positioned(
-                      right: -2, top: -2,
+                      right: -2,
+                      top: -2,
                       child: ScaleTransition(
                         scale: _badgeAnimation,
                         child: Container(
-                          padding    : const EdgeInsets.all(4),
-                          decoration : BoxDecoration(
-                            gradient : AppTheme.badgeGradient,
-                            shape    : BoxShape.circle,
-                            border   : Border.all(color: Colors.white, width: 1.5),
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            gradient: AppTheme.badgeGradient,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
                             boxShadow: AppTheme.badgeShadow,
                           ),
-                          constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                          child      : Text(
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
                             _unreadCount > 99 ? '99+' : _unreadCount.toString(),
-                            style    : const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -251,43 +304,66 @@ class _CustomAppBarState extends State<CustomAppBar>
                     ),
                 ],
               ),
-              shape       : RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              offset      : const Offset(0, 48),
-              elevation   : 4,
-              color       : AppTheme.surfaceColor,
-              onSelected  : (value) async {
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              offset: const Offset(0, 48),
+              elevation: 4,
+              color: AppTheme.surfaceColor,
+              onSelected: (value) async {
                 switch (value) {
                   case 'ai_chat':
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AIChatScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AIChatScreen()),
+                    );
                     break;
                   case 'notifications':
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationScreen(),
+                      ),
+                    );
                     _loadUnreadCount();
                     break;
                   case 'settings':
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
                     break;
                   case 'logout':
                     _signOut(context);
                     break;
                 }
               },
-              itemBuilder : (_) => [
+              itemBuilder: (_) => [
                 // Chef AI
                 PopupMenuItem(
                   value: 'ai_chat',
                   child: Row(
                     children: [
                       Container(
-                        padding   : const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : AppTheme.subtleSurfaceColor,
+                          color: AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.psychology_rounded, size: 18, color: AppTheme.textPrimary),
+                        child: Icon(
+                          Icons.psychology_rounded,
+                          size: 18,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Text(_t('Chef AI', 'Chef AI'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      Text(
+                        _t('Chef AI', 'Chef AI'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -298,27 +374,44 @@ class _CustomAppBarState extends State<CustomAppBar>
                   child: Row(
                     children: [
                       Container(
-                        padding   : const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : AppTheme.subtleSurfaceColor,
+                          color: AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.notifications_rounded, size: 18, color: AppTheme.textPrimary),
+                        child: Icon(
+                          Icons.notifications_rounded,
+                          size: 18,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(_t('Notifications', 'Notifikasi'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                        child: Text(
+                          _t('Notifications', 'Notifikasi'),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
                       ),
                       if (_unreadCount > 0)
                         Container(
-                          padding   : const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color       : AppTheme.logoOrange,
+                            color: AppTheme.logoOrange,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '$_unreadCount',
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                     ],
@@ -332,15 +425,25 @@ class _CustomAppBarState extends State<CustomAppBar>
                   child: Row(
                     children: [
                       Container(
-                        padding   : const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : AppTheme.subtleSurfaceColor,
+                          color: AppTheme.subtleSurfaceColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.settings_rounded, size: 18, color: AppTheme.textPrimary),
+                        child: Icon(
+                          Icons.settings_rounded,
+                          size: 18,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Text(_t('Settings', 'Pengaturan'), style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                      Text(
+                        _t('Settings', 'Pengaturan'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -353,15 +456,25 @@ class _CustomAppBarState extends State<CustomAppBar>
                   child: Row(
                     children: [
                       Container(
-                        padding   : const EdgeInsets.all(7),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color       : Colors.red.shade50,
+                          color: Colors.red.shade50,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.logout_rounded, size: 18, color: Colors.red.shade600),
+                        child: Icon(
+                          Icons.logout_rounded,
+                          size: 18,
+                          color: Colors.red.shade600,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Text(_t('Logout', 'Keluar'), style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                      Text(
+                        _t('Logout', 'Keluar'),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 ),

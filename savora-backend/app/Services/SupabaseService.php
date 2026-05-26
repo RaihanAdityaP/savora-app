@@ -14,9 +14,13 @@ class SupabaseService
 
     public function __construct()
     {
-        $this->supabaseUrl        = env('SUPABASE_URL');
-        $this->supabaseKey        = env('SUPABASE_ANON_KEY');
-        $this->supabaseServiceKey = env('SUPABASE_SERVICE_KEY');
+        $this->supabaseUrl        = (string) config('services.supabase.url', '');
+        $this->supabaseKey        = (string) config('services.supabase.key', '');
+        $this->supabaseServiceKey = (string) config('services.supabase.service_key', '');
+
+        if ($this->supabaseUrl === '' || $this->supabaseKey === '' || $this->supabaseServiceKey === '') {
+            throw new Exception('Konfigurasi Supabase belum terbaca. Jalankan php artisan optimize:clear dan pastikan SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY ada di .env backend.');
+        }
     }
 
     // ─────────────────────────────────────────────

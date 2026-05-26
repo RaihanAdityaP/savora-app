@@ -171,28 +171,7 @@ class RecipeController extends Controller
                 }));
             }
 
-            foreach ($recipes as &$recipe) {
-                $totalRatings = 0;
-                $avgRating    = 0;
-
-                try {
-                    $ratings      = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipe['id']]);
-                    $totalRatings = count($ratings);
-
-                    if ($totalRatings > 0) {
-                        $sum       = array_sum(array_column($ratings, 'rating'));
-                        $avgRating = round($sum / $totalRatings, 1);
-                    }
-                } catch (Exception $e) {
-                    // keep default
-                }
-
-                $recipe['rating_info'] = [
-                    'average' => $avgRating,
-                    'total'   => $totalRatings,
-                ];
-            }
-            unset($recipe);
+            $recipes = $this->attachRatingInfo($recipes);
 
             $requestUserId = $this->resolveRequestUserId($request);
             $recipes = $this->attachSavedState(
@@ -1038,6 +1017,53 @@ class RecipeController extends Controller
             $recipeId = $recipe['id'] ?? null;
             $recipes[$index]['likes_count'] = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
             $recipes[$index]['is_liked'] = $recipeId ? !empty($likedRecipeIds[$recipeId]) : false;
+        }
+
+        return $recipes;
+    }
+
+    private function attachRatingInfo(array $recipes): array
+    {
+        $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($recipeIds)) {
+            return $recipes;
+        }
+
+        $ratingSums = [];
+        $ratingCounts = [];
+
+        try {
+            $rows = $this->supabase->select(
+                'recipe_ratings',
+                ['recipe_id', 'rating'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($rows as $row) {
+                $recipeId = $row['recipe_id'] ?? null;
+                if (!$recipeId) {
+                    continue;
+                }
+
+                $ratingSums[$recipeId] = ($ratingSums[$recipeId] ?? 0) + (float) ($row['rating'] ?? 0);
+                $ratingCounts[$recipeId] = ($ratingCounts[$recipeId] ?? 0) + 1;
+            }
+        } catch (Exception) {
+        }
+
+        foreach ($recipes as $index => $recipe) {
+            $recipeId = $recipe['id'] ?? null;
+            $totalRatings = $recipeId ? (int) ($ratingCounts[$recipeId] ?? 0) : 0;
+            $average = $totalRatings > 0
+                ? round(($ratingSums[$recipeId] ?? 0) / $totalRatings, 1)
+                : 0;
+
+            $recipes[$index]['rating_info'] = [
+                'average' => $average,
+                'total' => $totalRatings,
+            ];
+            $recipes[$index]['rating_avg'] = $average;
+            $recipes[$index]['rating_count'] = $totalRatings;
         }
 
         return $recipes;

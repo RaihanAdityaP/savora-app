@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App;
 use App\Http\Controllers\Controller;
 use App\Services\SupabaseService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Exception;
 
 class SearchController extends Controller
@@ -26,8 +27,8 @@ class SearchController extends Controller
         $results = [];
 
         try {
-            $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
-            $popularTags = $this->supabase->select('tags', ['id', 'name', 'usage_count'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]);
+            $categories  = Cache::remember('search_categories', 300, fn () => $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']));
+            $popularTags = Cache::remember('search_popular_tags', 300, fn () => $this->supabase->select('tags', ['id', 'name', 'usage_count'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 20]));
         } catch (Exception) {}
 
         // Hanya search kalau ada input
@@ -81,18 +82,33 @@ class SearchController extends Controller
                     };
                 });
 
-                // Inject rating
-                foreach ($results as &$r) {
+                $recipeIds = array_values(array_filter(array_column($results, 'id')));
+                $ratingSums = [];
+                $ratingCounts = [];
+                if (! empty($recipeIds)) {
                     try {
-                        $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $r['id']]);
-                        $total   = count($ratings);
-                        $r['rating_avg']   = $total > 0 ? round(array_sum(array_column($ratings, 'rating')) / $total, 1) : 0;
-                        $r['rating_count'] = $total;
+                        $ratings = $this->supabase->select(
+                            'recipe_ratings',
+                            ['recipe_id', 'rating'],
+                            ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+                        );
+                        foreach ($ratings as $rating) {
+                            $rid = $rating['recipe_id'] ?? null;
+                            if (! $rid) continue;
+                            $ratingSums[$rid] = ($ratingSums[$rid] ?? 0) + (float) ($rating['rating'] ?? 0);
+                            $ratingCounts[$rid] = ($ratingCounts[$rid] ?? 0) + 1;
+                        }
                     } catch (Exception) {
-                        $r['rating_avg']   = 0;
-                        $r['rating_count'] = 0;
                     }
                 }
+
+                foreach ($results as &$r) {
+                    $rid = $r['id'] ?? null;
+                    $total = $rid ? (int) ($ratingCounts[$rid] ?? 0) : 0;
+                    $r['rating_avg'] = $total > 0 ? round(($ratingSums[$rid] ?? 0) / $total, 1) : 0;
+                    $r['rating_count'] = $total;
+                }
+                unset($r);
 
             } catch (Exception $e) {
                 $results = [];

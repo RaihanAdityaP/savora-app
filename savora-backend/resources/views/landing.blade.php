@@ -326,8 +326,8 @@
                 </div>
 
                 <h1 class="fade-up-2 text-5xl lg:text-6xl font-black leading-[1.1] mb-6">
-                    Discover Recipes<br>
-                    <span class="gradient-text">Delicious Every Day</span>
+                    Discover Delicious<br>
+                    <span class="gradient-text">Recipe Every Day</span>
                 </h1>
 
                 <p class="fade-up-3 text-lg leading-relaxed mb-10 max-w-lg mx-auto lg:mx-0"

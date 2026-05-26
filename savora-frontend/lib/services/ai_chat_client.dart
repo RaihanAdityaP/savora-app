@@ -67,10 +67,9 @@ class AIChatClient {
   /// Update judul conversation
   static Future<bool> updateConversationTitle(String id, String title) async {
     try {
-      final response = await ApiService.put(
-        '/ai/conversations/$id',
-        {'title': title},
-      );
+      final response = await ApiService.put('/ai/conversations/$id', {
+        'title': title,
+      });
       return response['success'] == true;
     } catch (e) {
       debugPrint('AIChatClient.updateConversationTitle error: $e');
@@ -134,8 +133,9 @@ class AIChatClient {
     String conversationId,
   ) async {
     try {
-      final response =
-          await ApiService.get('/ai/conversations/$conversationId/messages');
+      final response = await ApiService.get(
+        '/ai/conversations/$conversationId/messages',
+      );
       if (response['success'] == true) {
         return List<Map<String, dynamic>>.from(response['data'] ?? []);
       }
@@ -172,9 +172,7 @@ class AIChatClient {
     String? openRouterApiKey,
   }) async {
     try {
-      final body = <String, dynamic>{
-        'is_active_provider': activeProvider,
-      };
+      final body = <String, dynamic>{'is_active_provider': activeProvider};
       if (groqModel != null && groqModel.isNotEmpty) {
         body['groq_model'] = groqModel;
       }
@@ -200,10 +198,7 @@ class AIChatClient {
     String? openRouterApiKey,
   }) async {
     try {
-      final body = <String, dynamic>{
-        'provider': provider,
-        'model': model,
-      };
+      final body = <String, dynamic>{'provider': provider, 'model': model};
       if (openRouterApiKey != null && openRouterApiKey.isNotEmpty) {
         body['openrouter_api_key'] = openRouterApiKey;
       }

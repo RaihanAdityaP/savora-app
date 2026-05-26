@@ -116,7 +116,8 @@ class RecipeClient {
             .toList();
         if (cleanIngredients.isNotEmpty) {
           params.add(
-              'ingredients=${Uri.encodeComponent(cleanIngredients.join(','))}');
+            'ingredients=${Uri.encodeComponent(cleanIngredients.join(','))}',
+          );
         }
       }
       if (categoryId != null) {

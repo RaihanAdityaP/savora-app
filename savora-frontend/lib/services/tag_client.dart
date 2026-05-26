@@ -2,9 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class TagClient {
-  static Future<List<Map<String, dynamic>>> searchTags(String query, {int limit = 20}) async {
+  static Future<List<Map<String, dynamic>>> searchTags(
+    String query, {
+    int limit = 20,
+  }) async {
     try {
-      final response = await ApiService.get('/tags/search?q=${Uri.encodeComponent(query)}&limit=$limit');
+      final response = await ApiService.get(
+        '/tags/search?q=${Uri.encodeComponent(query)}&limit=$limit',
+      );
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -16,7 +21,9 @@ class TagClient {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> popularTags({int limit = 30}) async {
+  static Future<List<Map<String, dynamic>>> popularTags({
+    int limit = 30,
+  }) async {
     try {
       final response = await ApiService.get('/tags/popular?limit=$limit');
       if (response['success'] == true) {

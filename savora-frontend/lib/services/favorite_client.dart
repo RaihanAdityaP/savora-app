@@ -9,9 +9,7 @@ class FavoriteClient {
   // ─────────────────────────────────────────────
 
   /// Get semua resep favorit user
-  static Future<List<Map<String, dynamic>>> getFavorites(
-    String userId,
-  ) async {
+  static Future<List<Map<String, dynamic>>> getFavorites(String userId) async {
     try {
       final response = await ApiService.get('/favorites');
       if (response['success'] == true) {
@@ -107,13 +105,10 @@ class FavoriteClient {
     String? description,
   }) async {
     try {
-      final response = await ApiService.put(
-        '/favorites/boards/$boardId',
-        {
-          if (name != null) 'name': name,
-          if (description != null) 'description': description,
-        },
-      );
+      final response = await ApiService.put('/favorites/boards/$boardId', {
+        if (name != null) 'name': name,
+        if (description != null) 'description': description,
+      });
       return response['success'] == true;
     } catch (e) {
       debugPrint('FavoriteClient.updateBoard error: $e');
@@ -137,8 +132,9 @@ class FavoriteClient {
     String boardId,
   ) async {
     try {
-      final response =
-          await ApiService.get('/favorites/boards/$boardId/recipes');
+      final response = await ApiService.get(
+        '/favorites/boards/$boardId/recipes',
+      );
       if (response['success'] == true) {
         final list = response['data'] as List;
         return list.map((e) => Map<String, dynamic>.from(e)).toList();

@@ -31,9 +31,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.initialProfile['username'] ?? '');
-    _fullNameController = TextEditingController(text: widget.initialProfile['full_name'] ?? '');
-    _bioController = TextEditingController(text: widget.initialProfile['bio'] ?? '');
+    _usernameController = TextEditingController(
+      text: widget.initialProfile['username'] ?? '',
+    );
+    _fullNameController = TextEditingController(
+      text: widget.initialProfile['full_name'] ?? '',
+    );
+    _bioController = TextEditingController(
+      text: widget.initialProfile['bio'] ?? '',
+    );
     _avatarUrl = widget.initialProfile['avatar_url'];
   }
 
@@ -46,11 +52,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickAndUploadImage() async {
-    final image = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 75);
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 75,
+    );
     if (image == null) return;
 
     setState(() => _isUploading = true);
-    final updated = await UserClient.updateProfile(userId: widget.userId, avatarPath: image.path);
+    final updated = await UserClient.updateProfile(
+      userId: widget.userId,
+      avatarPath: image.path,
+    );
     if (!mounted) return;
     setState(() {
       _avatarUrl = updated?['avatar_url'] ?? _avatarUrl;
@@ -66,7 +80,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (_usernameController.text.trim().isEmpty) {
-      _showSnackBar(_t('Username cannot be empty', 'Username tidak boleh kosong'), isError: true);
+      _showSnackBar(
+        _t('Username cannot be empty', 'Username tidak boleh kosong'),
+        isError: true,
+      );
       return;
     }
 
@@ -81,10 +98,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isSaving = false);
 
     if (updated != null) {
-      _showSnackBar(_t('Profile updated', 'Profil berhasil diperbarui'), isError: false);
+      _showSnackBar(
+        _t('Profile updated', 'Profil berhasil diperbarui'),
+        isError: false,
+      );
       Navigator.pop(context, true);
     } else {
-      _showSnackBar(_t('Failed to save profile', 'Gagal menyimpan profil'), isError: true);
+      _showSnackBar(
+        _t('Failed to save profile', 'Gagal menyimpan profil'),
+        isError: true,
+      );
     }
   }
 
@@ -106,7 +129,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimary,
         elevation: 0,
-        title: Text(_t('Edit Profile', 'Edit Profil'), style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          _t('Edit Profile', 'Edit Profil'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -118,8 +144,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 54,
-                    backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-                    child: _avatarUrl == null ? const Icon(Icons.person_rounded, size: 42) : null,
+                    backgroundImage: _avatarUrl != null
+                        ? NetworkImage(_avatarUrl!)
+                        : null,
+                    child: _avatarUrl == null
+                        ? const Icon(Icons.person_rounded, size: 42)
+                        : null,
                   ),
                   Positioned(
                     right: 0,
@@ -128,8 +158,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       radius: 18,
                       backgroundColor: AppTheme.primaryCoral,
                       child: _isUploading
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                     ),
                   ),
                 ],
@@ -137,9 +178,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _field(_usernameController, 'Username', Icons.alternate_email_rounded),
+          _field(
+            _usernameController,
+            'Username',
+            Icons.alternate_email_rounded,
+          ),
           const SizedBox(height: 16),
-          _field(_fullNameController, _t('Full Name', 'Nama Lengkap'), Icons.person_outline_rounded),
+          _field(
+            _fullNameController,
+            _t('Full Name', 'Nama Lengkap'),
+            Icons.person_outline_rounded,
+          ),
           const SizedBox(height: 16),
           _field(_bioController, 'Bio', Icons.edit_note_rounded, maxLines: 4),
           const SizedBox(height: 24),
@@ -149,19 +198,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               backgroundColor: AppTheme.primaryCoral,
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
             icon: _isSaving
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : const Icon(Icons.save_rounded),
-            label: Text(_t('Save Changes', 'Simpan Perubahan'), style: const TextStyle(fontWeight: FontWeight.bold)),
+            label: Text(
+              _t('Save Changes', 'Simpan Perubahan'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _field(TextEditingController controller, String label, IconData icon, {int maxLines = 1}) {
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -182,7 +248,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppTheme.primaryCoral, width: 1.5),
+          borderSide: const BorderSide(
+            color: AppTheme.primaryCoral,
+            width: 1.5,
+          ),
         ),
       ),
     );

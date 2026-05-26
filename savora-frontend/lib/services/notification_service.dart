@@ -54,7 +54,7 @@ class NotificationService {
 
   // Callback opsional saat notifikasi atau action button di-tap.
   static void Function(String? payload, {String? actionId})?
-      onNotificationTapped;
+  onNotificationTapped;
 
   // ─────────────────────────────────────────────
   // INITIALIZE
@@ -77,20 +77,18 @@ class NotificationService {
       debugPrint('Starting NotificationService initialization...');
 
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@drawable/ic_stat_savora');
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
       const InitializationSettings initializationSettings =
-          InitializationSettings(
-        android: initializationSettingsAndroid,
-      );
+          InitializationSettings(android: initializationSettingsAndroid);
 
-      final bool? initialized =
-          await _flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
-        onDidReceiveBackgroundNotificationResponse:
-            savoraNotificationTapBackground,
-      );
+      final bool? initialized = await _flutterLocalNotificationsPlugin
+          .initialize(
+            initializationSettings,
+            onDidReceiveNotificationResponse: _onNotificationTapped,
+            onDidReceiveBackgroundNotificationResponse:
+                savoraNotificationTapBackground,
+          );
 
       debugPrint('Plugin initialization result: $initialized');
 
@@ -128,7 +126,8 @@ class NotificationService {
 
       final androidImpl = _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidImpl != null) {
         await androidImpl.createNotificationChannel(channel);
@@ -151,11 +150,12 @@ class NotificationService {
     try {
       final androidImpl = _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       if (androidImpl != null) {
-        final bool? granted =
-            await androidImpl.requestNotificationsPermission();
+        final bool? granted = await androidImpl
+            .requestNotificationsPermission();
         debugPrint('Notification permission granted: $granted');
         if (granted == false) {
           debugPrint('Permission denied. Notifications will not work.');
@@ -267,46 +267,48 @@ class NotificationService {
       final bool canActOnRecipe = _isRecipePayload(payload);
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        androidChannelId,
-        androidChannelName,
-        channelDescription: androidChannelDescription,
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: true,
-        enableVibration: true,
-        playSound: true,
-        icon: '@drawable/ic_stat_savora',
-        color: const Color(0xFFFF6B6B),
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-        styleInformation: BigTextStyleInformation(
-          body,
-          htmlFormatBigText: false,
-          contentTitle: title,
-          htmlFormatContentTitle: false,
-          summaryText: 'Savora',
-          htmlFormatSummaryText: false,
-        ),
-        ticker: 'Savora Notification',
-        channelShowBadge: true,
-        autoCancel: true,
-        ongoing: false,
-        actions: canActOnRecipe
-            ? const <AndroidNotificationAction>[
-                AndroidNotificationAction(
-                  actionLikeRecipe,
-                  'Like',
-                  showsUserInterface: true,
-                  cancelNotification: true,
-                ),
-                AndroidNotificationAction(
-                  actionReplyRecipe,
-                  'Reply',
-                  showsUserInterface: true,
-                  cancelNotification: true,
-                ),
-              ]
-            : null,
-      );
+            androidChannelId,
+            androidChannelName,
+            channelDescription: androidChannelDescription,
+            importance: Importance.max,
+            priority: Priority.high,
+            showWhen: true,
+            enableVibration: true,
+            playSound: true,
+            icon: '@mipmap/ic_launcher',
+            color: const Color(0xFFFF6B6B),
+            largeIcon: const DrawableResourceAndroidBitmap(
+              '@mipmap/ic_launcher',
+            ),
+            styleInformation: BigTextStyleInformation(
+              body,
+              htmlFormatBigText: false,
+              contentTitle: title,
+              htmlFormatContentTitle: false,
+              summaryText: 'Savora',
+              htmlFormatSummaryText: false,
+            ),
+            ticker: 'Savora Notification',
+            channelShowBadge: true,
+            autoCancel: true,
+            ongoing: false,
+            actions: canActOnRecipe
+                ? const <AndroidNotificationAction>[
+                    AndroidNotificationAction(
+                      actionLikeRecipe,
+                      'Like',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                    AndroidNotificationAction(
+                      actionReplyRecipe,
+                      'Reply',
+                      showsUserInterface: true,
+                      cancelNotification: true,
+                    ),
+                  ]
+                : null,
+          );
 
       final NotificationDetails notificationDetails = NotificationDetails(
         android: androidDetails,
@@ -355,7 +357,7 @@ class NotificationService {
 
     final plugin = FlutterLocalNotificationsPlugin();
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('@drawable/ic_stat_savora'),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     );
 
     await plugin.initialize(
@@ -374,8 +376,10 @@ class NotificationService {
       showBadge: true,
     );
 
-    final androidImpl = plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidImpl = plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidImpl?.createNotificationChannel(channel);
 
     final payload = _payloadFromData(message.data);
@@ -389,7 +393,7 @@ class NotificationService {
       showWhen: true,
       enableVibration: true,
       playSound: true,
-      icon: '@drawable/ic_stat_savora',
+      icon: '@mipmap/ic_launcher',
       color: const Color(0xFFFF6B6B),
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       styleInformation: BigTextStyleInformation(
@@ -475,7 +479,9 @@ class NotificationService {
     final success = await NotificationClient.registerDevice(
       userId: userId,
       deviceToken: token,
-      deviceType: defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+      deviceType: defaultTargetPlatform == TargetPlatform.iOS
+          ? 'ios'
+          : 'android',
     );
 
     if (success) {

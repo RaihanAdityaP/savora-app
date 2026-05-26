@@ -20,39 +20,46 @@ class CreateRecipeScreen extends StatefulWidget {
   State<CreateRecipeScreen> createState() => _CreateRecipeScreenState();
 }
 
+class _PickerItem<T> {
+  const _PickerItem({required this.value, required this.label});
+
+  final T value;
+  final String label;
+}
+
 class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
-  final _titleController       = TextEditingController();
+  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _cookingTimeController = TextEditingController();
-  final _servingsController    = TextEditingController();
-  final _caloriesController    = TextEditingController();
+  final _servingsController = TextEditingController();
+  final _caloriesController = TextEditingController();
 
   final List<String> _ingredients = [];
-  final List<String> _steps       = [];
-  File?       _imageFile;
-  Uint8List?  _webImageBytes;
-  File?       _videoFile;
-  Uint8List?  _webVideoBytes;
-  String?     _videoFileName;
-  int?        _selectedCategoryId;
-  String      _selectedDifficulty = 'mudah';
-  bool        _isLoading      = false;
-  bool        _isUploading    = false;
-  bool        _autoSaveDrafts = true;
-  String?     _userAvatarUrl;
+  final List<String> _steps = [];
+  File? _imageFile;
+  Uint8List? _webImageBytes;
+  File? _videoFile;
+  Uint8List? _webVideoBytes;
+  String? _videoFileName;
+  int? _selectedCategoryId;
+  String _selectedDifficulty = 'mudah';
+  bool _isLoading = false;
+  bool _isUploading = false;
+  bool _autoSaveDrafts = true;
+  String? _userAvatarUrl;
 
-  List<String>               _selectedTags     = [];
-  List<int>                  _selectedTagIds   = [];
+  List<String> _selectedTags = [];
+  List<int> _selectedTagIds = [];
   final _tagInputController = TextEditingController();
-  List<Map<String, dynamic>> _popularTags      = [];
-  List<Map<String, dynamic>> _userCreatedTags  = [];
-  bool   _isSearchingTags = false;
+  List<Map<String, dynamic>> _popularTags = [];
+  List<Map<String, dynamic>> _userCreatedTags = [];
+  bool _isSearchingTags = false;
   Timer? _debounce;
 
   List<Map<String, dynamic>> _categories = [];
-  final ImagePicker _picker               = ImagePicker();
-  final _tempIngredientController         = TextEditingController();
-  final _tempStepController               = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
+  final _tempIngredientController = TextEditingController();
+  final _tempStepController = TextEditingController();
 
   Timer? _draftTimer;
 
@@ -65,7 +72,6 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     _loadSettings();
     _loadUserAvatar();
     _loadPopularTags();
-    _restoreDraft();
 
     _titleController.addListener(_scheduleDraftSave);
     _descriptionController.addListener(_scheduleDraftSave);
@@ -103,9 +109,18 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     final settings = await AppSettingsService.load();
     if (!mounted) return;
     setState(() => _autoSaveDrafts = settings.autoSaveDrafts);
+    if (settings.autoSaveDrafts) {
+      await _restoreDraft();
+    } else {
+      await DraftService.clearCreateDraft();
+    }
   }
 
   Future<void> _saveDraft() async {
+    if (!_autoSaveDrafts) {
+      await DraftService.clearCreateDraft();
+      return;
+    }
     if (_titleController.text.isEmpty &&
         _descriptionController.text.isEmpty &&
         _ingredients.isEmpty &&
@@ -113,16 +128,16 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       return;
     }
     await DraftService.saveCreateDraft({
-      'title'       : _titleController.text,
-      'description' : _descriptionController.text,
+      'title': _titleController.text,
+      'description': _descriptionController.text,
       'cooking_time': _cookingTimeController.text,
-      'servings'    : _servingsController.text,
-      'calories'    : _caloriesController.text,
-      'ingredients' : _ingredients,
-      'steps'       : _steps,
-      'tags'        : _selectedTags,
-      'category_id' : _selectedCategoryId,
-      'difficulty'  : _selectedDifficulty,
+      'servings': _servingsController.text,
+      'calories': _caloriesController.text,
+      'ingredients': _ingredients,
+      'steps': _steps,
+      'tags': _selectedTags,
+      'category_id': _selectedCategoryId,
+      'difficulty': _selectedDifficulty,
     });
   }
 
@@ -134,28 +149,38 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(10),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.accentGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.restore_page_rounded, color: Colors.white),
             ),
-            child: Icon(Icons.restore_page_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Text(_t('Draft Found', 'Draft Ditemukan')),
-        ]),
+            const SizedBox(width: 12),
+            Text(_t('Draft Found', 'Draft Ditemukan')),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_t('There is an unfinished recipe draft:', 'Ada draft resep yang belum selesai:'),
-                style: TextStyle(color: Colors.grey.shade600)),
+            Text(
+              _t(
+                'There is an unfinished recipe draft:',
+                'Ada draft resep yang belum selesai:',
+              ),
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
             const SizedBox(height: 8),
             if ((draft['title'] as String?)?.isNotEmpty == true)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryCoral.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -163,8 +188,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 child: Text(
                   '"${draft['title']}"',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryCoral),
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryCoral,
+                  ),
                 ),
               ),
             const SizedBox(height: 8),
@@ -188,7 +214,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               backgroundColor: AppTheme.primaryCoral,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ],
@@ -197,19 +224,19 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
     if (restore == true && mounted) {
       setState(() {
-        _titleController.text       = draft['title']        ?? '';
-        _descriptionController.text = draft['description']  ?? '';
+        _titleController.text = draft['title'] ?? '';
+        _descriptionController.text = draft['description'] ?? '';
         _cookingTimeController.text = draft['cooking_time'] ?? '';
-        _servingsController.text    = draft['servings']     ?? '';
-        _caloriesController.text    = draft['calories']     ?? '';
+        _servingsController.text = draft['servings'] ?? '';
+        _caloriesController.text = draft['calories'] ?? '';
         _ingredients
           ..clear()
           ..addAll(List<String>.from(draft['ingredients'] ?? []));
         _steps
           ..clear()
           ..addAll(List<String>.from(draft['steps'] ?? []));
-        _selectedTags       = List<String>.from(draft['tags'] ?? []);
-        _selectedTagIds     = [];
+        _selectedTags = List<String>.from(draft['tags'] ?? []);
+        _selectedTagIds = [];
         _selectedCategoryId = draft['category_id'] as int?;
         _selectedDifficulty = draft['difficulty'] ?? 'mudah';
       });
@@ -222,12 +249,12 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   String _formatDraftTime(String? isoString) {
     if (isoString == null) return '';
     try {
-      final dt   = DateTime.parse(isoString).toLocal();
-      final now  = DateTime.now();
+      final dt = DateTime.parse(isoString).toLocal();
+      final now = DateTime.now();
       final diff = now.difference(dt);
       if (diff.inMinutes < 1) return 'Baru saja';
-      if (diff.inHours < 1)   return '${diff.inMinutes} menit lalu';
-      if (diff.inDays < 1)    return '${diff.inHours} jam lalu';
+      if (diff.inHours < 1) return '${diff.inMinutes} menit lalu';
+      if (diff.inDays < 1) return '${diff.inHours} jam lalu';
       return '${diff.inDays} hari lalu';
     } catch (_) {
       return isoString;
@@ -243,8 +270,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       final response = await ApiService.get('/tags/popular?limit=15');
       if (mounted && response['success'] == true) {
         final list = response['data'] as List;
-        setState(() =>
-            _popularTags = list.map((e) => Map<String, dynamic>.from(e)).toList());
+        setState(
+          () => _popularTags = list
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        );
       }
     } catch (e) {
       debugPrint('Error loading popular tags: $e');
@@ -255,11 +285,22 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     try {
       final categories = await CategoryClient.getCategories();
       if (mounted) {
-        setState(() => _categories = categories);
+        setState(
+          () => _categories = categories
+              .map((category) => {...category, 'id': _toInt(category['id'])})
+              .where((category) => category['id'] != null)
+              .toList(),
+        );
       }
     } catch (e) {
       debugPrint('Error loading categories: $e');
     }
+  }
+
+  int? _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   Future<void> _loadUserAvatar() async {
@@ -279,17 +320,24 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
   Future<void> _searchTags(String query) async {
     if (query.isEmpty) {
-      setState(() { _isSearchingTags = false; _userCreatedTags.clear(); });
+      setState(() {
+        _isSearchingTags = false;
+        _userCreatedTags.clear();
+      });
       return;
     }
     setState(() => _isSearchingTags = true);
     try {
       final response = await ApiService.get(
-          '/tags/search?q=${Uri.encodeComponent(query)}&limit=10');
+        '/tags/search?q=${Uri.encodeComponent(query)}&limit=10',
+      );
       if (mounted && response['success'] == true) {
         final list = response['data'] as List;
-        setState(() =>
-            _userCreatedTags = list.map((e) => Map<String, dynamic>.from(e)).toList());
+        setState(
+          () => _userCreatedTags = list
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        );
       }
     } catch (e) {
       debugPrint('Error searching tags: $e');
@@ -304,20 +352,21 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
     for (final tag in [..._userCreatedTags, ..._popularTags]) {
       final name = tag['name']?.toString().trim().toLowerCase();
-      final id   = tag['id'];
+      final id = tag['id'];
       if (name == normalized && id is num) return tag;
     }
 
     try {
       final response = await ApiService.get(
-          '/tags/search?q=${Uri.encodeComponent(tagName.trim())}&limit=20');
+        '/tags/search?q=${Uri.encodeComponent(tagName.trim())}&limit=20',
+      );
       if (response['success'] == true) {
         final list = (response['data'] as List)
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
         for (final tag in list) {
           final name = tag['name']?.toString().trim().toLowerCase();
-          final id   = tag['id'];
+          final id = tag['id'];
           if (name == normalized && id is num) return tag;
         }
       }
@@ -329,7 +378,12 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   Future<void> _addTagByName(String tagName) async {
     if (_selectedTagIds.length >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Maximum 3 tags per recipe', 'Maksimal 3 tag per resep'))));
+        SnackBar(
+          content: Text(
+            _t('Maximum 3 tags per recipe', 'Maksimal 3 tag per resep'),
+          ),
+        ),
+      );
       return;
     }
     final existingTag = await _findExistingTagByName(tagName);
@@ -337,17 +391,26 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                _t('Tag is not available yet. Add it from Manage Community Tags first.', 'Tag belum tersedia. Tambahkan dulu lewat Kelola Tag Komunitas.'))),
+          content: Text(
+            _t(
+              'Tag is not available yet. Add it from Manage Community Tags first.',
+              'Tag belum tersedia. Tambahkan dulu lewat Kelola Tag Komunitas.',
+            ),
+          ),
+        ),
       );
       return;
     }
-    final resolvedName = existingTag['name']?.toString().trim() ?? tagName.trim();
-    final resolvedId   = (existingTag['id'] as num).toInt();
+    final resolvedName =
+        existingTag['name']?.toString().trim() ?? tagName.trim();
+    final resolvedId = (existingTag['id'] as num).toInt();
     if (_selectedTagIds.contains(resolvedId) ||
         _selectedTags.contains(resolvedName)) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Tag already added', 'Tag sudah ditambahkan'))));
+        SnackBar(
+          content: Text(_t('Tag already added', 'Tag sudah ditambahkan')),
+        ),
+      );
       return;
     }
     setState(() {
@@ -369,11 +432,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     }
 
     final resolvedNames = <String>[];
-    final resolvedIds   = <int>[];
+    final resolvedIds = <int>[];
 
     for (final name in _selectedTags) {
-      final found        = await _findExistingTagByName(name);
-      final id           = found?['id'];
+      final found = await _findExistingTagByName(name);
+      final id = found?['id'];
       final resolvedName = found?['name']?.toString().trim();
       if (id is num && resolvedName != null && resolvedName.isNotEmpty) {
         final intId = id.toInt();
@@ -386,7 +449,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
 
     if (!mounted) return;
     setState(() {
-      _selectedTags   = resolvedNames;
+      _selectedTags = resolvedNames;
       _selectedTagIds = resolvedIds;
     });
   }
@@ -452,10 +515,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   Future<void> _pickImageFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
-          source: ImageSource.gallery,
-          maxWidth: 800,
-          maxHeight: 800,
-          imageQuality: 80);
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
       if (image != null) {
         if (kIsWeb) {
           final bytes = await image.readAsBytes();
@@ -466,8 +530,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -475,17 +540,23 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   Future<void> _pickImageFromCamera() async {
     try {
       final XFile? image = await _picker.pickImage(
-          source: ImageSource.camera,
-          maxWidth: 800,
-          maxHeight: 800,
-          imageQuality: 80);
+        source: ImageSource.camera,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 80,
+      );
       if (image != null && mounted) {
         setState(() => _imageFile = File(image.path));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${_t('Failed to open camera', 'Gagal membuka kamera')}: $e')));
+          SnackBar(
+            content: Text(
+              '${_t('Failed to open camera', 'Gagal membuka kamera')}: $e',
+            ),
+          ),
+        );
       }
     }
   }
@@ -493,15 +564,23 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   Future<void> _pickVideo() async {
     try {
       final XFile? video = await _picker.pickVideo(
-          source: ImageSource.gallery,
-          maxDuration: const Duration(minutes: 5));
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 5),
+      );
       if (video != null) {
         final fileSize = await video.length();
         if (fileSize > 50 * 1024 * 1024) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(_t('Video is too large! Maximum 50MB', 'Video terlalu besar! Maksimal 50MB'))));
+              SnackBar(
+                content: Text(
+                  _t(
+                    'Video is too large! Maximum 50MB',
+                    'Video terlalu besar! Maksimal 50MB',
+                  ),
+                ),
+              ),
+            );
           }
           return;
         }
@@ -516,7 +595,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         } else {
           if (mounted) {
             setState(() {
-              _videoFile     = File(video.path);
+              _videoFile = File(video.path);
               _videoFileName = video.name;
             });
           }
@@ -524,17 +603,22 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${_t('Error choosing video', 'Error memilih video')}: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${_t('Error choosing video', 'Error memilih video')}: $e',
+            ),
+          ),
+        );
       }
     }
   }
 
   void _removeVideo() => setState(() {
-        _videoFile     = null;
-        _webVideoBytes = null;
-        _videoFileName = null;
-      });
+    _videoFile = null;
+    _webVideoBytes = null;
+    _videoFileName = null;
+  });
 
   // ─────────────────────────────────────────────
   // INGREDIENTS & STEPS
@@ -543,7 +627,12 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   void _addIngredient() {
     if (_tempIngredientController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Ingredient cannot be empty', 'Bahan tidak boleh kosong'))));
+        SnackBar(
+          content: Text(
+            _t('Ingredient cannot be empty', 'Bahan tidak boleh kosong'),
+          ),
+        ),
+      );
       return;
     }
     setState(() {
@@ -556,7 +645,12 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   void _addStep() {
     if (_tempStepController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Step cannot be empty', 'Langkah tidak boleh kosong'))));
+        SnackBar(
+          content: Text(
+            _t('Step cannot be empty', 'Langkah tidak boleh kosong'),
+          ),
+        ),
+      );
       return;
     }
     setState(() {
@@ -583,28 +677,55 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   Future<void> _submitRecipe() async {
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Recipe title is required', 'Judul resep harus diisi'))));
+        SnackBar(
+          content: Text(
+            _t('Recipe title is required', 'Judul resep harus diisi'),
+          ),
+        ),
+      );
       return;
     }
     if (_selectedCategoryId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Choose a category first', 'Pilih kategori terlebih dahulu'))));
+        SnackBar(
+          content: Text(
+            _t('Choose a category first', 'Pilih kategori terlebih dahulu'),
+          ),
+        ),
+      );
       return;
     }
     if (_imageFile == null && _webImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(_t('Choose a recipe image first', 'Pilih gambar resep terlebih dahulu'))));
+        SnackBar(
+          content: Text(
+            _t(
+              'Choose a recipe image first',
+              'Pilih gambar resep terlebih dahulu',
+            ),
+          ),
+        ),
+      );
       return;
     }
     if (_ingredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Add at least 1 ingredient', 'Tambahkan minimal 1 bahan'))));
+        SnackBar(
+          content: Text(
+            _t('Add at least 1 ingredient', 'Tambahkan minimal 1 bahan'),
+          ),
+        ),
+      );
       return;
     }
     if (_steps.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_t('Add at least 1 step', 'Tambahkan minimal 1 langkah'))));
+        SnackBar(
+          content: Text(
+            _t('Add at least 1 step', 'Tambahkan minimal 1 langkah'),
+          ),
+        ),
+      );
       return;
     }
 
@@ -613,8 +734,15 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       final parsed = int.tryParse(_caloriesController.text.trim());
       if (parsed == null || parsed < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(_t('Calories must be a positive number', 'Kalori harus berupa angka positif'))));
+          SnackBar(
+            content: Text(
+              _t(
+                'Calories must be a positive number',
+                'Kalori harus berupa angka positif',
+              ),
+            ),
+          ),
+        );
         return;
       }
       calories = parsed;
@@ -630,8 +758,13 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
-                    _t('Invalid tag. Choose a tag from the available list.', 'Tag tidak valid. Pilih tag dari daftar yang tersedia.'))),
+              content: Text(
+                _t(
+                  'Invalid tag. Choose a tag from the available list.',
+                  'Tag tidak valid. Pilih tag dari daftar yang tersedia.',
+                ),
+              ),
+            ),
           );
         }
         setState(() => _isUploading = false);
@@ -645,26 +778,27 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       if (!kIsWeb && _videoFile != null) videoPath = _videoFile!.path;
 
       final fields = <String, String>{
-        'user_id'     : userId,
-        'title'       : _titleController.text.trim(),
-        'description' : _descriptionController.text.trim(),
-        'category_id' : _selectedCategoryId.toString(),
-        'cooking_time': (int.tryParse(_cookingTimeController.text) ?? 0).toString(),
-        'servings'    : (int.tryParse(_servingsController.text) ?? 1).toString(),
-        'difficulty'  : _selectedDifficulty,
+        'user_id': userId,
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'category_id': _selectedCategoryId.toString(),
+        'cooking_time': (int.tryParse(_cookingTimeController.text) ?? 0)
+            .toString(),
+        'servings': (int.tryParse(_servingsController.text) ?? 1).toString(),
+        'difficulty': _selectedDifficulty,
         if (calories != null) 'calories': calories.toString(),
       };
 
       final jsonBody = <String, dynamic>{
-        'user_id'     : userId,
-        'title'       : _titleController.text.trim(),
-        'description' : _descriptionController.text.trim(),
-        'category_id' : _selectedCategoryId,
+        'user_id': userId,
+        'title': _titleController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'category_id': _selectedCategoryId,
         'cooking_time': int.tryParse(_cookingTimeController.text) ?? 0,
-        'servings'    : int.tryParse(_servingsController.text) ?? 1,
-        'difficulty'  : _selectedDifficulty,
-        'ingredients' : _ingredients,
-        'steps'       : _steps,
+        'servings': int.tryParse(_servingsController.text) ?? 1,
+        'difficulty': _selectedDifficulty,
+        'ingredients': _ingredients,
+        'steps': _steps,
         if (calories != null) 'calories': calories,
         if (_selectedTagIds.isNotEmpty) 'tags': _selectedTagIds,
       };
@@ -677,9 +811,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           fields: {
             ...fields,
             'ingredients': _ingredients.join('||'),
-            'steps'      : _steps.join('||'),
-            if (_selectedTagIds.isNotEmpty)
-              'tags': _selectedTagIds.join(','),
+            'steps': _steps.join('||'),
+            if (_selectedTagIds.isNotEmpty) 'tags': _selectedTagIds.join(','),
           },
         );
       } else {
@@ -698,20 +831,28 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           await DraftService.clearCreateDraft();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content:
-                  Text(_t('Recipe submitted! Waiting for admin approval.', 'Resep berhasil dikirim! Menunggu persetujuan admin.')),
+              content: Text(
+                _t(
+                  'Recipe submitted! Waiting for admin approval.',
+                  'Resep berhasil dikirim! Menunggu persetujuan admin.',
+                ),
+              ),
               backgroundColor: Colors.green,
             ),
           );
           Navigator.pop(context, true);
         } else {
-          throw Exception(response['message'] ?? _t('Failed to create recipe', 'Gagal membuat resep'));
+          throw Exception(
+            response['message'] ??
+                _t('Failed to create recipe', 'Gagal membuat resep'),
+          );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -746,8 +887,10 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 ),
               ],
             ),
-      bottomNavigationBar:
-          CustomBottomNav(currentIndex: 2, avatarUrl: _userAvatarUrl),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: 2,
+        avatarUrl: _userAvatarUrl,
+      ),
     );
   }
 
@@ -765,12 +908,16 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+              ),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded,
-                color: AppTheme.primaryDark),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.primaryDark,
+            ),
             onPressed: () async {
               await _saveDraft();
               if (mounted) Navigator.pop(context);
@@ -780,8 +927,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration:
-              const BoxDecoration(gradient: AppTheme.primaryGradient),
+          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
@@ -797,33 +943,46 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                           color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              width: 2),
+                            color: Colors.white.withValues(alpha: 0.5),
+                            width: 2,
+                          ),
                         ),
-                        child: const Icon(Icons.restaurant_menu_rounded,
-                            color: Colors.white, size: 32),
+                        child: const Icon(
+                          Icons.restaurant_menu_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_t('Create New Recipe', 'Buat Resep Baru'),
-                                style: AppTheme.headingLarge),
+                            Text(
+                              _t('Create New Recipe', 'Buat Resep Baru'),
+                              style: AppTheme.headingLarge,
+                            ),
                             const SizedBox(height: 4),
-                            Row(children: [
-                              const Icon(Icons.auto_awesome_rounded,
-                                  color: Colors.white70, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                _t('Draft auto-saved', 'Draft tersimpan otomatis'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                      Colors.white.withValues(alpha: 0.8),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.white70,
+                                  size: 12,
                                 ),
-                              ),
-                            ]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _t(
+                                    'Draft auto-saved',
+                                    'Draft tersimpan otomatis',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -851,21 +1010,32 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [
-                AppTheme.primaryCoral.withValues(alpha: 0.2),
-                AppTheme.primaryOrange.withValues(alpha: 0.2),
-              ]),
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryCoral.withValues(alpha: 0.2),
+                  AppTheme.primaryOrange.withValues(alpha: 0.2),
+                ],
+              ),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add_photo_alternate_rounded,
-                size: 60, color: AppTheme.primaryCoral),
+            child: const Icon(
+              Icons.add_photo_alternate_rounded,
+              size: 60,
+              color: AppTheme.primaryCoral,
+            ),
           ),
           const SizedBox(height: 16),
-          Text(_t('Tap to choose a recipe image', 'Tap untuk memilih gambar resep'),
-              style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            _t(
+              'Tap to choose a recipe image',
+              'Tap untuk memilih gambar resep',
+            ),
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       );
     }
@@ -878,8 +1048,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           GestureDetector(
             onTap: _pickImage,
             child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
               child: Stack(
                 children: [
                   Container(
@@ -893,31 +1064,38 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                     right: 16,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         gradient: AppTheme.accentGradient,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4))
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.add_a_photo_rounded,
-                              color: Colors.white, size: 20),
+                          const Icon(
+                            Icons.add_a_photo_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             _imageFile != null || _webImageBytes != null
                                 ? _t('Change Image', 'Ganti Gambar')
                                 : _t('Choose Image', 'Pilih Gambar'),
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -933,49 +1111,71 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppTheme.buildSectionHeader(
-                    _t('Basic Information', 'Informasi Dasar'), Icons.info_outline_rounded),
+                  _t('Basic Information', 'Informasi Dasar'),
+                  Icons.info_outline_rounded,
+                ),
                 const SizedBox(height: 20),
                 _buildTextField(
-                    controller: _titleController,
-                    hint: _t('Recipe Title (example: Special Fried Rice)', 'Judul Resep (contoh: Nasi Goreng Spesial)'),
-                    icon: Icons.restaurant_rounded),
+                  controller: _titleController,
+                  hint: _t(
+                    'Recipe Title (example: Special Fried Rice)',
+                    'Judul Resep (contoh: Nasi Goreng Spesial)',
+                  ),
+                  icon: Icons.restaurant_rounded,
+                ),
                 const SizedBox(height: 16),
                 _buildTextField(
-                    controller: _descriptionController,
-                    hint: _t('Short description of your recipe...', 'Deskripsi singkat resep Anda...'),
-                    icon: Icons.description_rounded,
-                    maxLines: 3),
+                  controller: _descriptionController,
+                  hint: _t(
+                    'Short description of your recipe...',
+                    'Deskripsi singkat resep Anda...',
+                  ),
+                  icon: Icons.description_rounded,
+                  maxLines: 3,
+                ),
                 const SizedBox(height: 20),
-                Row(children: [
-                  Expanded(child: _buildCategoryDropdown()),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildDifficultyDropdown()),
-                ]),
+                Row(
+                  children: [
+                    Expanded(child: _buildCategoryDropdown()),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildDifficultyDropdown()),
+                  ],
+                ),
                 const SizedBox(height: 20),
-                Row(children: [
-                  Expanded(
+                Row(
+                  children: [
+                    Expanded(
                       child: _buildQuickInfoChip(
-                          controller: _cookingTimeController,
-                          label: _t('Time (min)', 'Waktu (min)'),
-                          hint: '30',
-                          icon: Icons.access_time_rounded,
-                          color: AppTheme.primaryTeal)),
-                  const SizedBox(width: 12),
-                  Expanded(
+                        controller: _cookingTimeController,
+                        label: _t('Time (min)', 'Waktu (min)'),
+                        hint: '30',
+                        icon: Icons.access_time_rounded,
+                        color: AppTheme.primaryTeal,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: _buildQuickInfoChip(
-                          controller: _servingsController,
-                          label: _t('Servings', 'Porsi'),
-                          hint: '4',
-                          icon: Icons.restaurant_menu_rounded,
-                          color: AppTheme.primaryCoral)),
-                ]),
+                        controller: _servingsController,
+                        label: _t('Servings', 'Porsi'),
+                        hint: '4',
+                        icon: Icons.restaurant_menu_rounded,
+                        color: AppTheme.primaryCoral,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 _buildQuickInfoChip(
-                    controller: _caloriesController,
-                    label: _t('Calories (kcal) - Optional', 'Kalori (kcal) - Opsional'),
-                    hint: '250',
-                    icon: Icons.local_fire_department_rounded,
-                    color: AppTheme.primaryOrange),
+                  controller: _caloriesController,
+                  label: _t(
+                    'Calories (kcal) - Optional',
+                    'Kalori (kcal) - Opsional',
+                  ),
+                  hint: '250',
+                  icon: Icons.local_fire_department_rounded,
+                  color: AppTheme.primaryOrange,
+                ),
               ],
             ),
           ),
@@ -992,7 +1192,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppTheme.buildSectionHeader(
-              _t('Ingredients', 'Bahan-bahan'), Icons.restaurant_menu_rounded),
+            _t('Ingredients', 'Bahan-bahan'),
+            Icons.restaurant_menu_rounded,
+          ),
           const SizedBox(height: 16),
           _buildIngredientInput(),
           const SizedBox(height: 12),
@@ -1001,7 +1203,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           const Divider(height: 1),
           const SizedBox(height: 28),
           AppTheme.buildSectionHeader(
-              _t('Steps', 'Langkah-langkah'), Icons.format_list_numbered_rounded),
+            _t('Steps', 'Langkah-langkah'),
+            Icons.format_list_numbered_rounded,
+          ),
           const SizedBox(height: 16),
           _buildStepInput(),
           const SizedBox(height: 12),
@@ -1010,13 +1214,18 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
           const Divider(height: 1),
           const SizedBox(height: 28),
           AppTheme.buildSectionHeader(
-              _t('Video Tutorial (Optional)', 'Video Tutorial (Opsional)'), Icons.videocam_rounded),
+            _t('Video Tutorial (Optional)', 'Video Tutorial (Opsional)'),
+            Icons.videocam_rounded,
+          ),
           const SizedBox(height: 16),
           _buildVideoUpload(),
           const SizedBox(height: 28),
           const Divider(height: 1),
           const SizedBox(height: 28),
-          AppTheme.buildSectionHeader(_t('Recipe Tags', 'Tag Resep'), Icons.label_rounded),
+          AppTheme.buildSectionHeader(
+            _t('Recipe Tags', 'Tag Resep'),
+            Icons.label_rounded,
+          ),
           const SizedBox(height: 16),
           _buildTagInput(),
         ],
@@ -1031,30 +1240,43 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       child: Column(
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: AppTheme.primaryTeal.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: AppTheme.primaryTeal.withValues(alpha: 0.2)),
+                color: AppTheme.primaryTeal.withValues(alpha: 0.2),
+              ),
             ),
-            child: Row(children: [
-              Icon(Icons.save_outlined,
-                  color: AppTheme.primaryTeal, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                _t('This form is auto-saved as a draft', 'Form ini tersimpan otomatis sebagai draft'),
-                style: TextStyle(
+            child: Row(
+              children: [
+                Icon(
+                  Icons.save_outlined,
+                  color: AppTheme.primaryTeal,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _t(
+                    'This form is auto-saved as a draft',
+                    'Form ini tersimpan otomatis sebagai draft',
+                  ),
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.primaryTeal,
-                    fontWeight: FontWeight.w500),
-              ),
-            ]),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
           AppTheme.buildInfoBanner(
-              _t('Your recipe will be reviewed by an admin before publication', 'Resep Anda akan ditinjau oleh admin sebelum dipublikasikan')),
+            _t(
+              'Your recipe will be reviewed by an admin before publication',
+              'Resep Anda akan ditinjau oleh admin sebelum dipublikasikan',
+            ),
+          ),
           const SizedBox(height: 20),
           Container(
             width: double.infinity,
@@ -1064,9 +1286,10 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                    color: AppTheme.primaryOrange.withValues(alpha: 0.4),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8))
+                  color: AppTheme.primaryOrange.withValues(alpha: 0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
               ],
             ),
             child: ElevatedButton(
@@ -1076,16 +1299,22 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                 shadowColor: Colors.transparent,
                 disabledBackgroundColor: Colors.grey.shade300,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: _isUploading
                   ? const SizedBox(
                       height: 24,
                       width: 24,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2.5, color: Colors.white))
-                  : Text(_t('Publish Recipe', 'Publikasikan Resep'),
-                      style: AppTheme.buttonText),
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      _t('Publish Recipe', 'Publikasikan Resep'),
+                      style: AppTheme.buttonText,
+                    ),
             ),
           ),
         ],
@@ -1110,62 +1339,269 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         maxLines: maxLines,
         style: AppTheme.fieldText,
         decoration: AppTheme.buildInputDecoration(
-            hint: hint, icon: icon, maxLines: maxLines),
+          hint: hint,
+          icon: icon,
+          maxLines: maxLines,
+        ),
       ),
     );
   }
 
   Widget _buildCategoryDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-      child: DropdownButton<int>(
-        value: _selectedCategoryId,
-        isExpanded: true,
-        underline: Container(),
-        hint: Text(_t('Category', 'Kategori'),
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
-        items: _categories
-            .map((cat) => DropdownMenuItem<int>(
-                value: cat['id'],
-                child: Text(cat['name'],
-                    style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))))
-            .toList(),
-        onChanged: (value) {
-          setState(() => _selectedCategoryId = value);
-          _scheduleDraftSave();
-        },
-      ),
+    Map<String, dynamic>? selected;
+    for (final category in _categories) {
+      if (category['id'] == _selectedCategoryId) {
+        selected = category;
+        break;
+      }
+    }
+
+    return _buildSelectorTile(
+      label: _t('Category', 'Kategori'),
+      value: selected?['name']?.toString() ?? _t('Choose', 'Pilih'),
+      icon: Icons.category_rounded,
+      isPlaceholder: selected == null,
+      onTap: _showCategoryPicker,
     );
   }
 
   Widget _buildDifficultyDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-      child: DropdownButton<String>(
-        value: _selectedDifficulty,
-        isExpanded: true,
-        underline: Container(),
-        items: [
-          DropdownMenuItem(
-              value: 'mudah',
-              child: Text(_t('Easy', 'Mudah'), style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
-          DropdownMenuItem(
-              value: 'sedang',
-              child: Text(_t('Medium', 'Sedang'), style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
-          DropdownMenuItem(
-              value: 'sulit',
-              child: Text(_t('Hard', 'Sulit'), style: TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
-        ],
-        onChanged: (value) {
-          if (value != null) {
-            setState(() => _selectedDifficulty = value);
-            _scheduleDraftSave();
-          }
-        },
+    return _buildSelectorTile(
+      label: _t('Difficulty', 'Kesulitan'),
+      value: _difficultyLabel(_selectedDifficulty),
+      icon: Icons.bar_chart_rounded,
+      onTap: _showDifficultyPicker,
+    );
+  }
+
+  Widget _buildSelectorTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool isPlaceholder = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 58),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: AppTheme.primaryCoral),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isPlaceholder
+                            ? AppTheme.textSecondary
+                            : AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppTheme.textSecondary,
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Future<void> _showCategoryPicker() async {
+    if (_categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _t('Categories are still loading', 'Kategori masih dimuat'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final value = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: AppTheme.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: _buildPickerSheet<int>(
+          title: _t('Choose category', 'Pilih kategori'),
+          items: _categories
+              .map(
+                (category) => _PickerItem<int>(
+                  value: category['id'] as int,
+                  label: category['name']?.toString() ?? '-',
+                ),
+              )
+              .toList(),
+          selectedValue: _selectedCategoryId,
+        ),
+      ),
+    );
+
+    if (value != null) {
+      setState(() => _selectedCategoryId = value);
+      _scheduleDraftSave();
+    }
+  }
+
+  Future<void> _showDifficultyPicker() async {
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppTheme.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        child: _buildPickerSheet<String>(
+          title: _t('Choose difficulty', 'Pilih kesulitan'),
+          items: [
+            _PickerItem(value: 'mudah', label: _t('Easy', 'Mudah')),
+            _PickerItem(value: 'sedang', label: _t('Medium', 'Sedang')),
+            _PickerItem(value: 'sulit', label: _t('Hard', 'Sulit')),
+          ],
+          selectedValue: _selectedDifficulty,
+        ),
+      ),
+    );
+
+    if (value != null) {
+      setState(() => _selectedDifficulty = value);
+      _scheduleDraftSave();
+    }
+  }
+
+  Widget _buildPickerSheet<T>({
+    required String title,
+    required List<_PickerItem<T>> items,
+    required T? selectedValue,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.borderColor,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: items.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = items[index];
+                final selected = item.value == selectedValue;
+                return InkWell(
+                  onTap: () => Navigator.pop(context, item.value),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.primaryCoral.withValues(alpha: 0.14)
+                          : AppTheme.subtleSurfaceColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected
+                            ? AppTheme.primaryCoral
+                            : AppTheme.borderColor,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: selected
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (selected)
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppTheme.primaryCoral,
+                            size: 20,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _difficultyLabel(String value) {
+    switch (value) {
+      case 'sedang':
+        return _t('Medium', 'Sedang');
+      case 'sulit':
+        return _t('Hard', 'Sulit');
+      default:
+        return _t('Easy', 'Mudah');
+    }
   }
 
   Widget _buildQuickInfoChip({
@@ -1178,45 +1614,50 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [
-          color.withValues(alpha: 0.1),
-          color.withValues(alpha: 0.05),
-        ]),
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+        ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
-      child: Row(children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
                   style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                      fontWeight: FontWeight.w500)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: color),
-                decoration: InputDecoration(
+                    color: color,
+                  ),
+                  decoration: InputDecoration(
                     hintText: hint,
-                    hintStyle:
-                        TextStyle(color: Colors.grey.shade400),
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
-                    isDense: true),
-              ),
-            ],
+                    isDense: true,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -1224,79 +1665,107 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-      child: Row(children: [
-        Expanded(
-          child: TextField(
-            controller: _tempIngredientController,
-            style: AppTheme.fieldText,
-            decoration: InputDecoration(
-              hintText: _t('Add ingredient (example: 2 cloves garlic)', 'Tambah bahan (contoh: 2 siung bawang putih)'),
-              hintStyle: AppTheme.fieldHint,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _tempIngredientController,
+              style: AppTheme.fieldText,
+              decoration: InputDecoration(
+                hintText: _t(
+                  'Add ingredient (example: 2 cloves garlic)',
+                  'Tambah bahan (contoh: 2 siung bawang putih)',
+                ),
+                hintStyle: AppTheme.fieldHint,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
             ),
           ),
-        ),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
               gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(10)),
-          child: IconButton(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
               onPressed: _addIngredient,
               icon: const Icon(Icons.add, color: Colors.white, size: 20),
-              padding: EdgeInsets.zero),
-        ),
-      ]),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildIngredientsList() {
     if (_ingredients.isEmpty) {
       return AppTheme.buildEmptyState(
-          icon: Icons.restaurant_menu_rounded, title: _t('No ingredients yet', 'Belum ada bahan'));
+        icon: Icons.restaurant_menu_rounded,
+        title: _t('No ingredients yet', 'Belum ada bahan'),
+      );
     }
     return Column(
       children: _ingredients.asMap().entries.map((entry) {
-        final index      = entry.key;
+        final index = entry.key;
         final ingredient = entry.value;
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-          child: Row(children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: const BoxDecoration(
                   gradient: AppTheme.accentGradient,
-                  shape: BoxShape.circle),
-              child: Center(
-                  child: Text('${index + 1}',
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white))),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(ingredient,
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w500))),
-            GestureDetector(
-              onTap: () => _removeIngredient(index),
-              child: Container(
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  ingredient,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _removeIngredient(index),
+                child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                      color: Colors.red.shade50, shape: BoxShape.circle),
-                  child: Icon(Icons.close,
-                      size: 16, color: Colors.red.shade600)),
-            ),
-          ]),
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.red.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }).toList(),
     );
@@ -1306,91 +1775,121 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(
-          child: TextField(
-            controller: _tempStepController,
-            maxLines: 2,
-            style: AppTheme.fieldText,
-            decoration: InputDecoration(
-              hintText:
-                  _t('Add step (example: Heat oil in a pan...)', 'Tambah langkah (contoh: Panaskan minyak di wajan...)'),
-              hintStyle: AppTheme.fieldHint,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _tempStepController,
+              maxLines: 2,
+              style: AppTheme.fieldText,
+              decoration: InputDecoration(
+                hintText: _t(
+                  'Add step (example: Heat oil in a pan...)',
+                  'Tambah langkah (contoh: Panaskan minyak di wajan...)',
+                ),
+                hintStyle: AppTheme.fieldHint,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
             ),
           ),
-        ),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
               gradient: AppTheme.accentGradient,
-              borderRadius: BorderRadius.circular(10)),
-          child: IconButton(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
               onPressed: _addStep,
               icon: Icon(Icons.add, color: Colors.white, size: 20),
-              padding: EdgeInsets.zero),
-        ),
-      ]),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildStepsList() {
     if (_steps.isEmpty) {
       return AppTheme.buildEmptyState(
-          icon: Icons.format_list_numbered_rounded,
-          title: _t('No steps yet', 'Belum ada langkah'));
+        icon: Icons.format_list_numbered_rounded,
+        title: _t('No steps yet', 'Belum ada langkah'),
+      );
     }
     return Column(
       children: _steps.asMap().entries.map((entry) {
         final index = entry.key;
-        final step  = entry.value;
+        final step = entry.value;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [
-              AppTheme.primaryCoral.withValues(alpha: 0.1),
-              AppTheme.primaryOrange.withValues(alpha: 0.05),
-            ]),
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryCoral.withValues(alpha: 0.1),
+                AppTheme.primaryOrange.withValues(alpha: 0.05),
+              ],
+            ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: AppTheme.primaryCoral.withValues(alpha: 0.2)),
-          ),
-          child:
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                  gradient: AppTheme.accentGradient,
-                  borderRadius: BorderRadius.circular(10)),
-              child: Center(
-                  child: Text('${index + 1}',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white))),
+              color: AppTheme.primaryCoral.withValues(alpha: 0.2),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-                child: Text(step,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    '${index + 1}',
                     style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textPrimary,
-                        height: 1.5))),
-            GestureDetector(
-              onTap: () => _removeStep(index),
-              child: Container(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  step,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _removeStep(index),
+                child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                      color: Colors.red.shade50, shape: BoxShape.circle),
-                  child: Icon(Icons.close,
-                      size: 16, color: Colors.red.shade600)),
-            ),
-          ]),
+                    color: Colors.red.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.red.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }).toList(),
     );
@@ -1404,70 +1903,90 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
-          child: Row(children: [
-            Expanded(
-              child: TextField(
-                controller: _tagInputController,
-                style: AppTheme.fieldText,
-                // FIX: debounce 350ms, bukan langsung fire ke API
-                onChanged: (q) {
-                  _debounce?.cancel();
-                  _debounce = Timer(
-                    const Duration(milliseconds: 350),
-                    () => _searchTags(q),
-                  );
-                  setState(() {}); // update suffixIcon
-                },
-                decoration: InputDecoration(
-                  hintText: _t('Search or add tags (max 3)', 'Cari atau tambahkan tag (max 3)'),
-                  hintStyle: AppTheme.fieldHint,
-                  prefixIcon: Icon(Icons.tag_rounded,
-                      color: AppTheme.textSecondary, size: 20),
-                  suffixIcon: _tagInputController.text.isNotEmpty
-                      ? IconButton(
-                          onPressed: () => setState(() {
-                            _tagInputController.clear();
-                            _userCreatedTags.clear();
-                            _isSearchingTags = false;
-                          }),
-                          icon: Icon(Icons.clear, size: 20, color: AppTheme.textSecondary))
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _tagInputController,
+                  style: AppTheme.fieldText,
+                  // FIX: debounce 350ms, bukan langsung fire ke API
+                  onChanged: (q) {
+                    _debounce?.cancel();
+                    _debounce = Timer(
+                      const Duration(milliseconds: 350),
+                      () => _searchTags(q),
+                    );
+                    setState(() {}); // update suffixIcon
+                  },
+                  decoration: InputDecoration(
+                    hintText: _t(
+                      'Search or add tags (max 3)',
+                      'Cari atau tambahkan tag (max 3)',
+                    ),
+                    hintStyle: AppTheme.fieldHint,
+                    prefixIcon: Icon(
+                      Icons.tag_rounded,
+                      color: AppTheme.textSecondary,
+                      size: 20,
+                    ),
+                    suffixIcon: _tagInputController.text.isNotEmpty
+                        ? IconButton(
+                            onPressed: () => setState(() {
+                              _tagInputController.clear();
+                              _userCreatedTags.clear();
+                              _isSearchingTags = false;
+                            }),
+                            icon: Icon(
+                              Icons.clear,
+                              size: 20,
+                              color: AppTheme.textSecondary,
+                            ),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
                   gradient: AppTheme.accentGradient,
-                  borderRadius: BorderRadius.circular(10)),
-              child: IconButton(
-                onPressed: () async {
-                  if (_tagInputController.text.trim().isNotEmpty) {
-                    await _addTagByName(_tagInputController.text.trim());
-                  }
-                },
-                icon: const Icon(Icons.add, color: Colors.white, size: 20),
-                padding: EdgeInsets.zero,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: IconButton(
+                  onPressed: () async {
+                    if (_tagInputController.text.trim().isNotEmpty) {
+                      await _addTagByName(_tagInputController.text.trim());
+                    }
+                  },
+                  icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                  padding: EdgeInsets.zero,
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
 
         // ── Kelola tag button ──
-        Row(children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _openTagManagementPage,
-              icon: const Icon(Icons.manage_search_rounded, size: 18),
-              label: Text(_t('Manage Community Tags', 'Kelola Tag Komunitas')),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _openTagManagementPage,
+                icon: const Icon(Icons.manage_search_rounded, size: 18),
+                label: Text(
+                  _t('Manage Community Tags', 'Kelola Tag Komunitas'),
+                ),
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
         const SizedBox(height: 12),
 
         // ── Selected tags ──
@@ -1477,26 +1996,41 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             runSpacing: 8,
             children: _selectedTags.asMap().entries.map((entry) {
               final index = entry.key;
-              final tag   = entry.value;
+              final tag = entry.value;
               return Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: AppTheme.selectedTagDecoration,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.tag_rounded,
-                      size: 14, color: Colors.white),
-                  const SizedBox(width: 6),
-                  Text(tag,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.tag_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      tag,
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 6),
-                  GestureDetector(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    GestureDetector(
                       onTap: () => _removeTag(index),
-                      child: const Icon(Icons.close,
-                          size: 16, color: Colors.white)),
-                ]),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }).toList(),
           ),
@@ -1511,33 +2045,53 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_t('Search Results:', 'Hasil Pencarian:'),
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  _t('Search Results:', 'Hasil Pencarian:'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                ..._userCreatedTags.map((tag) => InkWell(
-                      onTap: () => _addTagByName(tag['name']),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(children: [
-                          Icon(Icons.tag_rounded,
-                              size: 16, color: AppTheme.textSecondary),
+                ..._userCreatedTags.map(
+                  (tag) => InkWell(
+                    onTap: () => _addTagByName(tag['name']),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.tag_rounded,
+                            size: 16,
+                            color: AppTheme.textSecondary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
-                              child: Text(tag['name'],
-                                  style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppTheme.textPrimary))),
+                            child: Text(
+                              tag['name'],
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
                           tag['is_approved'] == true
-                              ? const Icon(Icons.check_circle,
-                                  color: Colors.green, size: 16)
-                              : const Icon(Icons.pending,
-                                  color: Colors.orange, size: 16),
-                        ]),
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 16,
+                                )
+                              : const Icon(
+                                  Icons.pending,
+                                  color: Colors.orange,
+                                  size: 16,
+                                ),
+                        ],
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1553,11 +2107,14 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_t('Popular Tags:', 'Tag Populer:'),
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  _t('Popular Tags:', 'Tag Populer:'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -1575,8 +2132,12 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                       onTap: () {
                         if (isDisabled) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                  content: Text(_t('Maximum 3 tags', 'Maksimal 3 tag'))));
+                            SnackBar(
+                              content: Text(
+                                _t('Maximum 3 tags', 'Maksimal 3 tag'),
+                              ),
+                            ),
+                          );
                           return;
                         }
                         if (isSelected) {
@@ -1590,18 +2151,18 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: isSelected
                             ? AppTheme.selectedTagDecoration
                             : isDisabled
-                                ? BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius:
-                                        BorderRadius.circular(20),
-                                    border: Border.all(
-                                        color: Colors.grey.shade300),
-                                  )
-                                : AppTheme.unselectedTagDecoration,
+                            ? BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.grey.shade300),
+                              )
+                            : AppTheme.unselectedTagDecoration,
                         child: Text(
                           tag['name'],
                           style: TextStyle(
@@ -1609,8 +2170,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                             color: isSelected
                                 ? Colors.white
                                 : isDisabled
-                                    ? AppTheme.textMuted
-                                    : AppTheme.textPrimary,
+                                ? AppTheme.textMuted
+                                : AppTheme.textPrimary,
                             fontWeight: isSelected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -1632,45 +2193,59 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [
-            AppTheme.primaryTeal.withValues(alpha: 0.1),
-            AppTheme.primaryTeal.withValues(alpha: 0.2),
-          ]),
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryTeal.withValues(alpha: 0.1),
+              AppTheme.primaryTeal.withValues(alpha: 0.2),
+            ],
+          ),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: AppTheme.primaryTeal.withValues(alpha: 0.3)),
+            color: AppTheme.primaryTeal.withValues(alpha: 0.3),
+          ),
         ),
-        child: Row(children: [
-          Container(
+        child: Row(
+          children: [
+            Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                  gradient: AppTheme.tealGradient,
-                  borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.videocam,
-                  color: Colors.white, size: 24)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_t('Video selected successfully', 'Video berhasil dipilih'),
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary)),
-                const SizedBox(height: 4),
-                Text(_videoFileName ?? 'video.mp4',
-                    style: TextStyle(
-                        fontSize: 12, color: AppTheme.textSecondary),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-              ],
+                gradient: AppTheme.tealGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.videocam, color: Colors.white, size: 24),
             ),
-          ),
-          IconButton(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _t('Video selected successfully', 'Video berhasil dipilih'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _videoFileName ?? 'video.mp4',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
               onPressed: _removeVideo,
-              icon: Icon(Icons.close, color: Colors.red.shade600)),
-        ]),
+              icon: Icon(Icons.close, color: Colors.red.shade600),
+            ),
+          ],
+        ),
       );
     }
     return GestureDetector(
@@ -1678,21 +2253,36 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: AppTheme.subtlePanelDecoration,
-        child: Column(children: [
-          Icon(Icons.video_library_rounded,
-              size: 48, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text(_t('Tap to upload a video tutorial', 'Tap untuk upload video tutorial'),
+        child: Column(
+          children: [
+            Icon(
+              Icons.video_library_rounded,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _t(
+                'Tap to upload a video tutorial',
+                'Tap untuk upload video tutorial',
+              ),
               style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500)),
-          const SizedBox(height: 6),
-          Text(_t('Format: MP4 | Max: 50MB | Max duration: 5 minutes', 'Format: MP4 | Max: 50MB | Max durasi: 5 menit'),
-              style:
-                  TextStyle(fontSize: 11, color: AppTheme.textMuted),
-              textAlign: TextAlign.center),
-        ]),
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _t(
+                'Format: MP4 | Max: 50MB | Max duration: 5 minutes',
+                'Format: MP4 | Max: 50MB | Max durasi: 5 menit',
+              ),
+              style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

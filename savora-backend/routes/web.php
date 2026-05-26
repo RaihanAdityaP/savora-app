@@ -13,6 +13,7 @@ use App\Http\Controllers\App\NotificationController;
 use App\Http\Controllers\App\AIChatController;
 use App\Http\Controllers\App\TagController;
 use App\Http\Controllers\App\UploadTokenController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\LandingController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,8 @@ Route::get('/download-apk', function () {
     ]);
 })->name('apk.download');
 Route::get('/license', [LandingController::class, 'license'])->name('license');
+Route::get('/kehadiran', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::post('/kehadiran', [AttendanceController::class, 'store'])->name('attendance.store');
 
 // ── Admin auth ─────────────────────────────────────────────────
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -70,6 +73,8 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('logs',      [AdminWebController::class, 'logs'])->name('logs');
     Route::get('broadcast',  [AdminWebController::class, 'broadcast'])->name('broadcast');
     Route::post('broadcast', [AdminWebController::class, 'sendBroadcast'])->name('broadcast.send');
+    Route::get('kehadiran', [AttendanceController::class, 'adminIndex'])->name('attendance');
+    Route::post('kehadiran/{id}/delete', [AttendanceController::class, 'adminDestroy'])->name('attendance.delete');
 
     Route::post('users/{id}/toggle-ban',     [AdminWebController::class, 'toggleUserBan'])->name('users.toggle-ban');
     Route::post('users/{id}/toggle-premium', [AdminWebController::class, 'togglePremium'])->name('users.toggle-premium');

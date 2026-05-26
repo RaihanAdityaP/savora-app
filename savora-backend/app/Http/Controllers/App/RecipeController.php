@@ -7,6 +7,7 @@ use App\Services\NotificationService;
 use App\Services\SupabaseService;
 use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -138,15 +139,15 @@ class RecipeController extends Controller
         $popularTags = [];
         try {
             // Fetch categories & tags in parallel — reduced columns for speed
-            $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
+            $categories  = Cache::remember('recipe_form_categories', 300, fn () => $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']));
 
             // Limit popular tags to 15 (was 20), only approved
-            $popularTags = $this->supabase->select(
+            $popularTags = Cache::remember('recipe_form_popular_tags', 300, fn () => $this->supabase->select(
                 'tags',
                 ['id', 'name', 'slug'],  // drop usage_count from select for speed
                 ['is_approved' => true],
                 ['order' => 'usage_count.desc', 'limit' => 15]
-            );
+            ));
         } catch (Exception) {}
 
         return view('app.recipes.create', compact('categories', 'popularTags'));
@@ -264,8 +265,8 @@ class RecipeController extends Controller
 
             $tags = array_map(fn($rt) => $rt['tags'], array_filter($recipe['recipe_tags'] ?? [], fn($rt) => $rt['tags'] ?? null));
 
-            $categories  = $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']);
-            $popularTags = $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 15]);
+            $categories  = Cache::remember('recipe_form_categories', 300, fn () => $this->supabase->select('categories', ['id', 'name'], [], ['order' => 'name.asc']));
+            $popularTags = Cache::remember('recipe_form_popular_tags', 300, fn () => $this->supabase->select('tags', ['id', 'name', 'slug'], ['is_approved' => true], ['order' => 'usage_count.desc', 'limit' => 15]));
 
             return view('app.recipes.edit', compact('recipe', 'tags', 'categories', 'popularTags'));
 

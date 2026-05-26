@@ -12,11 +12,7 @@ class AIChatScreen extends StatefulWidget {
   final String? conversationId;
   final String? initialTitle;
 
-  const AIChatScreen({
-    super.key,
-    this.conversationId,
-    this.initialTitle,
-  });
+  const AIChatScreen({super.key, this.conversationId, this.initialTitle});
 
   @override
   State<AIChatScreen> createState() => _AIChatScreenState();
@@ -24,14 +20,14 @@ class AIChatScreen extends StatefulWidget {
 
 class _AIChatScreenState extends State<AIChatScreen> {
   final _messageController = TextEditingController();
-  final _scrollController  = ScrollController();
-  final _imagePicker       = ImagePicker();
+  final _scrollController = ScrollController();
+  final _imagePicker = ImagePicker();
 
   String? _conversationId;
-  String  _conversationTitle = 'Chef AI';
+  String _conversationTitle = 'Chef AI';
   List<Map<String, dynamic>> _messages = [];
-  bool _isLoading        = false;
-  bool _isInitializing   = true;
+  bool _isLoading = false;
+  bool _isInitializing = true;
   File? _selectedImage;
 
   String _t(String en, String id) => AppSettingsService.isEnglish ? en : id;
@@ -69,11 +65,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final data = await AIChatClient.getConversation(id);
     if (data != null && mounted) {
       setState(() {
-        _conversationId    = id;
+        _conversationId = id;
         _conversationTitle = data['title'] ?? 'Chef AI';
-        _messages          = List<Map<String, dynamic>>.from(
-          data['messages'] ?? [],
-        );
+        _messages = List<Map<String, dynamic>>.from(data['messages'] ?? []);
       });
     }
   }
@@ -82,7 +76,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final conv = await AIChatClient.createConversation(title: 'New Chat');
     if (conv != null && mounted) {
       setState(() {
-        _conversationId    = conv['id'];
+        _conversationId = conv['id'];
         _conversationTitle = conv['title'] ?? 'New Chat';
       });
     }
@@ -92,25 +86,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (_messages.isEmpty) {
       setState(() {
         _messages.add({
-          'role'      : 'assistant',
-          'content'   : _t(
+          'role': 'assistant',
+          'content': _t(
             'Hi! I am Savora Chef AI.\n\n'
-            'I can help you with:\n'
-            '- Recipe questions\n'
-            '- Cooking tips and techniques\n'
-            '- Recipe variation ideas\n'
-            '- Food photo analysis\n\n'
-            'What can I help you with?',
+                'I can help you with:\n'
+                '- Recipe questions\n'
+                '- Cooking tips and techniques\n'
+                '- Recipe variation ideas\n'
+                '- Food photo analysis\n\n'
+                'What can I help you with?',
             'Halo! Saya Chef AI Savora.\n\n'
-            'Saya siap membantu Anda dengan:\n'
-            '- Pertanyaan tentang resep\n'
-            '- Tips dan teknik memasak\n'
-            '- Saran variasi resep\n'
-            '- Analisis foto makanan\n\n'
-            'Ada yang bisa saya bantu?',
+                'Saya siap membantu Anda dengan:\n'
+                '- Pertanyaan tentang resep\n'
+                '- Tips dan teknik memasak\n'
+                '- Saran variasi resep\n'
+                '- Analisis foto makanan\n\n'
+                'Ada yang bisa saya bantu?',
           ),
           'is_welcome': true,
-          'is_error'  : false,
+          'is_error': false,
           'created_at': DateTime.now().toIso8601String(),
         });
       });
@@ -129,7 +123,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (_conversationId == null) {
       await _createNewConversation();
       if (_conversationId == null) {
-        _showSnackBar(_t('Failed to create chat session. Check your connection.', 'Gagal membuat sesi chat. Cek koneksi kamu.'), isError: true);
+        _showSnackBar(
+          _t(
+            'Failed to create chat session. Check your connection.',
+            'Gagal membuat sesi chat. Cek koneksi kamu.',
+          ),
+          isError: true,
+        );
         return;
       }
     }
@@ -137,10 +137,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _messageController.clear();
     setState(() {
       _messages.add({
-        'role'      : 'user',
-        'content'   : content,
-        'image_url' : imageUrl,
-        'is_error'  : false,
+        'role': 'user',
+        'content': content,
+        'image_url': imageUrl,
+        'is_error': false,
         'created_at': DateTime.now().toIso8601String(),
       });
       _isLoading = true;
@@ -150,8 +150,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
     try {
       final result = await AIChatClient.sendMessage(
         conversationId: _conversationId!,
-        content       : content,
-        imageUrl      : imageUrl,
+        content: content,
+        imageUrl: imageUrl,
       );
 
       if (mounted && result != null) {
@@ -173,8 +173,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            'role'    : 'assistant',
-            'content' : _getErrorMessage(e.toString()),
+            'role': 'assistant',
+            'content': _getErrorMessage(e.toString()),
             'is_error': true,
             'created_at': DateTime.now().toIso8601String(),
           });
@@ -192,8 +192,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final image = await _imagePicker.pickImage(
-        source      : source,
-        maxWidth    : 1280,
+        source: source,
+        maxWidth: 1280,
         imageQuality: 85,
       );
       if (image != null && mounted) {
@@ -201,7 +201,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _showImagePreview();
       }
     } catch (e) {
-      _showSnackBar(_t('Failed to pick image: $e', 'Gagal memilih gambar: $e'), isError: true);
+      _showSnackBar(
+        _t('Failed to pick image: $e', 'Gagal memilih gambar: $e'),
+        isError: true,
+      );
     }
   }
 
@@ -211,35 +214,47 @@ class _AIChatScreenState extends State<AIChatScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
         decoration: const BoxDecoration(
-          color        : Colors.white,
-          borderRadius : BorderRadius.vertical(top: Radius.circular(20)),
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                margin    : const EdgeInsets.only(top: 12),
-                width     : 40, height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color        : Colors.grey.shade300,
-                  borderRadius : BorderRadius.circular(2),
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
               Padding(
                 padding: EdgeInsets.all(16),
-                child  : Text(_t('Choose Image Source', 'Pilih Sumber Gambar'),
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  _t('Choose Image Source', 'Pilih Sumber Gambar'),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
               ListTile(
                 leading: Icon(Icons.camera_alt, color: Colors.blue.shade700),
-                title  : Text(_t('Camera', 'Kamera')),
-                onTap  : () { Navigator.pop(context); _pickImage(ImageSource.camera); },
+                title: Text(_t('Camera', 'Kamera')),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
               ),
               ListTile(
-                leading: Icon(Icons.photo_library, color: Colors.purple.shade700),
-                title  : Text(_t('Gallery', 'Galeri')),
-                onTap  : () { Navigator.pop(context); _pickImage(ImageSource.gallery); },
+                leading: Icon(
+                  Icons.photo_library,
+                  color: Colors.purple.shade700,
+                ),
+                title: Text(_t('Gallery', 'Galeri')),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
               ),
               const SizedBox(height: 16),
             ],
@@ -254,42 +269,51 @@ class _AIChatScreenState extends State<AIChatScreen> {
     final captionController = TextEditingController();
 
     showModalBottomSheet(
-      context            : context,
-      isScrollControlled : true,
-      backgroundColor    : Colors.transparent,
-      builder            : (_) => Padding(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Padding(
         // Naik saat keyboard muncul
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child  : Container(
-          height    : MediaQuery.of(context).size.height * 0.72,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.72,
           decoration: const BoxDecoration(
-            color        : Colors.white,
-            borderRadius : BorderRadius.vertical(top: Radius.circular(20)),
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             children: [
               // Handle bar
               Container(
-                margin    : const EdgeInsets.only(top: 12),
-                width: 40, height: 4,
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color       : Colors.grey.shade300,
+                  color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
 
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child  : Row(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       _t('Send Image', 'Kirim Gambar'),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
-                      icon     : Icon(Icons.close),
+                      icon: Icon(Icons.close),
                       onPressed: () {
                         setState(() => _selectedImage = null);
                         Navigator.pop(context);
@@ -303,9 +327,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child  : ClipRRect(
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child       : Image.file(_selectedImage!, fit: BoxFit.contain),
+                    child: Image.file(_selectedImage!, fit: BoxFit.contain),
                   ),
                 ),
               ),
@@ -314,26 +338,33 @@ class _AIChatScreenState extends State<AIChatScreen> {
               // Caption input
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child  : Container(
+                child: Container(
                   decoration: BoxDecoration(
-                    color       : AppTheme.subtleSurfaceColor,
+                    color: AppTheme.subtleSurfaceColor,
                     borderRadius: BorderRadius.circular(16),
-                    border      : Border.all(
+                    border: Border.all(
                       color: AppTheme.primaryCoral.withValues(alpha: 0.3),
                     ),
                   ),
                   child: TextField(
-                    controller    : captionController,
-                    maxLines      : 3,
-                    minLines      : 1,
-                    autofocus     : false,
+                    controller: captionController,
+                    maxLines: 3,
+                    minLines: 1,
+                    autofocus: false,
                     textInputAction: TextInputAction.done,
-                    decoration    : InputDecoration(
-                      hintText      : _t('Add a question or caption... (optional)', 'Tambah pertanyaan atau caption... (opsional)'),
-                      hintStyle     : TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                      border        : InputBorder.none,
+                    decoration: InputDecoration(
+                      hintText: _t(
+                        'Add a question or caption... (optional)',
+                        'Tambah pertanyaan atau caption... (opsional)',
+                      ),
+                      hintStyle: TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 13,
+                      ),
+                      border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12,
+                        horizontal: 16,
+                        vertical: 12,
                       ),
                     ),
                   ),
@@ -344,21 +375,21 @@ class _AIChatScreenState extends State<AIChatScreen> {
               // Tombol kirim
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child  : SizedBox(
-                  width : double.infinity,
-                  child : ElevatedButton.icon(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       final caption = captionController.text.trim();
                       Navigator.pop(context);
                       _sendMessageWithImage(caption: caption);
                     },
-                    icon : const Icon(Icons.send_rounded),
+                    icon: const Icon(Icons.send_rounded),
                     label: Text(_t('Send', 'Kirim')),
                     style: ElevatedButton.styleFrom(
-                      padding        : const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: AppTheme.primaryCoral,
                       foregroundColor: Colors.white,
-                      shape          : RoundedRectangleBorder(
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -379,13 +410,19 @@ class _AIChatScreenState extends State<AIChatScreen> {
     if (_conversationId == null) {
       await _createNewConversation();
       if (_conversationId == null) {
-        _showSnackBar(_t('Failed to create chat session. Check your connection.', 'Gagal membuat sesi chat. Cek koneksi kamu.'), isError: true);
+        _showSnackBar(
+          _t(
+            'Failed to create chat session. Check your connection.',
+            'Gagal membuat sesi chat. Cek koneksi kamu.',
+          ),
+          isError: true,
+        );
         return;
       }
     }
 
     final imagePath = _selectedImage!.path;
-    final content   = caption.isNotEmpty
+    final content = caption.isNotEmpty
         ? caption
         : _t(
             'Please analyze this food image and provide information or a recipe about it.',
@@ -394,13 +431,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     setState(() {
       _messages.add({
-        'role'      : 'user',
-        'content'   : content,
+        'role': 'user',
+        'content': content,
         'image_file': imagePath,
-        'is_error'  : false,
+        'is_error': false,
         'created_at': DateTime.now().toIso8601String(),
       });
-      _isLoading     = true;
+      _isLoading = true;
       _selectedImage = null;
     });
     _scrollToBottom();
@@ -411,9 +448,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            'role'      : 'assistant',
-            'content'   : result,
-            'is_error'  : false,
+            'role': 'assistant',
+            'content': result,
+            'is_error': false,
             'created_at': DateTime.now().toIso8601String(),
           });
           _isLoading = false;
@@ -424,8 +461,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
       if (mounted) {
         setState(() {
           _messages.add({
-            'role'    : 'assistant',
-            'content' : _getErrorMessage(e.toString()),
+            'role': 'assistant',
+            'content': _getErrorMessage(e.toString()),
             'is_error': true,
             'created_at': DateTime.now().toIso8601String(),
           });
@@ -447,15 +484,17 @@ class _AIChatScreenState extends State<AIChatScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(_t('Rename Chat', 'Ganti Judul')),
         content: TextField(
-          controller : controller,
-          autofocus  : true,
-          decoration : InputDecoration(hintText: _t('Conversation title', 'Judul conversation')),
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: _t('Conversation title', 'Judul conversation'),
+          ),
           onSubmitted: (_) => Navigator.pop(dialogCtx, controller.text.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child    : Text(_t('Cancel', 'Batal')),
+            child: Text(_t('Cancel', 'Batal')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogCtx, controller.text.trim()),
@@ -474,9 +513,15 @@ class _AIChatScreenState extends State<AIChatScreen> {
       if (mounted) setState(() => _conversationTitle = newTitle);
       // Simpan ke server
       if (_conversationId != null) {
-        final ok = await AIChatClient.updateConversationTitle(_conversationId!, newTitle);
+        final ok = await AIChatClient.updateConversationTitle(
+          _conversationId!,
+          newTitle,
+        );
         if (!ok && mounted) {
-          _showSnackBar(_t('Failed to save title', 'Gagal menyimpan judul'), isError: true);
+          _showSnackBar(
+            _t('Failed to save title', 'Gagal menyimpan judul'),
+            isError: true,
+          );
           // Rollback
           setState(() => _conversationTitle = widget.initialTitle ?? 'Chef AI');
         }
@@ -494,7 +539,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
-          curve   : Curves.easeOut,
+          curve: Curves.easeOut,
         );
       }
     });
@@ -502,26 +547,43 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   String _getErrorMessage(String error) {
     if (error.contains('API key') || error.contains('401')) {
-      return _t('Invalid API key. Check your AI settings.', 'API key tidak valid. Cek pengaturan AI kamu.');
+      return _t(
+        'Invalid API key. Check your AI settings.',
+        'API key tidak valid. Cek pengaturan AI kamu.',
+      );
     } else if (error.contains('429')) {
-      return _t('Too many requests. Please wait a moment.', 'Terlalu banyak permintaan. Tunggu sebentar ya.');
+      return _t(
+        'Too many requests. Please wait a moment.',
+        'Terlalu banyak permintaan. Tunggu sebentar ya.',
+      );
     } else if (error.contains('timeout')) {
-      return _t('Connection timed out. Try again.', 'Koneksi timeout. Coba lagi.');
+      return _t(
+        'Connection timed out. Try again.',
+        'Koneksi timeout. Coba lagi.',
+      );
     } else if (error.contains('503')) {
-      return _t('Server is busy. Try again shortly.', 'Server sedang sibuk. Coba lagi sebentar.');
+      return _t(
+        'Server is busy. Try again shortly.',
+        'Server sedang sibuk. Coba lagi sebentar.',
+      );
     }
-    return _t('Sorry, something went wrong.\n\n$error', 'Maaf, terjadi kesalahan.\n\n$error');
+    return _t(
+      'Sorry, something went wrong.\n\n$error',
+      'Maaf, terjadi kesalahan.\n\n$error',
+    );
   }
 
   void _showSnackBar(String message, {required bool isError}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
-      behavior: SnackBarBehavior.floating,
-      shape   : RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin  : const EdgeInsets.all(16),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────
@@ -533,8 +595,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: _buildAppBar(),
-      body  : _isInitializing
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryCoral))
+      body: _isInitializing
+          ? const Center(
+              child: CircularProgressIndicator(color: AppTheme.primaryCoral),
+            )
           : Column(
               children: [
                 Expanded(child: _buildMessageList()),
@@ -548,9 +612,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: AppTheme.surfaceColor,
-      elevation      : 1,
-      leading        : IconButton(
-        icon     : Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
+      elevation: 1,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back_rounded, color: AppTheme.textPrimary),
         onPressed: () => Navigator.pop(context),
       ),
       title: GestureDetector(
@@ -558,27 +622,31 @@ class _AIChatScreenState extends State<AIChatScreen> {
         child: Row(
           children: [
             Container(
-              padding   : const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient     : AppTheme.accentGradient,
-                shape        : BoxShape.circle,
+                gradient: AppTheme.accentGradient,
+                shape: BoxShape.circle,
               ),
-              child: Icon(Icons.psychology_rounded, color: Colors.white, size: 20),
+              child: Icon(
+                Icons.psychology_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children          : [
+                children: [
                   Text(
                     _conversationTitle,
                     style: TextStyle(
-                      fontSize  : 16,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color     : AppTheme.textPrimary,
+                      color: AppTheme.textPrimary,
                     ),
-                    maxLines : 1,
-                    overflow : TextOverflow.ellipsis,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     _t('Tap to rename', 'Tap untuk ganti judul'),
@@ -593,8 +661,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
       actions: [
         // History button
         IconButton(
-          icon     : Icon(Icons.history_rounded, color: AppTheme.textPrimary),
-          tooltip  : _t('Chat History', 'Riwayat Chat'),
+          icon: Icon(Icons.history_rounded, color: AppTheme.textPrimary),
+          tooltip: _t('Chat History', 'Riwayat Chat'),
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AIChatHistoryScreen()),
@@ -602,8 +670,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
         // Settings button
         IconButton(
-          icon     : Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
-          tooltip  : 'AI Settings',
+          icon: Icon(Icons.tune_rounded, color: AppTheme.textPrimary),
+          tooltip: 'AI Settings',
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AISettingsScreen()),
@@ -611,8 +679,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         ),
         // New chat button
         IconButton(
-          icon     : Icon(Icons.add_comment_rounded, color: AppTheme.primaryCoral),
-          tooltip  : _t('New Chat', 'Chat Baru'),
+          icon: Icon(Icons.add_comment_rounded, color: AppTheme.primaryCoral),
+          tooltip: _t('New Chat', 'Chat Baru'),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const AIChatScreen()),
@@ -625,77 +693,86 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget _buildMessageList() {
     if (_messages.isEmpty) return const SizedBox.shrink();
     return ListView.builder(
-      controller : _scrollController,
-      padding    : const EdgeInsets.all(16),
-      itemCount  : _messages.length,
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: _messages.length,
       itemBuilder: (_, index) => _buildMessageBubble(_messages[index]),
     );
   }
 
   Widget _buildMessageBubble(Map<String, dynamic> message) {
-    final isUser   = message['role'] == 'user';
-    final isError  = message['is_error'] == true;
-    final content  = message['content'] ?? '';
-    final imgPath  = message['image_file'] as String?;
+    final isUser = message['role'] == 'user';
+    final isError = message['is_error'] == true;
+    final content = message['content'] ?? '';
+    final imgPath = message['image_file'] as String?;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child    : Container(
-        margin     : const EdgeInsets.only(bottom: 12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
-        padding   : const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient    : isUser
+          gradient: isUser
               ? AppTheme.accentGradient
               : isError
-                  ? LinearGradient(colors: [Colors.red.shade50, Colors.red.shade100])
-                  : LinearGradient(colors: [
-                      AppTheme.subtleSurfaceColor,
-                      AppTheme.surfaceColor,
-                    ]),
+              ? LinearGradient(
+                  colors: [Colors.red.shade50, Colors.red.shade100],
+                )
+              : LinearGradient(
+                  colors: [AppTheme.subtleSurfaceColor, AppTheme.surfaceColor],
+                ),
           borderRadius: BorderRadius.only(
-            topLeft    : const Radius.circular(16),
-            topRight   : const Radius.circular(16),
-            bottomLeft : Radius.circular(isUser ? 16 : 4),
-            bottomRight: Radius.circular(isUser ? 4  : 16),
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
           ),
-          border: isError
-              ? Border.all(color: Colors.red.shade300)
-              : null,
+          border: isError ? Border.all(color: Colors.red.shade300) : null,
           boxShadow: [
             BoxShadow(
-              color     : Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 6,
-              offset    : const Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children          : [
+          children: [
             // Tampilkan preview gambar jika ada
             if (imgPath != null) ...[
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child       : Image.file(
+                child: Image.file(
                   File(imgPath),
-                  height      : 140,
-                  width       : double.infinity,
-                  fit         : BoxFit.cover,
+                  height: 140,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
-                    height    : 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color       : Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children         : [
-                        Icon(Icons.image_rounded, color: Colors.white.withValues(alpha: 0.7), size: 16),
+                      children: [
+                        Icon(
+                          Icons.image_rounded,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
-                        Text(_t('Image sent', 'Gambar dikirim'), style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                        Text(
+                          _t('Image sent', 'Gambar dikirim'),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -706,13 +783,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
             Text(
               content,
               style: TextStyle(
-                color : isUser
+                color: isUser
                     ? Colors.white
                     : isError
-                        ? Colors.red.shade900
-                        : AppTheme.textPrimary,
+                    ? Colors.red.shade900
+                    : AppTheme.textPrimary,
                 fontSize: 15,
-                height  : 1.45,
+                height: 1.45,
               ),
             ),
           ],
@@ -724,27 +801,30 @@ class _AIChatScreenState extends State<AIChatScreen> {
   Widget _buildTypingIndicator() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child  : Row(
+      child: Row(
         children: [
           Container(
-            padding   : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color       : AppTheme.borderColor,
+              color: AppTheme.borderColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children    : [
+              children: [
                 SizedBox(
-                  width: 16, height: 16,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color      : AppTheme.primaryCoral,
+                    color: AppTheme.primaryCoral,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(_t('Chef AI is typing...', 'Chef AI sedang mengetik...'),
-                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13)),
+                Text(
+                  _t('Chef AI is typing...', 'Chef AI sedang mengetik...'),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                ),
               ],
             ),
           ),
@@ -755,14 +835,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding   : const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color    : AppTheme.surfaceColor,
+        color: AppTheme.surfaceColor,
         boxShadow: [
           BoxShadow(
-            color     : Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset    : const Offset(0, -2),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -776,8 +856,10 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon     : Icon(Icons.image_rounded,
-                    color: _isLoading ? Colors.grey : AppTheme.primaryCoral),
+                icon: Icon(
+                  Icons.image_rounded,
+                  color: _isLoading ? Colors.grey : AppTheme.primaryCoral,
+                ),
                 onPressed: _isLoading ? null : _showImageSourceDialog,
               ),
             ),
@@ -787,21 +869,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color       : AppTheme.subtleSurfaceColor,
+                  color: AppTheme.subtleSurfaceColor,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
-                  controller     : _messageController,
-                  maxLines       : null,
-                  enabled        : !_isLoading,
+                  controller: _messageController,
+                  maxLines: null,
+                  enabled: !_isLoading,
                   textInputAction: TextInputAction.send,
-                  onSubmitted    : (_) => _sendMessage(),
-                  decoration     : InputDecoration(
-                    hintText       : _t('Ask about cooking...', 'Tanya tentang masak...'),
-                    hintStyle      : TextStyle(color: AppTheme.textMuted),
-                    border         : InputBorder.none,
-                    contentPadding : const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 12,
+                  onSubmitted: (_) => _sendMessage(),
+                  decoration: InputDecoration(
+                    hintText: _t(
+                      'Ask about cooking...',
+                      'Tanya tentang masak...',
+                    ),
+                    hintStyle: TextStyle(color: AppTheme.textMuted),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
                     ),
                   ),
                 ),
@@ -813,12 +899,14 @@ class _AIChatScreenState extends State<AIChatScreen> {
             Container(
               decoration: BoxDecoration(
                 gradient: _isLoading
-                    ? LinearGradient(colors: [Colors.grey, Colors.grey.shade400])
+                    ? LinearGradient(
+                        colors: [Colors.grey, Colors.grey.shade400],
+                      )
                     : AppTheme.accentGradient,
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                icon     : const Icon(Icons.send_rounded, color: Colors.white),
+                icon: const Icon(Icons.send_rounded, color: Colors.white),
                 onPressed: _isLoading ? null : _sendMessage,
               ),
             ),

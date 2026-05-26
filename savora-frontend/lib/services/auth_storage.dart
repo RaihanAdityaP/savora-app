@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// AuthStorage — persist Sanctum token & userId ke SharedPreferences
 /// Dipanggil dari AuthClient setelah login berhasil, dan dari main() saat app buka
 class AuthStorage {
-  static const String _tokenKey  = 'auth_sanctum_token';
+  static const String _tokenKey = 'auth_sanctum_token';
   static const String _userIdKey = 'auth_user_id';
 
   /// Simpan token + userId setelah login sukses
@@ -26,9 +26,11 @@ class AuthStorage {
   static Future<({String? token, String? userId})> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token  = prefs.getString(_tokenKey);
+      final token = prefs.getString(_tokenKey);
       final userId = prefs.getString(_userIdKey);
-      debugPrint('[AuthStorage] Loaded token: ${token != null ? "found" : "null"}');
+      debugPrint(
+        '[AuthStorage] Loaded token: ${token != null ? "found" : "null"}',
+      );
       return (token: token, userId: userId);
     } catch (e) {
       debugPrint('[AuthStorage] load error: $e');

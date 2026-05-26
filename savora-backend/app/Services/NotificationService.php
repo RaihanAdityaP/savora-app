@@ -135,6 +135,8 @@ class NotificationService
                         'priority'     => 'high',
                         'notification' => [
                             'channel_id'   => self::ANDROID_CHANNEL_ID,
+                            'icon'         => 'ic_launcher',
+                            'color'        => '#E76F51',
                             'sound'        => 'default',
                             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                             'notification_priority' => 'PRIORITY_HIGH',
@@ -241,6 +243,8 @@ class NotificationService
                         'priority'     => 'high',
                         'notification' => [
                             'channel_id'   => self::ANDROID_CHANNEL_ID,
+                            'icon'         => 'ic_launcher',
+                            'color'        => '#E76F51',
                             'sound'        => 'default',
                             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
                             'notification_priority' => 'PRIORITY_HIGH',

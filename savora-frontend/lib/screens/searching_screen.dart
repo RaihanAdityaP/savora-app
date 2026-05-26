@@ -70,13 +70,20 @@ class _SearchingScreenState extends State<SearchingScreen>
     _selectedTagName = widget.initialTagName;
 
     _animationController = AnimationController(
-        duration: const Duration(milliseconds: 1000), vsync: this);
-    _fadeAnimation =
-        CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-            CurvedAnimation(
-                parent: _animationController, curve: Curves.easeOutCubic));
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     _loadUserAvatar();
     _loadCategories();
@@ -127,9 +134,11 @@ class _SearchingScreenState extends State<SearchingScreen>
       if (!mounted) return;
       if (response['success'] == true) {
         final list = response['data'] as List;
-        setState(() =>
-            _popularTags =
-                list.map((e) => Map<String, dynamic>.from(e)).toList());
+        setState(
+          () => _popularTags = list
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        );
       }
     } catch (e) {
       debugPrint('Error loading tags: $e');
@@ -185,8 +194,10 @@ class _SearchingScreenState extends State<SearchingScreen>
       switch (_sortBy) {
         case 'newest':
           filtered.sort((a, b) {
-            final aDate = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(0);
-            final bDate = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(0);
+            final aDate =
+                DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(0);
+            final bDate =
+                DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(0);
             return bDate.compareTo(aDate);
           });
           break;
@@ -233,12 +244,15 @@ class _SearchingScreenState extends State<SearchingScreen>
     bool tempFollowedOnly = _followedUsersOnly;
 
     // Local controllers pre-filled from current state
-    final tempMinCaloriesCtrl =
-        TextEditingController(text: _minCalories?.toString() ?? '');
-    final tempMaxCaloriesCtrl =
-        TextEditingController(text: _maxCalories?.toString() ?? '');
-    final tempIngredientsCtrl =
-        TextEditingController(text: _ingredientKeywords.join(', '));
+    final tempMinCaloriesCtrl = TextEditingController(
+      text: _minCalories?.toString() ?? '',
+    );
+    final tempMaxCaloriesCtrl = TextEditingController(
+      text: _maxCalories?.toString() ?? '',
+    );
+    final tempIngredientsCtrl = TextEditingController(
+      text: _ingredientKeywords.join(', '),
+    );
 
     showModalBottomSheet(
       context: context,
@@ -247,8 +261,7 @@ class _SearchingScreenState extends State<SearchingScreen>
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
           // Helper sort chip — reads/writes local temp state
-          Widget buildLocalSortChip(
-              String label, String value, IconData icon) {
+          Widget buildLocalSortChip(String label, String value, IconData icon) {
             final isSelected = tempSortBy == value;
             return Material(
               color: Colors.transparent,
@@ -261,44 +274,52 @@ class _SearchingScreenState extends State<SearchingScreen>
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     gradient: isSelected ? AppTheme.tealGradient : null,
                     color: isSelected ? null : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: isSelected
-                            ? AppTheme.primaryTeal
-                            : Colors.grey.shade300,
-                        width: isSelected ? 2 : 1.5),
+                      color: isSelected
+                          ? AppTheme.primaryTeal
+                          : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1.5,
+                    ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                                color: AppTheme.primaryTeal
-                                    .withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4))
+                              color: AppTheme.primaryTeal.withValues(
+                                alpha: 0.3,
+                              ),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
                           ]
                         : null,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon,
-                          size: 18,
+                      Icon(
+                        icon,
+                        size: 18,
+                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : AppTheme.textPrimary),
-                      const SizedBox(width: 8),
-                      Text(label,
-                          style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textPrimary,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                              fontSize: 14)),
+                              : AppTheme.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -322,58 +343,73 @@ class _SearchingScreenState extends State<SearchingScreen>
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     gradient: isSelected
                         ? LinearGradient(
-                            colors: [color, color.withValues(alpha: 0.8)])
+                            colors: [color, color.withValues(alpha: 0.8)],
+                          )
                         : null,
                     color: isSelected ? null : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: isSelected ? color : Colors.grey.shade300,
-                        width: isSelected ? 2 : 1.5),
+                      color: isSelected ? color : Colors.grey.shade300,
+                      width: isSelected ? 2 : 1.5,
+                    ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                                color: color.withValues(alpha: 0.3),
-                                blurRadius: 6,
-                                offset: const Offset(0, 3))
+                              color: color.withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
                           ]
                         : null,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(icon,
-                          size: 16,
-                          color: isSelected ? Colors.white : color),
+                      Icon(
+                        icon,
+                        size: 16,
+                        color: isSelected ? Colors.white : color,
+                      ),
                       const SizedBox(width: 6),
-                      Text(label,
-                          style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textPrimary,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                              fontSize: 13)),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
                       if (count != null) ...[
                         const SizedBox(width: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Colors.white.withValues(alpha: 0.3)
-                                  : color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8)),
-                          child: Text('$count',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      isSelected ? Colors.white : color)),
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.3)
+                                : color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : color,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -386,8 +422,7 @@ class _SearchingScreenState extends State<SearchingScreen>
           return Container(
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor,
-              borderRadius:
-                  BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
               border: Border.all(color: AppTheme.borderColor),
             ),
             child: DraggableScrollableSheet(
@@ -419,28 +454,37 @@ class _SearchingScreenState extends State<SearchingScreen>
                             borderRadius: BorderRadius.circular(14),
                             boxShadow: AppTheme.buttonShadow,
                           ),
-                          child: Icon(Icons.tune,
-                              color: Colors.white, size: 26),
+                          child: Icon(
+                            Icons.tune,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
-                          child: Text(_t('Filter & Sort', 'Filter & Urutkan'),
-                              style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.textPrimary)),
+                          child: Text(
+                            _t('Filter & Sort', 'Filter & Urutkan'),
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
                         ),
                         Container(
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [
-                              AppTheme.primaryCoral.withValues(alpha: 0.15),
-                              AppTheme.primaryOrange
-                                  .withValues(alpha: 0.15)
-                            ]),
+                            gradient: LinearGradient(
+                              colors: [
+                                AppTheme.primaryCoral.withValues(alpha: 0.15),
+                                AppTheme.primaryOrange.withValues(alpha: 0.15),
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: AppTheme.primaryCoral
-                                    .withValues(alpha: 0.3)),
+                              color: AppTheme.primaryCoral.withValues(
+                                alpha: 0.3,
+                              ),
+                            ),
                           ),
                           child: TextButton.icon(
                             onPressed: () {
@@ -456,15 +500,24 @@ class _SearchingScreenState extends State<SearchingScreen>
                                 tempFollowedOnly = false;
                               });
                             },
-                            icon: Icon(Icons.refresh_rounded,
-                                size: 18, color: AppTheme.primaryCoral),
-                            label: Text(_t('Reset', 'Reset'),
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryCoral)),
+                            icon: Icon(
+                              Icons.refresh_rounded,
+                              size: 18,
+                              color: AppTheme.primaryCoral,
+                            ),
+                            label: Text(
+                              _t('Reset', 'Reset'),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryCoral,
+                              ),
+                            ),
                             style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -479,15 +532,19 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryTeal.withValues(alpha: 0.08),
-                                AppTheme.primaryTeal.withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryTeal.withValues(alpha: 0.08),
+                                  AppTheme.primaryTeal.withValues(alpha: 0.04),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryTeal
-                                      .withValues(alpha: 0.2),
-                                  width: 1.5),
+                                color: AppTheme.primaryTeal.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,34 +554,50 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: AppTheme.primaryTeal
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      child: const Icon(Icons.sort_rounded,
-                                          color: AppTheme.primaryTeal,
-                                          size: 20),
+                                        color: AppTheme.primaryTeal.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: const Icon(
+                                        Icons.sort_rounded,
+                                        color: AppTheme.primaryTeal,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(_t('Sort By', 'Urutkan Berdasarkan'),
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimary)),
+                                    Text(
+                                      _t('Sort By', 'Urutkan Berdasarkan'),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
                                 Wrap(
-                                    spacing: 10,
-                                    runSpacing: 10,
-                                    children: [
-                                      buildLocalSortChip(_t('Most Popular', 'Terpopuler'),
-                                          'popular', Icons.trending_up),
-                                      buildLocalSortChip(
-                                          _t('Newest', 'Terbaru'), 'newest', Icons.fiber_new),
-                                      buildLocalSortChip(_t('Highest Rating', 'Rating Tertinggi'),
-                                          'rating', Icons.star),
-                                    ]),
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    buildLocalSortChip(
+                                      _t('Most Popular', 'Terpopuler'),
+                                      'popular',
+                                      Icons.trending_up,
+                                    ),
+                                    buildLocalSortChip(
+                                      _t('Newest', 'Terbaru'),
+                                      'newest',
+                                      Icons.fiber_new,
+                                    ),
+                                    buildLocalSortChip(
+                                      _t('Highest Rating', 'Rating Tertinggi'),
+                                      'rating',
+                                      Icons.star,
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -534,15 +607,19 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryTeal.withValues(alpha: 0.08),
-                                AppTheme.primaryTeal.withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryTeal.withValues(alpha: 0.08),
+                                  AppTheme.primaryTeal.withValues(alpha: 0.04),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryTeal
-                                      .withValues(alpha: 0.2),
-                                  width: 1.5),
+                                color: AppTheme.primaryTeal.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,21 +629,26 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: AppTheme.primaryTeal
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
+                                        color: AppTheme.primaryTeal.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                       child: Icon(
-                                          Icons.local_fire_department_rounded,
-                                          color: AppTheme.primaryTeal,
-                                          size: 20),
+                                        Icons.local_fire_department_rounded,
+                                        color: AppTheme.primaryTeal,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(_t('Calories (kcal)', 'Kalori (kkal)'),
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimary)),
+                                    Text(
+                                      _t('Calories (kcal)', 'Kalori (kkal)'),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
@@ -575,23 +657,33 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Expanded(
                                       child: _buildCaloriesInput(
                                         controller: tempMinCaloriesCtrl,
-                                        hint: _t('Min (ex: 100)', 'Min (cth: 100)'),
+                                        hint: _t(
+                                          'Min (ex: 100)',
+                                          'Min (cth: 100)',
+                                        ),
                                         label: _t('Minimum', 'Minimum'),
                                       ),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10),
-                                      child: Text('—',
-                                          style: TextStyle(
-                                              color: Colors.grey.shade500,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
+                                        horizontal: 10,
+                                      ),
+                                      child: Text(
+                                        '—',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                     Expanded(
                                       child: _buildCaloriesInput(
                                         controller: tempMaxCaloriesCtrl,
-                                        hint: _t('Max (ex: 500)', 'Max (cth: 500)'),
+                                        hint: _t(
+                                          'Max (ex: 500)',
+                                          'Max (cth: 500)',
+                                        ),
                                         label: _t('Maximum', 'Maksimum'),
                                       ),
                                     ),
@@ -606,15 +698,19 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryCoral.withValues(alpha: 0.08),
-                                AppTheme.primaryCoral.withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryCoral.withValues(alpha: 0.08),
+                                  AppTheme.primaryCoral.withValues(alpha: 0.04),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryCoral
-                                      .withValues(alpha: 0.2),
-                                  width: 1.5),
+                                color: AppTheme.primaryCoral.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,61 +720,81 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: AppTheme.primaryCoral
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      child: Icon(Icons.egg_alt_rounded,
-                                          color: AppTheme.primaryCoral,
-                                          size: 20),
+                                        color: AppTheme.primaryCoral.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        Icons.egg_alt_rounded,
+                                        color: AppTheme.primaryCoral,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(_t('Ingredients', 'Bahan-Bahan'),
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimary)),
+                                    Text(
+                                      _t('Ingredients', 'Bahan-Bahan'),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                    _t('Separate with commas, ex: chicken, onion',
-                                        'Pisahkan dengan koma, cth: ayam, bawang'),
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.textSecondary)),
+                                  _t(
+                                    'Separate with commas, ex: chicken, onion',
+                                    'Pisahkan dengan koma, cth: ayam, bawang',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
                                 Container(
                                   decoration: BoxDecoration(
                                     color: AppTheme.subtleSurfaceColor,
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                        color: AppTheme.primaryCoral
-                                            .withValues(alpha: 0.3),
-                                        width: 1.5),
+                                      color: AppTheme.primaryCoral.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1.5,
+                                    ),
                                   ),
                                   child: TextField(
                                     controller: tempIngredientsCtrl,
                                     decoration: InputDecoration(
-                                      hintText: _t('ex: chicken, onion, tomato',
-                                          'cth: ayam, bawang, tomat'),
+                                      hintText: _t(
+                                        'ex: chicken, onion, tomato',
+                                        'cth: ayam, bawang, tomat',
+                                      ),
                                       hintStyle: TextStyle(
-                                          color: AppTheme.textMuted,
-                                          fontSize: 14),
+                                        color: AppTheme.textMuted,
+                                        fontSize: 14,
+                                      ),
                                       border: InputBorder.none,
                                       prefixIcon: const Padding(
                                         padding: EdgeInsets.all(12),
-                                        child: Icon(Icons.search_rounded,
-                                            color: AppTheme.primaryCoral,
-                                            size: 20),
+                                        child: Icon(
+                                          Icons.search_rounded,
+                                          color: AppTheme.primaryCoral,
+                                          size: 20,
+                                        ),
                                       ),
                                       contentPadding:
                                           const EdgeInsets.symmetric(
-                                              horizontal: 16, vertical: 14),
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
                                     ),
                                     style: TextStyle(
-                                        color: AppTheme.textPrimary,
-                                        fontSize: 14),
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -690,30 +806,39 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryOrange
-                                    .withValues(alpha: 0.08),
-                                AppTheme.primaryOrange
-                                    .withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryOrange.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  AppTheme.primaryOrange.withValues(
+                                    alpha: 0.04,
+                                  ),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryOrange
-                                      .withValues(alpha: 0.3),
-                                  width: 1.5),
+                                color: AppTheme.primaryOrange.withValues(
+                                  alpha: 0.3,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Row(
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                      color: AppTheme.primaryOrange
-                                          .withValues(alpha: 0.2),
-                                      borderRadius:
-                                          BorderRadius.circular(12)),
-                                  child: Icon(Icons.people_rounded,
-                                      color: AppTheme.primaryOrange,
-                                      size: 24),
+                                    color: AppTheme.primaryOrange.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.people_rounded,
+                                    color: AppTheme.primaryOrange,
+                                    size: 24,
+                                  ),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
@@ -721,18 +846,28 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(_t('From Following', 'Dari yang Diikuti'),
-                                          style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppTheme.textPrimary)),
+                                      Text(
+                                        _t(
+                                          'From Following',
+                                          'Dari yang Diikuti',
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
                                       const SizedBox(height: 2),
                                       Text(
-                                          _t('Only show recipes from users you follow',
-                                              'Hanya tampilkan resep dari pengguna yang Anda ikuti'),
-                                          style: TextStyle(
-                                              fontSize: 12,
-                                              color: AppTheme.textSecondary)),
+                                        _t(
+                                          'Only show recipes from users you follow',
+                                          'Hanya tampilkan resep dari pengguna yang Anda ikuti',
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -742,7 +877,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                                   child: Switch(
                                     value: tempFollowedOnly,
                                     onChanged: (value) => setSheetState(
-                                        () => tempFollowedOnly = value),
+                                      () => tempFollowedOnly = value,
+                                    ),
                                     activeThumbColor: AppTheme.primaryOrange,
                                     activeTrackColor: AppTheme.primaryOrange
                                         .withValues(alpha: 0.4),
@@ -757,15 +893,19 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryCoral.withValues(alpha: 0.08),
-                                AppTheme.primaryCoral.withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryCoral.withValues(alpha: 0.08),
+                                  AppTheme.primaryCoral.withValues(alpha: 0.04),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryCoral
-                                      .withValues(alpha: 0.2),
-                                  width: 1.5),
+                                color: AppTheme.primaryCoral.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -775,21 +915,26 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: AppTheme.primaryCoral
-                                              .withValues(alpha: 0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
+                                        color: AppTheme.primaryCoral.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                       child: Icon(
-                                          Icons.category_rounded,
-                                          color: AppTheme.primaryCoral,
-                                          size: 20),
+                                        Icons.category_rounded,
+                                        color: AppTheme.primaryCoral,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(_t('Category', 'Kategori'),
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimary)),
+                                    Text(
+                                      _t('Category', 'Kategori'),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
@@ -827,17 +972,23 @@ class _SearchingScreenState extends State<SearchingScreen>
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                AppTheme.primaryYellow
-                                    .withValues(alpha: 0.08),
-                                AppTheme.primaryYellow
-                                    .withValues(alpha: 0.04)
-                              ]),
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryYellow.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  AppTheme.primaryYellow.withValues(
+                                    alpha: 0.04,
+                                  ),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                  color: AppTheme.primaryYellow
-                                      .withValues(alpha: 0.3),
-                                  width: 1.5),
+                                color: AppTheme.primaryYellow.withValues(
+                                  alpha: 0.3,
+                                ),
+                                width: 1.5,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,21 +998,25 @@ class _SearchingScreenState extends State<SearchingScreen>
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                          color: AppTheme.primaryYellow
-                                              .withValues(alpha: 0.3),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
+                                        color: AppTheme.primaryYellow
+                                            .withValues(alpha: 0.3),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
                                       child: Icon(
-                                          Icons.local_offer_rounded,
-                                          color: AppTheme.primaryDark,
-                                          size: 20),
+                                        Icons.local_offer_rounded,
+                                        color: AppTheme.primaryDark,
+                                        size: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
-                                    Text(_t('Popular Tags', 'Tags Populer'),
-                                        style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimary)),
+                                    Text(
+                                      _t('Popular Tags', 'Tags Populer'),
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 14),
@@ -869,8 +1024,7 @@ class _SearchingScreenState extends State<SearchingScreen>
                                   spacing: 8,
                                   runSpacing: 8,
                                   children: _popularTags.map((tag) {
-                                    final isSelected =
-                                        tempTagId == tag['id'];
+                                    final isSelected = tempTagId == tag['id'];
                                     return buildLocalFilterChip(
                                       label: '#${tag['name'] ?? ''}',
                                       count: tag['usage_count'],
@@ -907,8 +1061,8 @@ class _SearchingScreenState extends State<SearchingScreen>
                         onPressed: () {
                           final minText = tempMinCaloriesCtrl.text.trim();
                           final maxText = tempMaxCaloriesCtrl.text.trim();
-                          final ingredientsText =
-                              tempIngredientsCtrl.text.trim();
+                          final ingredientsText = tempIngredientsCtrl.text
+                              .trim();
 
                           // Commit all temp values to parent state at once
                           setState(() {
@@ -926,18 +1080,18 @@ class _SearchingScreenState extends State<SearchingScreen>
                                 : null;
                             _ingredientKeywords = ingredientsText.isNotEmpty
                                 ? ingredientsText
-                                    .split(',')
-                                    .map((e) => e.trim())
-                                    .where((e) => e.isNotEmpty)
-                                    .toList()
+                                      .split(',')
+                                      .map((e) => e.trim())
+                                      .where((e) => e.isNotEmpty)
+                                      .toList()
                                 : [];
                             // Sync main controllers with committed values
                             _minCaloriesController.text =
                                 _minCalories?.toString() ?? '';
                             _maxCaloriesController.text =
                                 _maxCalories?.toString() ?? '';
-                            _ingredientsController.text =
-                                _ingredientKeywords.join(', ');
+                            _ingredientsController.text = _ingredientKeywords
+                                .join(', ');
                           });
                           Navigator.pop(context);
                           _searchRecipes(_lastSearchQuery);
@@ -946,15 +1100,22 @@ class _SearchingScreenState extends State<SearchingScreen>
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
-                        icon: Icon(Icons.search_rounded,
-                            color: Colors.white, size: 24),
-                        label: Text(_t('Apply Filter', 'Terapkan Filter'),
-                            style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
+                        icon: Icon(
+                          Icons.search_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        label: Text(
+                          _t('Apply Filter', 'Terapkan Filter'),
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -975,40 +1136,47 @@ class _SearchingScreenState extends State<SearchingScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textSecondary,
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             color: AppTheme.subtleSurfaceColor,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: AppTheme.primaryTeal.withValues(alpha: 0.3),
-                width: 1.5),
+              color: AppTheme.primaryTeal.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
           ),
           child: TextField(
             controller: controller,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-                  TextStyle(color: AppTheme.textMuted, fontSize: 13),
+              hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 13),
               border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
               suffixText: 'kkal',
               suffixStyle: TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                  fontWeight: FontWeight.w500),
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             style: TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600),
+              color: AppTheme.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -1041,34 +1209,43 @@ class _SearchingScreenState extends State<SearchingScreen>
                       color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                          color:
-                              AppTheme.primaryCoral.withValues(alpha: 0.3),
-                          width: 2),
+                        color: AppTheme.primaryCoral.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                            color:
-                                AppTheme.primaryCoral.withValues(alpha: 0.1),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5))
+                          color: AppTheme.primaryCoral.withValues(alpha: 0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
                       ],
                     ),
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: _t('Search delicious recipes...',
-                            'Cari resep lezat...'),
+                        hintText: _t(
+                          'Search delicious recipes...',
+                          'Cari resep lezat...',
+                        ),
                         hintStyle: TextStyle(
-                            color: AppTheme.textMuted, fontSize: 15),
+                          color: AppTheme.textMuted,
+                          fontSize: 15,
+                        ),
                         border: InputBorder.none,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.all(14),
-                          child: Icon(Icons.search_rounded,
-                              color: AppTheme.primaryCoral, size: 24),
+                          child: Icon(
+                            Icons.search_rounded,
+                            color: AppTheme.primaryCoral,
+                            size: 24,
+                          ),
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: Icon(Icons.clear_rounded,
-                                    color: AppTheme.textSecondary),
+                                icon: Icon(
+                                  Icons.clear_rounded,
+                                  color: AppTheme.textSecondary,
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   _searchRecipes('');
@@ -1077,14 +1254,17 @@ class _SearchingScreenState extends State<SearchingScreen>
                               )
                             : null,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                       ),
                       style: TextStyle(
-                          color: AppTheme.textPrimary, fontSize: 15),
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                      ),
                       onChanged: (value) {
                         setState(() {});
-                        Future.delayed(const Duration(milliseconds: 500),
-                            () {
+                        Future.delayed(const Duration(milliseconds: 500), () {
                           if (_searchController.text == value) {
                             _searchRecipes(value);
                           }
@@ -1106,8 +1286,11 @@ class _SearchingScreenState extends State<SearchingScreen>
                         child: InkWell(
                           onTap: _showFilterBottomSheet,
                           borderRadius: BorderRadius.circular(16),
-                          child: Icon(Icons.tune_rounded,
-                              color: Colors.white, size: 26),
+                          child: Icon(
+                            Icons.tune_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ),
@@ -1118,27 +1301,32 @@ class _SearchingScreenState extends State<SearchingScreen>
                         child: Container(
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [
-                              Color(0xFFFF3B30),
-                              Color(0xFFFF6B6B)
-                            ]),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF3B30), Color(0xFFFF6B6B)],
+                            ),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.5),
-                                  blurRadius: 8,
-                                  spreadRadius: 1)
+                                color: Colors.red.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
                             ],
                           ),
                           constraints: const BoxConstraints(
-                              minWidth: 24, minHeight: 24),
-                          child: Text('$activeFilters',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1),
-                              textAlign: TextAlign.center),
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          child: Text(
+                            '$activeFilters',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              height: 1,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
                   ],
@@ -1159,71 +1347,89 @@ class _SearchingScreenState extends State<SearchingScreen>
                 children: [
                   if (_selectedCategoryName != null)
                     _buildActiveFilterChip(
-                        _selectedCategoryName!,
-                        Icons.category_rounded,
-                        AppTheme.primaryCoral, () {
-                      setState(() {
-                        _selectedCategoryId = null;
-                        _selectedCategoryName = null;
-                      });
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                      _selectedCategoryName!,
+                      Icons.category_rounded,
+                      AppTheme.primaryCoral,
+                      () {
+                        setState(() {
+                          _selectedCategoryId = null;
+                          _selectedCategoryName = null;
+                        });
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                   if (_selectedTagName != null)
-                    _buildActiveFilterChip('#$_selectedTagName',
-                        Icons.tag_rounded, AppTheme.primaryYellow, () {
-                      setState(() {
-                        _selectedTagId = null;
-                        _selectedTagName = null;
-                      });
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                    _buildActiveFilterChip(
+                      '#$_selectedTagName',
+                      Icons.tag_rounded,
+                      AppTheme.primaryYellow,
+                      () {
+                        setState(() {
+                          _selectedTagId = null;
+                          _selectedTagName = null;
+                        });
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                   if (_minCalories != null || _maxCalories != null)
                     _buildActiveFilterChip(
-                        _minCalories != null && _maxCalories != null
-                            ? '$_minCalories–$_maxCalories kkal'
-                            : _minCalories != null
-                                ? '≥$_minCalories kkal'
-                                : '≤$_maxCalories kkal',
-                        Icons.local_fire_department_rounded,
-                        AppTheme.primaryTeal, () {
-                      setState(() {
-                        _minCalories = null;
-                        _maxCalories = null;
-                        _minCaloriesController.clear();
-                        _maxCaloriesController.clear();
-                      });
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                      _minCalories != null && _maxCalories != null
+                          ? '$_minCalories–$_maxCalories kkal'
+                          : _minCalories != null
+                          ? '≥$_minCalories kkal'
+                          : '≤$_maxCalories kkal',
+                      Icons.local_fire_department_rounded,
+                      AppTheme.primaryTeal,
+                      () {
+                        setState(() {
+                          _minCalories = null;
+                          _maxCalories = null;
+                          _minCaloriesController.clear();
+                          _maxCaloriesController.clear();
+                        });
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                   if (_ingredientKeywords.isNotEmpty)
                     _buildActiveFilterChip(
-                        _ingredientKeywords.length == 1
-                            ? _ingredientKeywords.first
-                            : _t('${_ingredientKeywords.length} ingredients',
-                                '${_ingredientKeywords.length} bahan'),
-                        Icons.egg_alt_rounded,
-                        AppTheme.primaryCoral, () {
-                      setState(() {
-                        _ingredientKeywords = [];
-                        _ingredientsController.clear();
-                      });
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                      _ingredientKeywords.length == 1
+                          ? _ingredientKeywords.first
+                          : _t(
+                              '${_ingredientKeywords.length} ingredients',
+                              '${_ingredientKeywords.length} bahan',
+                            ),
+                      Icons.egg_alt_rounded,
+                      AppTheme.primaryCoral,
+                      () {
+                        setState(() {
+                          _ingredientKeywords = [];
+                          _ingredientsController.clear();
+                        });
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                   if (_followedUsersOnly)
-                    _buildActiveFilterChip(_t('From following', 'Dari yang diikuti'),
-                        Icons.people_rounded, AppTheme.primaryOrange, () {
-                      setState(() => _followedUsersOnly = false);
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                    _buildActiveFilterChip(
+                      _t('From following', 'Dari yang diikuti'),
+                      Icons.people_rounded,
+                      AppTheme.primaryOrange,
+                      () {
+                        setState(() => _followedUsersOnly = false);
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                   if (_sortBy != 'popular')
                     _buildActiveFilterChip(
-                        _sortBy == 'newest'
-                            ? _t('Newest', 'Terbaru')
-                            : _t('Highest Rating', 'Rating Tertinggi'),
-                        Icons.sort_rounded,
-                        AppTheme.primaryTeal, () {
-                      setState(() => _sortBy = 'popular');
-                      _searchRecipes(_lastSearchQuery);
-                    }),
+                      _sortBy == 'newest'
+                          ? _t('Newest', 'Terbaru')
+                          : _t('Highest Rating', 'Rating Tertinggi'),
+                      Icons.sort_rounded,
+                      AppTheme.primaryTeal,
+                      () {
+                        setState(() => _sortBy = 'popular');
+                        _searchRecipes(_lastSearchQuery);
+                      },
+                    ),
                 ],
               ),
             ),
@@ -1238,75 +1444,86 @@ class _SearchingScreenState extends State<SearchingScreen>
                         Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                              gradient: AppTheme.accentGradient,
-                              borderRadius: BorderRadius.circular(26),
-                              boxShadow: AppTheme.buttonShadow),
+                            gradient: AppTheme.accentGradient,
+                            borderRadius: BorderRadius.circular(26),
+                            boxShadow: AppTheme.buttonShadow,
+                          ),
                           child: const CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 3.5),
+                            color: Colors.white,
+                            strokeWidth: 3.5,
+                          ),
                         ),
                         const SizedBox(height: 26),
-                        Text(_t('Searching recipes...', 'Mencari resep...'),
-                            style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textSecondary)),
+                        Text(
+                          _t('Searching recipes...', 'Mencari resep...'),
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   )
                 : _searchResults.isEmpty
-                    ? _buildEmptyState(activeFilters)
-                    : FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: ListView.builder(
-                            padding:
-                                const EdgeInsets.fromLTRB(20, 0, 20, 100),
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: _searchResults.length,
-                            itemBuilder: (context, index) {
-                              final recipe = _searchResults[index];
-                              return RecipeCard(
-                                recipe: recipe,
-                                rating: _recipeRatings[
-                                    recipe['id'].toString()],
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => DetailScreen(
-                                          recipeId:
-                                              recipe['id'].toString())),
+                ? _buildEmptyState(activeFilters)
+                : FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: _searchResults.length,
+                        itemBuilder: (context, index) {
+                          final recipe = _searchResults[index];
+                          return RecipeCard(
+                            recipe: recipe,
+                            rating: _recipeRatings[recipe['id'].toString()],
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DetailScreen(
+                                  recipeId: recipe['id'].toString(),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
+                    ),
+                  ),
           ),
         ],
       ),
-      bottomNavigationBar:
-          CustomBottomNav(currentIndex: 1, avatarUrl: _userAvatarUrl),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: 1,
+        avatarUrl: _userAvatarUrl,
+      ),
     );
   }
 
   Widget _buildActiveFilterChip(
-      String label, IconData icon, Color color, VoidCallback onRemove) {
+    String label,
+    IconData icon,
+    Color color,
+    VoidCallback onRemove,
+  ) {
     return Container(
       margin: const EdgeInsets.only(right: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [
-          color.withValues(alpha: 0.15),
-          color.withValues(alpha: 0.1)
-        ]),
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.15), color.withValues(alpha: 0.1)],
+        ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
         boxShadow: [
           BoxShadow(
-              color: color.withValues(alpha: 0.15),
-              blurRadius: 6,
-              offset: const Offset(0, 2))
+            color: color.withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
@@ -1315,16 +1532,20 @@ class _SearchingScreenState extends State<SearchingScreen>
           Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8)),
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Icon(icon, size: 16, color: color),
           ),
           const SizedBox(width: 8),
-          Text(label,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
           const SizedBox(width: 8),
           GestureDetector(
             onTap: onRemove,
@@ -1332,15 +1553,14 @@ class _SearchingScreenState extends State<SearchingScreen>
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                    colors: [color, color.withValues(alpha: 0.8)]),
+                  colors: [color, color.withValues(alpha: 0.8)],
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                      color: color.withValues(alpha: 0.4), blurRadius: 4)
+                  BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 4),
                 ],
               ),
-              child: Icon(Icons.close_rounded,
-                  size: 14, color: Colors.white),
+              child: Icon(Icons.close_rounded, size: 14, color: Colors.white),
             ),
           ),
         ],
@@ -1386,20 +1606,27 @@ class _SearchingScreenState extends State<SearchingScreen>
                   ? _t('No Recipes Found', 'Tidak Ditemukan Resep')
                   : _t('Start Searching', 'Mulai Pencarian'),
               style: TextStyle(
-                  fontSize: 24,
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.bold),
+                fontSize: 24,
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               _lastSearchQuery.isNotEmpty || activeFilters > 0
-                  ? _t('Try another keyword or change your filters',
-                      'Coba kata kunci lain atau ubah filter pencarian')
-                  : _t('Find thousands of delicious recipes\neasily and quickly',
-                      'Temukan ribuan resep lezat\ndengan mudah dan cepat'),
-              style: AppTheme.bodyLarge
-                  .copyWith(color: AppTheme.textSecondary, height: 1.6),
+                  ? _t(
+                      'Try another keyword or change your filters',
+                      'Coba kata kunci lain atau ubah filter pencarian',
+                    )
+                  : _t(
+                      'Find thousands of delicious recipes\neasily and quickly',
+                      'Temukan ribuan resep lezat\ndengan mudah dan cepat',
+                    ),
+              style: AppTheme.bodyLarge.copyWith(
+                color: AppTheme.textSecondary,
+                height: 1.6,
+              ),
               textAlign: TextAlign.center,
             ),
             if (activeFilters > 0) ...[
@@ -1428,17 +1655,26 @@ class _SearchingScreenState extends State<SearchingScreen>
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: Colors.white, size: 22),
-                  label: Text(_t('Reset All Filters', 'Reset Semua Filter'),
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white)),
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                  label: Text(
+                    _t('Reset All Filters', 'Reset Semua Filter'),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],

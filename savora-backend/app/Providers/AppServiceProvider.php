@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\SupabaseService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -25,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
 
             try {
                 $supabase           = app(SupabaseService::class);
-                $pendingTagCount    = count($supabase->select('tags',    ['id'], ['is_approved' => false]));
-                $pendingRecipeCount = count($supabase->select('recipes', ['id'], ['status'      => 'pending']));
+                $pendingTagCount    = Cache::remember('admin_pending_tag_count', 60, fn () => $supabase->count('tags', ['is_approved' => false]));
+                $pendingRecipeCount = Cache::remember('admin_pending_recipe_count', 60, fn () => $supabase->count('recipes', ['status' => 'pending']));
             } catch (\Exception) {}
 
             View::share('pendingTagCount',    $pendingTagCount);
@@ -40,29 +41,33 @@ class AppServiceProvider extends ServiceProvider
             try {
                 $userId = session('user_id');
                 if ($userId) {
-                    $supabase       = app(SupabaseService::class);
-                    $notifications = $supabase->select(
-                        'notifications',
-                        ['type', 'related_entity_type', 'related_entity_id', 'is_read'],
-                        ['user_id' => $userId],
-                        ['order' => 'created_at.desc', 'limit' => 50]
-                    );
+                    $appUnreadCount = Cache::remember("app_unread_count:{$userId}", 30, function () use ($userId) {
+                        $supabase = app(SupabaseService::class);
+                        $notifications = $supabase->select(
+                            'notifications',
+                            ['type', 'related_entity_type', 'related_entity_id', 'is_read'],
+                            ['user_id' => $userId],
+                            ['order' => 'created_at.desc', 'limit' => 50]
+                        );
 
-                    $seen = [];
-                    foreach ($notifications as $notification) {
-                        $key = implode('|', [
-                            $notification['type'] ?? '',
-                            $notification['related_entity_type'] ?? '',
-                            $notification['related_entity_id'] ?? '',
-                        ]);
+                        $unread = 0;
+                        $seen = [];
+                        foreach ($notifications as $notification) {
+                            $key = implode('|', [
+                                $notification['type'] ?? '',
+                                $notification['related_entity_type'] ?? '',
+                                $notification['related_entity_id'] ?? '',
+                            ]);
 
-                        if (isset($seen[$key])) continue;
-                        $seen[$key] = true;
+                            if (isset($seen[$key])) continue;
+                            $seen[$key] = true;
 
-                        if (! ($notification['is_read'] ?? false)) {
-                            $appUnreadCount++;
+                            if (! ($notification['is_read'] ?? false)) {
+                                $unread++;
+                            }
                         }
-                    }
+                        return $unread;
+                    });
                 }
             } catch (\Exception) {}
 

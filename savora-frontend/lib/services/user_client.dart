@@ -66,13 +66,12 @@ class UserClient {
   /// Follow user lain
   static Future<bool> follow({
     required String targetUserId, // user yang mau di-follow
-    required String followerId,   // user yang sedang login
+    required String followerId, // user yang sedang login
   }) async {
     try {
-      final response = await ApiService.post(
-        '/users/$targetUserId/follow',
-        {'follower_id': followerId},
-      );
+      final response = await ApiService.post('/users/$targetUserId/follow', {
+        'follower_id': followerId,
+      });
       return response['success'] == true;
     } catch (e) {
       debugPrint('UserClient.follow error: $e');
@@ -85,10 +84,9 @@ class UserClient {
     required String followerId,
   }) async {
     try {
-      final response = await ApiService.post(
-        '/users/$targetUserId/follow',
-        {'follower_id': followerId},
-      );
+      final response = await ApiService.post('/users/$targetUserId/follow', {
+        'follower_id': followerId,
+      });
       if (response['success'] == true) {
         return response['data']?['follow_status']?.toString() ?? 'following';
       }
@@ -105,10 +103,9 @@ class UserClient {
     required String followerId,
   }) async {
     try {
-      final response = await ApiService.post(
-        '/users/$targetUserId/unfollow',
-        {'follower_id': followerId},
-      );
+      final response = await ApiService.post('/users/$targetUserId/unfollow', {
+        'follower_id': followerId,
+      });
       return response['success'] == true;
     } catch (e) {
       debugPrint('UserClient.unfollow error: $e');
@@ -135,10 +132,14 @@ class UserClient {
   /// Get daftar followers user
   static Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
     try {
-      final response = await ApiService.get('/users/$userId/followers${_viewerQuery()}');
+      final response = await ApiService.get(
+        '/users/$userId/followers${_viewerQuery()}',
+      );
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
+        return _dedupeFollowUsers(
+          list.map((e) => _normalizeFollowUser(e)).toList(),
+        );
       }
       return [];
     } catch (e) {
@@ -150,10 +151,14 @@ class UserClient {
   /// Get daftar user yang diikuti
   static Future<List<Map<String, dynamic>>> getFollowing(String userId) async {
     try {
-      final response = await ApiService.get('/users/$userId/following${_viewerQuery()}');
+      final response = await ApiService.get(
+        '/users/$userId/following${_viewerQuery()}',
+      );
       if (response['success'] == true) {
         final list = response['data'] as List;
-        return _dedupeFollowUsers(list.map((e) => _normalizeFollowUser(e)).toList());
+        return _dedupeFollowUsers(
+          list.map((e) => _normalizeFollowUser(e)).toList(),
+        );
       }
       return [];
     } catch (e) {
@@ -239,7 +244,6 @@ class UserClient {
     }
   }
 
-
   static Map<String, dynamic>? _unwrapMapResponse(dynamic data) {
     if (data is Map<String, dynamic>) {
       return Map<String, dynamic>.from(data);
@@ -266,7 +270,8 @@ class UserClient {
   }
 
   static List<Map<String, dynamic>> _dedupeFollowUsers(
-      List<Map<String, dynamic>> users) {
+    List<Map<String, dynamic>> users,
+  ) {
     final seen = <String>{};
     final deduped = <Map<String, dynamic>>[];
 
@@ -279,5 +284,4 @@ class UserClient {
 
     return deduped;
   }
-
 }

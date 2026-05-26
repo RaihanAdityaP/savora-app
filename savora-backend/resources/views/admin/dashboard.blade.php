@@ -32,6 +32,7 @@ $menus = [
   [route('admin.recipes'),'linear-gradient(135deg,#FF9800,#FFB74D)', 'rgba(255,152,0,.25)',  'Recipe Moderation', $stats['pending_recipes'].' awaiting approval', '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>'],
   [route('admin.tags'),   'linear-gradient(135deg,#FFD700,#FFA500)', 'rgba(255,215,0,.25)',  'Tag Moderation',    ($stats['pending_tags'] ?? 0).' awaiting approval', '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'],
   [route('admin.logs'),   'linear-gradient(135deg,#2196F3,#64B5F6)', 'rgba(33,150,243,.25)', 'Activity Logs',     'Monitor all activities',                     '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
+  [route('admin.attendance'),'linear-gradient(135deg,#00BCD4,#4DD0E1)', 'rgba(0,188,212,.25)', 'Attendance', 'Manage Savora stand attendance', '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'],
   [route('admin.broadcast'),'linear-gradient(135deg,#E91E63,#F06292)', 'rgba(233,30,99,.25)', 'Broadcast Notification', 'Send manual notifications to users',      '<path d="M18 8a6 6 0 0 1 0 8"/><path d="M21 5a10 10 0 0 1 0 14"/><path d="M8 8l-5 4 5 4V8z"/><path d="M10 8v8l5 4V4l-5 4z"/>'],
 ];
 @endphp

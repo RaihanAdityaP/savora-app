@@ -7,6 +7,7 @@ use App\Services\SupabaseService;
 use App\Services\NotificationService;
 use App\Services\UserSettingsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -122,13 +123,14 @@ class UserController extends Controller
             $user['liked_recipes_count'] = 0;
 
             try {
-                // Schema table name is 'follows', not 'followers'
-                $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $id]);
-                $followersCount = collect($followers)
-                    ->pluck('follower_id')
-                    ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $id)
-                    ->unique()
-                    ->count();
+                $followersCount = Cache::remember("api_user_followers_count:{$id}", 60, function () use ($id) {
+                    $followers = $this->supabase->select('follows', ['follower_id'], ['following_id' => $id]);
+                    return collect($followers)
+                        ->pluck('follower_id')
+                        ->filter(fn ($followerId) => ! empty($followerId) && $followerId !== $id)
+                        ->unique()
+                        ->count();
+                });
                 $user['followers_count'] = $followersCount;
                 $user['total_followers'] = $followersCount;
             } catch (Exception $e) {
@@ -136,12 +138,14 @@ class UserController extends Controller
             }
 
             try {
-                $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $id]);
-                $followingCount = collect($following)
-                    ->pluck('following_id')
-                    ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $id)
-                    ->unique()
-                    ->count();
+                $followingCount = Cache::remember("api_user_following_count:{$id}", 60, function () use ($id) {
+                    $following = $this->supabase->select('follows', ['following_id'], ['follower_id' => $id]);
+                    return collect($following)
+                        ->pluck('following_id')
+                        ->filter(fn ($followingId) => ! empty($followingId) && $followingId !== $id)
+                        ->unique()
+                        ->count();
+                });
                 $user['following_count'] = $followingCount;
                 $user['total_following'] = $followingCount;
             } catch (Exception $e) {
@@ -149,14 +153,13 @@ class UserController extends Controller
             }
 
             try {
-                $recipes = $this->supabase->select('recipes', ['id'], ['user_id' => $id, 'status' => 'approved']);
-                $user['recipes_count'] = count($recipes);
+                $user['recipes_count'] = Cache::remember("api_user_recipes_count:{$id}", 60, fn () => $this->supabase->count('recipes', ['user_id' => $id, 'status' => 'approved']));
             } catch (Exception $e) {
                 // keep default value
             }
 
             try {
-                $user['liked_recipes_count'] = $this->supabase->count('recipe_likes', ['user_id' => $id]);
+                $user['liked_recipes_count'] = Cache::remember("api_user_liked_recipes_count:{$id}", 60, fn () => $this->supabase->count('recipe_likes', ['user_id' => $id]));
             } catch (Exception $e) {
                 // keep default value
             }
@@ -217,25 +220,9 @@ class UserController extends Controller
             $order = array_flip($recipeIds);
             usort($recipes, fn ($a, $b) => ($order[$a['id'] ?? ''] ?? 9999) <=> ($order[$b['id'] ?? ''] ?? 9999));
 
-            foreach ($recipes as $index => $recipe) {
-                $recipeId = $recipe['id'] ?? null;
-                if (! $recipeId) continue;
-
-                try {
-                    $recipes[$index]['likes_count'] = $this->supabase->count('recipe_likes', ['recipe_id' => $recipeId]);
-                } catch (Exception $e) {
-                    $recipes[$index]['likes_count'] = 0;
-                }
-
-                try {
-                    $recipes[$index]['is_liked'] = $viewerId ? ! empty($this->supabase->select('recipe_likes', ['id'], [
-                        'recipe_id' => $recipeId,
-                        'user_id' => $viewerId,
-                    ])) : false;
-                } catch (Exception $e) {
-                    $recipes[$index]['is_liked'] = false;
-                }
-            }
+            $recipes = $this->enrichRecipeLikes($recipes, $viewerId);
+            $viewerId = $this->resolveViewerId($request);
+            $recipes = $this->enrichRecipeLikes($recipes, $viewerId);
             $recipes = $this->enrichRecipeRatings($recipes);
 
             return response()->json([
@@ -1017,27 +1004,78 @@ class UserController extends Controller
 
     private function enrichRecipeRatings(array $recipes): array
     {
+        $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($recipeIds)) {
+            return $recipes;
+        }
+
+        $ratingSums = [];
+        $ratingCounts = [];
+
+        try {
+            $ratings = $this->supabase->select(
+                'recipe_ratings',
+                ['recipe_id', 'rating'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($ratings as $rating) {
+                $recipeId = $rating['recipe_id'] ?? null;
+                if (! $recipeId) continue;
+                $ratingSums[$recipeId] = ($ratingSums[$recipeId] ?? 0) + (float) ($rating['rating'] ?? 0);
+                $ratingCounts[$recipeId] = ($ratingCounts[$recipeId] ?? 0) + 1;
+            }
+        } catch (Exception $e) {
+        }
+
         foreach ($recipes as $index => $recipe) {
             $recipeId = $recipe['id'] ?? null;
-            if (! $recipeId) continue;
+            $total = $recipeId ? (int) ($ratingCounts[$recipeId] ?? 0) : 0;
+            $average = $total > 0
+                ? round(($ratingSums[$recipeId] ?? 0) / $total, 1)
+                : 0;
 
-            try {
-                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipeId]);
-                $total = count($ratings);
-                $average = $total > 0
-                    ? round(array_sum(array_column($ratings, 'rating')) / $total, 1)
-                    : 0;
+            $recipes[$index]['rating_avg'] = $average;
+            $recipes[$index]['average_rating'] = $average;
+            $recipes[$index]['rating_count'] = $total;
+            $recipes[$index]['rating_info'] = ['average' => $average, 'total' => $total];
+        }
 
-                $recipes[$index]['rating_avg'] = $average;
-                $recipes[$index]['average_rating'] = $average;
-                $recipes[$index]['rating_count'] = $total;
-                $recipes[$index]['rating_info'] = ['average' => $average, 'total' => $total];
-            } catch (Exception $e) {
-                $recipes[$index]['rating_avg'] = 0;
-                $recipes[$index]['average_rating'] = 0;
-                $recipes[$index]['rating_count'] = 0;
-                $recipes[$index]['rating_info'] = ['average' => 0, 'total' => 0];
+        return $recipes;
+    }
+
+    private function enrichRecipeLikes(array $recipes, ?string $viewerId): array
+    {
+        $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($recipeIds)) {
+            return $recipes;
+        }
+
+        $likeCounts = [];
+        $likedRecipeIds = [];
+
+        try {
+            $likes = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'user_id'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+
+            foreach ($likes as $like) {
+                $recipeId = $like['recipe_id'] ?? null;
+                if (! $recipeId) continue;
+                $likeCounts[$recipeId] = ($likeCounts[$recipeId] ?? 0) + 1;
+                if ($viewerId && ($like['user_id'] ?? null) === $viewerId) {
+                    $likedRecipeIds[$recipeId] = true;
+                }
             }
+        } catch (Exception $e) {
+        }
+
+        foreach ($recipes as $index => $recipe) {
+            $recipeId = $recipe['id'] ?? null;
+            $recipes[$index]['likes_count'] = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
+            $recipes[$index]['is_liked'] = $recipeId ? ! empty($likedRecipeIds[$recipeId]) : false;
         }
 
         return $recipes;

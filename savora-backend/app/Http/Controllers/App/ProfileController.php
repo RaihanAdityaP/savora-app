@@ -318,36 +318,55 @@ class ProfileController extends Controller
 
     private function enrichRecipeCards(array $recipes): array
     {
+        $recipeIds = array_values(array_filter(array_column($recipes, 'id')));
+        if (empty($recipeIds)) {
+            return $recipes;
+        }
+
+        $ratingSums = [];
+        $ratingCounts = [];
+        try {
+            $ratings = $this->supabase->select(
+                'recipe_ratings',
+                ['recipe_id', 'rating'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+            foreach ($ratings as $rating) {
+                $recipeId = $rating['recipe_id'] ?? null;
+                if (! $recipeId) continue;
+                $ratingSums[$recipeId] = ($ratingSums[$recipeId] ?? 0) + (float) ($rating['rating'] ?? 0);
+                $ratingCounts[$recipeId] = ($ratingCounts[$recipeId] ?? 0) + 1;
+            }
+        } catch (Exception) {}
+
+        $likeCounts = [];
+        $likedRecipeIds = [];
+        try {
+            $likes = $this->supabase->select(
+                'recipe_likes',
+                ['recipe_id', 'user_id'],
+                ['recipe_id' => ['operator' => 'in', 'values' => $recipeIds]]
+            );
+            $viewerId = session('user_id');
+            foreach ($likes as $like) {
+                $recipeId = $like['recipe_id'] ?? null;
+                if (! $recipeId) continue;
+                $likeCounts[$recipeId] = ($likeCounts[$recipeId] ?? 0) + 1;
+                if ($viewerId && ($like['user_id'] ?? null) === $viewerId) {
+                    $likedRecipeIds[$recipeId] = true;
+                }
+            }
+        } catch (Exception) {}
+
         foreach ($recipes as $index => $recipe) {
             $recipeId = $recipe['id'] ?? null;
-            if (! $recipeId) continue;
-
-            try {
-                $ratings = $this->supabase->select('recipe_ratings', ['rating'], ['recipe_id' => $recipeId]);
-                $ratingCount = count($ratings);
-                $recipes[$index]['rating_count'] = $ratingCount;
-                $recipes[$index]['rating_avg'] = $ratingCount > 0
-                    ? round(array_sum(array_column($ratings, 'rating')) / $ratingCount, 1)
-                    : 0;
-            } catch (Exception) {
-                $recipes[$index]['rating_count'] = 0;
-                $recipes[$index]['rating_avg'] = 0;
-            }
-
-            try {
-                $recipes[$index]['likes_count'] = $this->supabase->count('recipe_likes', ['recipe_id' => $recipeId]);
-            } catch (Exception) {
-                $recipes[$index]['likes_count'] = 0;
-            }
-
-            try {
-                $recipes[$index]['is_liked'] = ! empty($this->supabase->select('recipe_likes', ['id'], [
-                    'recipe_id' => $recipeId,
-                    'user_id' => session('user_id'),
-                ]));
-            } catch (Exception) {
-                $recipes[$index]['is_liked'] = false;
-            }
+            $ratingCount = $recipeId ? (int) ($ratingCounts[$recipeId] ?? 0) : 0;
+            $recipes[$index]['rating_count'] = $ratingCount;
+            $recipes[$index]['rating_avg'] = $ratingCount > 0
+                ? round(($ratingSums[$recipeId] ?? 0) / $ratingCount, 1)
+                : 0;
+            $recipes[$index]['likes_count'] = $recipeId ? (int) ($likeCounts[$recipeId] ?? 0) : 0;
+            $recipes[$index]['is_liked'] = $recipeId ? ! empty($likedRecipeIds[$recipeId]) : false;
         }
 
         return $recipes;

@@ -34,23 +34,23 @@ class AppTheme {
       isDarkMode ? const Color(0xFF6B7A8D) : const Color(0xFF9CA3AF);
 
   // Extended Colors (untuk modal, tag management, recipe card, app bar)
-  static const Color privacyGreen   = Color(0xFF2A9D8F);
-  static const Color privacyDark    = Color(0xFF264653);
-  static const Color privacyDeep    = Color(0xFF1a5c54);
-  static const Color termsRed       = Color(0xFFE76F51);
-  static const Color termsAmber     = Color(0xFFF4A261);
-  static const Color termsYellow    = Color(0xFFE9C46A);
-  static const Color tagBorder      = Color(0xFFE9C46A);
-  static const Color recipeCatDark  = Color(0xFF264653);
-  static const Color recipeCatTeal  = Color(0xFF2A9D8F);
-  static const Color logoBlue       = Color(0xFF2B6CB0);
-  static const Color logoOrange     = Color(0xFFFF6B35);
-  static const Color badgeRed       = Color(0xFFFF3B30);
-  static const Color badgeRedLight  = Color(0xFFFF6B6B);
+  static const Color privacyGreen = Color(0xFF2A9D8F);
+  static const Color privacyDark = Color(0xFF264653);
+  static const Color privacyDeep = Color(0xFF1a5c54);
+  static const Color termsRed = Color(0xFFE76F51);
+  static const Color termsAmber = Color(0xFFF4A261);
+  static const Color termsYellow = Color(0xFFE9C46A);
+  static const Color tagBorder = Color(0xFFE9C46A);
+  static const Color recipeCatDark = Color(0xFF264653);
+  static const Color recipeCatTeal = Color(0xFF2A9D8F);
+  static const Color logoBlue = Color(0xFF2B6CB0);
+  static const Color logoOrange = Color(0xFFFF6B35);
+  static const Color badgeRed = Color(0xFFFF3B30);
+  static const Color badgeRedLight = Color(0xFFFF6B6B);
 
   // Proxy/Warning Colors
-  static const Color proxyOrange    = Color(0xFFF97316);
-  static const Color proxyPurple    = Color(0xFF9333EA);
+  static const Color proxyOrange = Color(0xFFF97316);
+  static const Color proxyPurple = Color(0xFF9333EA);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -98,23 +98,24 @@ class AppTheme {
   );
 
   static LinearGradient get cardGradient => LinearGradient(
-        colors: [
-          primaryCoral.withValues(alpha: isDarkMode ? 0.08 : 0.05),
-          (isDarkMode ? primaryTeal : primaryOrange)
-              .withValues(alpha: isDarkMode ? 0.06 : 0.1),
-        ],
-      );
+    colors: [
+      primaryCoral.withValues(alpha: isDarkMode ? 0.08 : 0.05),
+      (isDarkMode ? primaryTeal : primaryOrange).withValues(
+        alpha: isDarkMode ? 0.06 : 0.1,
+      ),
+    ],
+  );
 
   static LinearGradient get inputGradient => LinearGradient(
-        colors: [
-          isDarkMode
-              ? Colors.white.withValues(alpha: 0.05)
-              : primaryCoral.withValues(alpha: 0.05),
-          isDarkMode
-              ? Colors.white.withValues(alpha: 0.03)
-              : primaryOrange.withValues(alpha: 0.08),
-        ],
-      );
+    colors: [
+      isDarkMode
+          ? Colors.white.withValues(alpha: 0.05)
+          : primaryCoral.withValues(alpha: 0.05),
+      isDarkMode
+          ? Colors.white.withValues(alpha: 0.03)
+          : primaryOrange.withValues(alpha: 0.08),
+    ],
+  );
 
   // Admin/Premium Gradients
   static const LinearGradient adminGradient = LinearGradient(
@@ -132,100 +133,97 @@ class AppTheme {
 
   // Box Shadows
   static List<BoxShadow> get primaryShadow => [
-        BoxShadow(
-          color: primaryCoral.withValues(alpha: 0.3),
-          blurRadius: 20,
-          offset: const Offset(0, 10),
-        ),
-      ];
+    BoxShadow(
+      color: primaryCoral.withValues(alpha: 0.3),
+      blurRadius: 20,
+      offset: const Offset(0, 10),
+    ),
+  ];
 
   static List<BoxShadow> get cardShadow => [
-        BoxShadow(
-          color: isDarkMode
-              ? Colors.black.withValues(alpha: 0.35)
-              : primaryCoral.withValues(alpha: 0.1),
-          blurRadius: isDarkMode ? 18 : 10,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: isDarkMode
+          ? Colors.black.withValues(alpha: 0.35)
+          : primaryCoral.withValues(alpha: 0.1),
+      blurRadius: isDarkMode ? 18 : 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   static List<BoxShadow> get buttonShadow => [
-        BoxShadow(
-          color: primaryCoral.withValues(alpha: 0.4),
-          blurRadius: 15,
-          offset: const Offset(0, 8),
-        ),
-      ];
+    BoxShadow(
+      color: primaryCoral.withValues(alpha: 0.4),
+      blurRadius: 15,
+      offset: const Offset(0, 8),
+    ),
+  ];
 
   static List<BoxShadow> get logoBlueShadow => [
-        BoxShadow(
-          color: logoBlue.withValues(alpha: 0.3),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
+    BoxShadow(
+      color: logoBlue.withValues(alpha: 0.3),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
   static List<BoxShadow> get badgeShadow => [
-        BoxShadow(
-          color: badgeRed.withValues(alpha: 0.5),
-          blurRadius: 8,
-          spreadRadius: 1,
-        ),
-      ];
+    BoxShadow(
+      color: badgeRed.withValues(alpha: 0.5),
+      blurRadius: 8,
+      spreadRadius: 1,
+    ),
+  ];
 
   // Border Decorations
   static BoxDecoration get cardDecoration => BoxDecoration(
-        color: cardBackground,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: primaryCoral.withValues(alpha: isDarkMode ? 0.2 : 0.18),
-          width: 2,
-        ),
-        boxShadow: cardShadow,
-      );
+    color: cardBackground,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(
+      color: primaryCoral.withValues(alpha: isDarkMode ? 0.2 : 0.18),
+      width: 2,
+    ),
+    boxShadow: cardShadow,
+  );
 
   static BoxDecoration inputDecoration(Color iconColor) => BoxDecoration(
-        color: isDarkMode ? subtleSurfaceColor : null,
-        gradient: isDarkMode
-            ? null
-            : LinearGradient(
-                colors: [
-                  iconColor.withValues(alpha: 0.05),
-                  iconColor.withValues(alpha: 0.1),
-                ],
-              ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: iconColor.withValues(alpha: isDarkMode ? 0.35 : 0.2),
-          width: 1.5,
-        ),
-      );
+    color: isDarkMode ? subtleSurfaceColor : null,
+    gradient: isDarkMode
+        ? null
+        : LinearGradient(
+            colors: [
+              iconColor.withValues(alpha: 0.05),
+              iconColor.withValues(alpha: 0.1),
+            ],
+          ),
+    borderRadius: BorderRadius.circular(14),
+    border: Border.all(
+      color: iconColor.withValues(alpha: isDarkMode ? 0.35 : 0.2),
+      width: 1.5,
+    ),
+  );
 
   // Button Styles
   static BoxDecoration get primaryButtonDecoration => BoxDecoration(
-        gradient: accentGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: buttonShadow,
-      );
+    gradient: accentGradient,
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: buttonShadow,
+  );
 
   static BoxDecoration get outlinedButtonDecoration => BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.3),
-          width: 1.5,
-        ),
-      );
+    color: Colors.white.withValues(alpha: 0.2),
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
+  );
 
   // Tag chip decoration for tag management screen
-  static BoxDecoration tagChipDecoration(Color color, {bool isSelected = false}) => BoxDecoration(
-        color: isSelected ? color.withValues(alpha: 0.15) : surfaceColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isSelected ? color : borderColor,
-          width: 1.5,
-        ),
-      );
+  static BoxDecoration tagChipDecoration(
+    Color color, {
+    bool isSelected = false,
+  }) => BoxDecoration(
+    color: isSelected ? color.withValues(alpha: 0.15) : surfaceColor,
+    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: isSelected ? color : borderColor, width: 1.5),
+  );
 
   // Section Header Style
   static Widget buildSectionHeader(String title, IconData icon) {
@@ -272,43 +270,25 @@ class AppTheme {
     color: Colors.white,
   );
 
-  static TextStyle get headingMedium => TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-      );
+  static TextStyle get headingMedium =>
+      TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textPrimary);
 
-  static TextStyle get headingSmall => TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: textPrimary,
-      );
+  static TextStyle get headingSmall =>
+      TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary);
 
-  static TextStyle get bodyLarge => TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: textPrimary,
-      );
+  static TextStyle get bodyLarge =>
+      TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: textPrimary);
 
-  static TextStyle get bodyMedium => TextStyle(
-        fontSize: 14,
-        color: textPrimary,
-      );
+  static TextStyle get bodyMedium =>
+      TextStyle(fontSize: 14, color: textPrimary);
 
-  static TextStyle get bodySmall => TextStyle(
-        fontSize: 13,
-        color: textSecondary,
-      );
+  static TextStyle get bodySmall =>
+      TextStyle(fontSize: 13, color: textSecondary);
 
-  static TextStyle get fieldText => TextStyle(
-        color: textPrimary,
-        fontWeight: FontWeight.w500,
-      );
+  static TextStyle get fieldText =>
+      TextStyle(color: textPrimary, fontWeight: FontWeight.w500);
 
-  static TextStyle get fieldHint => TextStyle(
-        color: textMuted,
-        fontSize: 14,
-      );
+  static TextStyle get fieldHint => TextStyle(color: textMuted, fontSize: 14);
 
   static const TextStyle buttonText = TextStyle(
     color: Colors.white,
@@ -338,12 +318,10 @@ class AppTheme {
   }
 
   static BoxDecoration get subtlePanelDecoration => BoxDecoration(
-        gradient: LinearGradient(
-          colors: [lightPanelAccentColor, lightPanelColor],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      );
+    gradient: LinearGradient(colors: [lightPanelAccentColor, lightPanelColor]),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: borderColor),
+  );
 
   // Role-based colors
   static List<Color> getRoleGradient(String role) {
@@ -370,15 +348,15 @@ class AppTheme {
 
   // Tag Chip Decoration
   static BoxDecoration get selectedTagDecoration => BoxDecoration(
-        gradient: accentGradient,
-        borderRadius: BorderRadius.circular(20),
-      );
+    gradient: accentGradient,
+    borderRadius: BorderRadius.circular(20),
+  );
 
   static BoxDecoration get unselectedTagDecoration => BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor),
-      );
+    color: surfaceColor,
+    borderRadius: BorderRadius.circular(20),
+    border: Border.all(color: borderColor),
+  );
 
   // Empty State Widget
   static Widget buildEmptyState({

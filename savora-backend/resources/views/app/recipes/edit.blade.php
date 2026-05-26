@@ -601,11 +601,59 @@
 
                 </template>
 
+                {{-- Inline tag search, same behavior as Flutter create/edit screens --}}
+                <div class="mb-4" x-show="selectedTags.length < 3">
+                    <div class="relative">
+                        <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-secondary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+                        </svg>
+                        <input type="text"
+                               x-model="tagSearch"
+                               @input="searchTags()"
+                               @keydown.enter.prevent="if (modalTagList.length) { toggleModalTag(modalTagList[0]); tagSearch=''; modalTagList = POPULAR_TAGS.map(t => ({ ...t })); } else { openTagModal(); }"
+                               placeholder="{{ $isEnglish ? 'Search tags (max 3)' : 'Cari tag (max 3)' }}"
+                               class="input-savora w-full pl-9 pr-10">
+                        <button type="button"
+                                x-show="tagSearch.length > 0"
+                                @click="tagSearch=''; modalTagList = POPULAR_TAGS.map(t => ({ ...t }))"
+                                class="absolute right-3 top-1/2 -translate-y-1/2"
+                                style="color: var(--color-text-secondary);">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div x-show="tagSearch.trim().length > 0" class="mt-2 rounded-2xl overflow-hidden border" style="border-color: var(--color-separator);">
+                        <div x-show="tagSearchLoading" class="px-3 py-3 text-xs" style="color: var(--color-text-secondary);">
+                            {{ $isEnglish ? 'Searching tags...' : 'Mencari tag...' }}
+                        </div>
+                        <template x-for="tag in modalTagList.slice(0, 8)" :key="tag.id">
+                            <button type="button"
+                                    @click="toggleModalTag(tag); tagSearch=''; modalTagList = POPULAR_TAGS.map(t => ({ ...t }))"
+                                    :disabled="!isTagSelected(tag.id) && selectedTags.length >= 3"
+                                    class="w-full flex items-center justify-between px-3 py-2.5 text-left text-sm transition-colors"
+                                    :class="isTagSelected(tag.id) ? 'font-semibold' : ''"
+                                    :style="isTagSelected(tag.id) ? 'background: var(--color-primary-coral); color: var(--color-on-accent);' : 'color: var(--color-text-primary);'">
+                                <span>#<span x-text="tag.name"></span></span>
+                                <span x-show="isTagSelected(tag.id)">✓</span>
+                            </button>
+                        </template>
+                        <button type="button"
+                                x-show="!tagSearchLoading && modalTagList.length === 0 && tagSearch.trim().length >= 2"
+                                @click="openTagModal()"
+                                class="w-full px-3 py-2.5 text-left text-sm font-semibold"
+                                style="color: var(--color-primary-coral);">
+                            {{ $isEnglish ? 'Tag not found. Open tag manager to create it.' : 'Tag tidak ditemukan. Buka kelola tag untuk membuatnya.' }}
+                        </button>
+                    </div>
+                </div>
+
 
 
                 {{-- Popular tags quick-select --}}
 
-                <div x-show="selectedTags.length < 3">
+                <div x-show="selectedTags.length < 3 && tagSearch.trim().length === 0">
 
                     <p class="text-xs font-semibold mb-2" style="color: var(--color-text-secondary);">Tag Populer</p>
 

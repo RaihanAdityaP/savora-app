@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'app_settings_service.dart';
 
 /// DraftService — menyimpan draft form ke SharedPreferences
 /// Dipanggil dari CreateRecipeScreen & EditRecipeScreen
@@ -15,6 +16,10 @@ class DraftService {
   /// Simpan draft untuk form Create Recipe
   static Future<void> saveCreateDraft(Map<String, dynamic> data) async {
     try {
+      if (!await _isAutoSaveEnabled()) {
+        await clearCreateDraft();
+        return;
+      }
       final prefs = await SharedPreferences.getInstance();
       data['saved_at'] = DateTime.now().toIso8601String();
       await prefs.setString(_createDraftKey, json.encode(data));
@@ -27,6 +32,10 @@ class DraftService {
   /// Load draft untuk form Create Recipe
   static Future<Map<String, dynamic>?> loadCreateDraft() async {
     try {
+      if (!await _isAutoSaveEnabled()) {
+        await clearCreateDraft();
+        return null;
+      }
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_createDraftKey);
       if (raw == null || raw.isEmpty) return null;
@@ -51,6 +60,7 @@ class DraftService {
   /// Cek apakah ada draft Create Recipe
   static Future<bool> hasCreateDraft() async {
     try {
+      if (!await _isAutoSaveEnabled()) return false;
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey(_createDraftKey);
     } catch (e) {
@@ -63,8 +73,15 @@ class DraftService {
   // ─────────────────────────────────────────────
 
   /// Simpan draft untuk form Edit Recipe (per recipe ID)
-  static Future<void> saveEditDraft(String recipeId, Map<String, dynamic> data) async {
+  static Future<void> saveEditDraft(
+    String recipeId,
+    Map<String, dynamic> data,
+  ) async {
     try {
+      if (!await _isAutoSaveEnabled()) {
+        await clearEditDraft(recipeId);
+        return;
+      }
       final prefs = await SharedPreferences.getInstance();
       data['saved_at'] = DateTime.now().toIso8601String();
       await prefs.setString('$_editDraftPrefix$recipeId', json.encode(data));
@@ -77,6 +94,10 @@ class DraftService {
   /// Load draft untuk Edit Recipe
   static Future<Map<String, dynamic>?> loadEditDraft(String recipeId) async {
     try {
+      if (!await _isAutoSaveEnabled()) {
+        await clearEditDraft(recipeId);
+        return null;
+      }
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('$_editDraftPrefix$recipeId');
       if (raw == null || raw.isEmpty) return null;
@@ -101,10 +122,16 @@ class DraftService {
   /// Cek apakah ada draft Edit Recipe
   static Future<bool> hasEditDraft(String recipeId) async {
     try {
+      if (!await _isAutoSaveEnabled()) return false;
       final prefs = await SharedPreferences.getInstance();
       return prefs.containsKey('$_editDraftPrefix$recipeId');
     } catch (e) {
       return false;
     }
+  }
+
+  static Future<bool> _isAutoSaveEnabled() async {
+    final settings = await AppSettingsService.load();
+    return settings.autoSaveDrafts;
   }
 }

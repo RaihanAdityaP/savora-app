@@ -4,11 +4,7 @@ class TermsModal extends StatefulWidget {
   final VoidCallback onClose;
   final VoidCallback? onAccept;
 
-  const TermsModal({
-    super.key,
-    required this.onClose,
-    this.onAccept,
-  });
+  const TermsModal({super.key, required this.onClose, this.onAccept});
 
   static Future<bool?> show(BuildContext context) {
     return showDialog<bool>(
@@ -46,9 +42,10 @@ class _TermsModalState extends State<TermsModal>
     _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
     );
-    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
-    );
+    _fadeAnim = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _animController, curve: Curves.easeIn));
     _animController.forward();
   }
 
@@ -106,9 +103,11 @@ class _TermsModalState extends State<TermsModal>
       child: Stack(
         children: [
           Positioned(
-            top: -40, right: -40,
+            top: -40,
+            right: -40,
             child: Container(
-              width: 120, height: 120,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.1),
@@ -116,9 +115,11 @@ class _TermsModalState extends State<TermsModal>
             ),
           ),
           Positioned(
-            bottom: -30, left: -30,
+            bottom: -30,
+            left: -30,
             child: Container(
-              width: 90, height: 90,
+              width: 90,
+              height: 90,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.1),
@@ -133,25 +134,42 @@ class _TermsModalState extends State<TermsModal>
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.description_rounded, color: Colors.white, size: 28),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Terms & Conditions',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                    Text(
+                      'Terms & Conditions',
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Please read carefully',
-                        style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+                    Text(
+                      'Please read carefully',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
               GestureDetector(
                 onTap: widget.onClose,
                 child: Container(
-                  width: 40, height: 40,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -204,12 +222,18 @@ class _TermsModalState extends State<TermsModal>
       child: Row(
         children: [
           Container(
-            width: 8, height: 8,
-            decoration: const BoxDecoration(color: Color(0xFFE76F51), shape: BoxShape.circle),
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE76F51),
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
-          Text('Last updated: March 19, 2026',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+          Text(
+            'Last updated: March 19, 2026',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+          ),
         ],
       ),
     );
@@ -245,11 +269,21 @@ class _TermsModalState extends State<TermsModal>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.route_rounded, color: Colors.purple.shade600, size: 18),
+                        Icon(
+                          Icons.route_rounded,
+                          color: Colors.purple.shade600,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text('Third-Party AI Proxy Terms',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.purple.shade700)),
+                          child: Text(
+                            'Third-Party AI Proxy Terms',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple.shade700,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -257,13 +291,22 @@ class _TermsModalState extends State<TermsModal>
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.purple.shade600,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text('MUST READ',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'MUST READ',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -275,39 +318,47 @@ class _TermsModalState extends State<TermsModal>
 
           Text(
             'Savora provides an optional feature to connect AI services from third-party providers. By using this feature, you agree to all of the following terms:',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 12),
 
           _proxyTermItem(
-            num  : 'A',
+            num: 'A',
             color: Colors.red.shade600,
             title: 'Costs Are Fully the User\'s Responsibility',
-            desc : 'Savora tidak bertanggung jawab atas biaya, tagihan, kelebihan kuota, atau pembayaran apapun yang timbul dari penggunaan layanan AI pihak ketiga. Seluruh biaya penggunaan API (termasuk model berbayar) adalah tanggung jawab pengguna sepenuhnya. Savora tidak akan mengganti kerugian finansial apapun yang diakibatkan penggunaan fitur ini.',
+            desc:
+                'Savora tidak bertanggung jawab atas biaya, tagihan, kelebihan kuota, atau pembayaran apapun yang timbul dari penggunaan layanan AI pihak ketiga. Seluruh biaya penggunaan API (termasuk model berbayar) adalah tanggung jawab pengguna sepenuhnya. Savora tidak akan mengganti kerugian finansial apapun yang diakibatkan penggunaan fitur ini.',
           ),
           const SizedBox(height: 10),
 
           _proxyTermItem(
-            num  : 'B',
+            num: 'B',
             color: Colors.purple.shade700,
             title: 'No Official Relationship with Third Parties',
-            desc : 'Savora tidak memiliki kemitraan, afiliasi, perjanjian kerja sama, atau hubungan resmi dalam bentuk apapun dengan provider AI pihak ketiga yang didukung oleh fitur ini, termasuk namun tidak terbatas pada OpenRouter dan penyedia serupa. Tampilan nama dan layanan pihak ketiga dalam aplikasi semata-mata untuk kemudahan konfigurasi pengguna dan bukan merupakan bentuk endorsement atau kerja sama resmi.',
+            desc:
+                'Savora tidak memiliki kemitraan, afiliasi, perjanjian kerja sama, atau hubungan resmi dalam bentuk apapun dengan provider AI pihak ketiga yang didukung oleh fitur ini, termasuk namun tidak terbatas pada OpenRouter dan penyedia serupa. Tampilan nama dan layanan pihak ketiga dalam aplikasi semata-mata untuk kemudahan konfigurasi pengguna dan bukan merupakan bentuk endorsement atau kerja sama resmi.',
           ),
           const SizedBox(height: 10),
 
           _proxyTermItem(
-            num  : 'C',
+            num: 'C',
             color: Colors.orange.shade700,
             title: 'Persetujuan Risiko secara Eksplisit',
-            desc : 'By enabling and using the third-party AI proxy feature, you knowingly and explicitly accept all risks that may arise, including API key leakage or misuse, third-party service unavailability or disruption, provider price or policy changes without notice, conversation data loss, and financial consequences from uncontrolled usage. Savora cannot be held responsible for these risks.',
+            desc:
+                'By enabling and using the third-party AI proxy feature, you knowingly and explicitly accept all risks that may arise, including API key leakage or misuse, third-party service unavailability or disruption, provider price or policy changes without notice, conversation data loss, and financial consequences from uncontrolled usage. Savora cannot be held responsible for these risks.',
           ),
           const SizedBox(height: 10),
 
           _proxyTermItem(
-            num  : 'D',
+            num: 'D',
             color: Colors.blue.shade700,
             title: 'Compliance with Third-Party Terms',
-            desc : 'Users must read, understand, and comply with the terms, conditions, and usage policies of each third-party AI provider they use. Savora is not responsible for user violations of third-party terms.',
+            desc:
+                'Users must read, understand, and comply with the terms, conditions, and usage policies of each third-party AI provider they use. Savora is not responsible for user violations of third-party terms.',
           ),
           const SizedBox(height: 14),
 
@@ -322,12 +373,20 @@ class _TermsModalState extends State<TermsModal>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.lightbulb_outline_rounded, color: Colors.purple.shade600, size: 18),
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: Colors.purple.shade600,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Savora provides a free default AI service (Groq) managed by the server. The third-party proxy feature is optional and intended for users who want to use specific AI models or providers.',
-                    style: TextStyle(fontSize: 12, color: Colors.purple.shade700, height: 1.5),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.purple.shade700,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ],
@@ -340,7 +399,7 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _proxyTermItem({
     required String num,
-    required Color  color,
+    required Color color,
     required String title,
     required String desc,
   }) {
@@ -355,14 +414,21 @@ class _TermsModalState extends State<TermsModal>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 26, height: 26,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(7),
             ),
             child: Center(
-              child: Text(num,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+              child: Text(
+                num,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -370,11 +436,23 @@ class _TermsModalState extends State<TermsModal>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(desc,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.5)),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade700,
+                    height: 1.5,
+                  ),
+                ),
               ],
             ),
           ),
@@ -385,10 +463,11 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildSection1() {
     return _buildSimpleSection(
-      num  : '1',
+      num: '1',
       color: const Color(0xFFE76F51),
       title: 'Acceptance of Terms',
-      text : 'By accessing and using the Savora platform, you agree to be bound by these terms and conditions. If you do not agree, please do not use our services.',
+      text:
+          'By accessing and using the Savora platform, you agree to be bound by these terms and conditions. If you do not agree, please do not use our services.',
     );
   }
 
@@ -408,32 +487,61 @@ class _TermsModalState extends State<TermsModal>
             _buildNumBadge('2', const Color(0xFF2A9D8F)),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Uploaded Content',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
+              child: Text(
+                'Uploaded Content',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF264653),
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Users are fully responsible for the content they upload, including:',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+        Text(
+          'Users are fully responsible for the content they upload, including:',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+        ),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: items.map((item) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 5, height: 5,
-                  decoration: const BoxDecoration(color: Color(0xFF2A9D8F), shape: BoxShape.circle),
+          spacing: 8,
+          runSpacing: 8,
+          children: items
+              .map(
+                (item) => Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2A9D8F),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        item,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 6),
-                Text(item, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-              ],
-            ),
-          )).toList(),
+              )
+              .toList(),
         ),
       ],
     );
@@ -472,11 +580,21 @@ class _TermsModalState extends State<TermsModal>
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.shield_outlined, color: Colors.red, size: 18),
+                        const Icon(
+                          Icons.shield_outlined,
+                          color: Colors.red,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         const Expanded(
-                          child: Text('Intellectual Property Rights',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.red)),
+                          child: Text(
+                            'Intellectual Property Rights',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -484,10 +602,22 @@ class _TermsModalState extends State<TermsModal>
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(20)),
-                        child: const Text('VERY IMPORTANT',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'VERY IMPORTANT',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -505,48 +635,81 @@ class _TermsModalState extends State<TermsModal>
             ),
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(fontSize: 13, color: Color(0xFF7B0000), fontWeight: FontWeight.w600, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF7B0000),
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
+                ),
                 children: [
                   const TextSpan(text: 'Savora '),
                   WidgetSpan(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.red.shade200, borderRadius: BorderRadius.circular(4)),
-                      child: const Text('not responsible',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF7B0000))),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'not responsible',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF7B0000),
+                        ),
+                      ),
                     ),
                   ),
                   const TextSpan(
-                      text: ' for copyright, trademark, or other intellectual property violations committed by users.'),
+                    text:
+                        ' for copyright, trademark, or other intellectual property violations committed by users.',
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Text('By uploading content, you represent that:',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+          Text(
+            'By uploading content, you represent that:',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+          ),
           const SizedBox(height: 8),
-          ...items.map((item) => Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 1),
-                      child: Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
+          ...items.map(
+            (item) => Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 1),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.red,
+                      size: 16,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(item, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -571,36 +734,49 @@ class _TermsModalState extends State<TermsModal>
             _buildNumBadge('4', const Color(0xFFF4A261)),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Limitation of Liability',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
+              child: Text(
+                'Limitation of Liability',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF264653),
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Savora acts as a recipe-sharing platform and is NOT responsible for:',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+        Text(
+          'Savora acts as a recipe-sharing platform and is NOT responsible for:',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+        ),
         const SizedBox(height: 8),
-        ...items.map((item) => Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(Icons.close, color: Colors.grey, size: 14),
+        ...items.map(
+          (item) => Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 2),
+                  child: Icon(Icons.close, color: Colors.grey, size: 14),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(item, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                  ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -620,43 +796,64 @@ class _TermsModalState extends State<TermsModal>
         Row(
           children: [
             Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.block_rounded, color: Colors.red, size: 18),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.red.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.block_rounded,
+                color: Colors.red,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text('Prohibited Content',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
+              child: Text(
+                'Prohibited Content',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF264653),
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        Text('Users are prohibited from uploading content that:',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+        Text(
+          'Users are prohibited from uploading content that:',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+        ),
         const SizedBox(height: 8),
-        ...items.map((item) => Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2),
-                    child: Icon(Icons.block_rounded, color: Colors.red, size: 14),
+        ...items.map(
+          (item) => Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 2),
+                  child: Icon(Icons.block_rounded, color: Colors.red, size: 14),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(item, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                  ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -664,41 +861,55 @@ class _TermsModalState extends State<TermsModal>
   List<Widget> _buildOtherSections() {
     final sections = [
       {
-        'num': '6', 'color': Colors.blue,
+        'num': '6',
+        'color': Colors.blue,
         'title': 'Content Moderation',
-        'text': 'Savora has the right to review, approve, reject, or remove content considered to violate these terms and conditions without prior notice.'
+        'text':
+            'Savora has the right to review, approve, reject, or remove content considered to violate these terms and conditions without prior notice.',
       },
       {
-        'num': '7', 'color': Colors.purple,
+        'num': '7',
+        'color': Colors.purple,
         'title': 'User Account',
-        'text': 'You are responsible for keeping your account, password, and API keys confidential. Savora is not responsible for losses caused by unauthorized access to your account or API keys.'
+        'text':
+            'You are responsible for keeping your account, password, and API keys confidential. Savora is not responsible for losses caused by unauthorized access to your account or API keys.',
       },
       {
-        'num': '8', 'color': Colors.pink,
+        'num': '8',
+        'color': Colors.pink,
         'title': 'Service Termination',
-        'text': 'Savora reserves the right to suspend or terminate your access to the platform if you are proven to violate these terms and conditions, without any compensation.'
+        'text':
+            'Savora reserves the right to suspend or terminate your access to the platform if you are proven to violate these terms and conditions, without any compensation.',
       },
       {
-        'num': '9', 'color': Colors.indigo,
+        'num': '9',
+        'color': Colors.indigo,
         'title': 'Changes to Terms',
-        'text': 'Savora reserves the right to change these terms and conditions at any time. Changes take effect immediately after being published on the platform.'
+        'text':
+            'Savora reserves the right to change these terms and conditions at any time. Changes take effect immediately after being published on the platform.',
       },
       {
-        'num': '10', 'color': Colors.blueGrey,
+        'num': '10',
+        'color': Colors.blueGrey,
         'title': 'Governing Law',
-        'text': 'These terms and conditions are governed by and interpreted under the laws of the Republic of Indonesia. Any dispute will be resolved in the competent courts of Indonesia.'
+        'text':
+            'These terms and conditions are governed by and interpreted under the laws of the Republic of Indonesia. Any dispute will be resolved in the competent courts of Indonesia.',
       },
     ];
 
-    return sections.map((s) => Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: _buildSimpleSection(
-        num  : s['num'] as String,
-        color: s['color'] as Color,
-        title: s['title'] as String,
-        text : s['text'] as String,
-      ),
-    )).toList();
+    return sections
+        .map(
+          (s) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildSimpleSection(
+              num: s['num'] as String,
+              color: s['color'] as Color,
+              title: s['title'] as String,
+              text: s['text'] as String,
+            ),
+          ),
+        )
+        .toList();
   }
 
   Widget _buildDisclaimerBanner() {
@@ -720,21 +931,39 @@ class _TermsModalState extends State<TermsModal>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.warning_rounded, color: Colors.white, size: 26),
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('IMPORTANT DISCLAIMER',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 13)),
+                    Text(
+                      'IMPORTANT DISCLAIMER',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                        fontSize: 13,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     RichText(
                       text: TextSpan(
-                        style: TextStyle(fontSize: 13, color: Colors.amber.shade800, height: 1.5),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.amber.shade800,
+                          height: 1.5,
+                        ),
                         children: [
                           const TextSpan(text: 'By using Savora, you '),
                           const TextSpan(
@@ -742,7 +971,9 @@ class _TermsModalState extends State<TermsModal>
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const TextSpan(
-                              text: ' from any legal claims related to user-uploaded content, including but not limited to copyright infringement, injury, or material loss.'),
+                            text:
+                                ' from any legal claims related to user-uploaded content, including but not limited to copyright infringement, injury, or material loss.',
+                          ),
                         ],
                       ),
                     ),
@@ -763,12 +994,21 @@ class _TermsModalState extends State<TermsModal>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.route_rounded, color: Colors.amber.shade800, size: 16),
+                Icon(
+                  Icons.route_rounded,
+                  color: Colors.amber.shade800,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'For the AI proxy feature specifically: Savora is not responsible for usage costs, service interruptions, or any losses arising from third-party AI providers. Use of this feature is entirely at your own risk and responsibility.',
-                    style: TextStyle(fontSize: 12, color: Colors.amber.shade900, height: 1.5, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.amber.shade900,
+                      height: 1.5,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
@@ -784,12 +1024,19 @@ class _TermsModalState extends State<TermsModal>
             ),
             child: Row(
               children: [
-                Icon(Icons.mail_outline, color: Colors.amber.shade800, size: 16),
+                Icon(
+                  Icons.mail_outline,
+                  color: Colors.amber.shade800,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: TextStyle(fontSize: 12, color: Colors.amber.shade800),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.amber.shade800,
+                      ),
                       children: [
                         const TextSpan(text: 'Questions? Contact us: '),
                         TextSpan(
@@ -810,7 +1057,7 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildSimpleSection({
     required String num,
-    required Color  color,
+    required Color color,
     required String title,
     required String text,
   }) {
@@ -822,16 +1069,28 @@ class _TermsModalState extends State<TermsModal>
             _buildNumBadge(num, color),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF264653))),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF264653),
+                ),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.only(left: 44),
-          child: Text(text,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.5)),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade700,
+              height: 1.5,
+            ),
+          ),
         ),
       ],
     );
@@ -839,14 +1098,21 @@ class _TermsModalState extends State<TermsModal>
 
   Widget _buildNumBadge(String num, Color color) {
     return Container(
-      width: 32, height: 32,
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
-        child: Text(num,
-            style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+        child: Text(
+          num,
+          style: TextStyle(
+            color: color,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -855,16 +1121,21 @@ class _TermsModalState extends State<TermsModal>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.grey.shade50, Colors.grey.shade100]),
+        gradient: LinearGradient(
+          colors: [Colors.grey.shade50, Colors.grey.shade100],
+        ),
         border: Border(top: BorderSide(color: Colors.grey.shade200, width: 2)),
       ),
       child: GestureDetector(
-        onTap: () => widget.onAccept != null ? widget.onAccept!() : widget.onClose(),
+        onTap: () =>
+            widget.onAccept != null ? widget.onAccept!() : widget.onClose(),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFFE76F51), Color(0xFFF4A261)]),
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE76F51), Color(0xFFF4A261)],
+            ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -879,8 +1150,14 @@ class _TermsModalState extends State<TermsModal>
             children: [
               const Icon(Icons.shield_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 10),
-              Text('I Understand & Agree',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'I Understand & Agree',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ),

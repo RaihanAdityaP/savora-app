@@ -68,14 +68,18 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
     if (created == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(children: [
-            Icon(Icons.error_outline_rounded, color: Colors.white),
-            const SizedBox(width: 12),
-            Text(_t('Failed to create tag.', 'Gagal membuat tag.')),
-          ]),
+          content: Row(
+            children: [
+              Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 12),
+              Text(_t('Failed to create tag.', 'Gagal membuat tag.')),
+            ],
+          ),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -84,11 +88,15 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(children: [
-          const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
-          const SizedBox(width: 12),
-          Text(_t('Tag "$tagName" created.', 'Tag "$tagName" berhasil dibuat.')),
-        ]),
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Text(
+              _t('Tag "$tagName" created.', 'Tag "$tagName" berhasil dibuat.'),
+            ),
+          ],
+        ),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -141,7 +149,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.primaryDark),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.primaryDark,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -168,17 +179,30 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                             width: 2,
                           ),
                         ),
-                        child: const Icon(Icons.label_rounded, color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.label_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(_t('Manage Tags', 'Kelola Tag'), style: AppTheme.headingLarge),
+                          Text(
+                            _t('Manage Tags', 'Kelola Tag'),
+                            style: AppTheme.headingLarge,
+                          ),
                           const SizedBox(height: 4),
                           Text(
-                            _t('Create & find community tags', 'Buat & cari tag komunitas'),
-                            style: TextStyle(fontSize: 14, color: Colors.white70),
+                            _t(
+                              'Create & find community tags',
+                              'Buat & cari tag komunitas',
+                            ),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
                           ),
                         ],
                       ),
@@ -200,7 +224,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppTheme.buildSectionHeader(_t('Add New Tag', 'Tambah Tag Baru'), Icons.add_circle_outline_rounded),
+          AppTheme.buildSectionHeader(
+            _t('Add New Tag', 'Tambah Tag Baru'),
+            Icons.add_circle_outline_rounded,
+          ),
           const SizedBox(height: 16),
           Container(
             decoration: AppTheme.inputDecoration(AppTheme.primaryCoral),
@@ -210,8 +237,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                   child: TextField(
                     controller: _createCtrl,
                     decoration: AppTheme.buildInputDecoration(
-                      hint: _t('New tag name (ex: breakfast, vegan)',
-                          'Nama tag baru (cth: sarapan, vegan)'),
+                      hint: _t(
+                        'New tag name (ex: breakfast, vegan)',
+                        'Nama tag baru (cth: sarapan, vegan)',
+                      ),
                       icon: Icons.tag_rounded,
                       iconColor: AppTheme.primaryCoral,
                     ),
@@ -235,9 +264,12 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          AppTheme.buildInfoBanner(_t(
+          AppTheme.buildInfoBanner(
+            _t(
               'New tags will wait for admin approval before they can be used.',
-              'Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.')),
+              'Tag baru akan menunggu persetujuan admin sebelum bisa digunakan.',
+            ),
+          ),
         ],
       ),
     );
@@ -252,7 +284,11 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
         decoration: InputDecoration(
           hintText: _t('Search existing tags...', 'Cari tag yang sudah ada...'),
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-          prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryTeal, size: 22),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: AppTheme.primaryTeal,
+            size: 22,
+          ),
           suffixIcon: _searchCtrl.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear_rounded, size: 20),
@@ -264,7 +300,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -287,8 +326,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             ? _t('Tag not found', 'Tag tidak ditemukan')
             : _t('No tags yet', 'Belum ada tag'),
         subtitle: _searchCtrl.text.isNotEmpty
-            ? _t('Try another keyword or create a new tag',
-                'Coba kata kunci lain atau buat tag baru')
+            ? _t(
+                'Try another keyword or create a new tag',
+                'Coba kata kunci lain atau buat tag baru',
+              )
             : _t('Create the first tag above', 'Buat tag pertama di atas'),
       );
     }
@@ -345,10 +386,8 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _tags.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: Colors.grey.shade100,
-            ),
+            separatorBuilder: (_, _) =>
+                Divider(height: 1, color: Colors.grey.shade100),
             itemBuilder: (context, index) {
               final tag = _tags[index];
               final tagName = tag['name']?.toString() ?? '';
@@ -360,7 +399,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                 child: InkWell(
                   onTap: () => Navigator.pop(context, tagName),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -369,7 +411,11 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                             gradient: AppTheme.accentGradient,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.tag_rounded, color: Colors.white, size: 16),
+                          child: Icon(
+                            Icons.tag_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -386,8 +432,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                _t('Used in $usageCount recipes',
-                                    'Dipakai $usageCount resep'),
+                                _t(
+                                  'Used in $usageCount recipes',
+                                  'Dipakai $usageCount resep',
+                                ),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade500,
@@ -397,7 +445,10 @@ class _TagManagementScreenState extends State<TagManagementScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: isApproved
                                 ? Colors.green.shade50
