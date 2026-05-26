@@ -46,48 +46,50 @@
       <div class="e-sub">Data akan muncul setelah user mengisi form /kehadiran</div>
     </div>
   @else
-    <table>
-      <thead>
-        <tr>
-          <th>Nama</th>
-          <th>Nomor</th>
-          <th>Asal</th>
-          <th>Jurusan</th>
-          <th>Kesan</th>
-          <th>Saran / Kritik</th>
-          <th>Waktu</th>
-          <th class="tr">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach($attendances as $attendance)
+    <div class="table-wrap">
+      <table>
+        <thead>
           <tr>
-            <td class="fw7">{{ $attendance['name'] ?? '-' }}</td>
-            <td class="tm">{{ $attendance['contact_number'] ?? '-' }}</td>
-            <td><span class="badge b-active">{{ $typeLabels[$attendance['attendee_type'] ?? ''] ?? '-' }}</span></td>
-            <td class="tm">{{ $majorLabels[$attendance['major'] ?? ''] ?? '-' }}</td>
-            <td class="tm" style="max-width:240px;white-space:normal;">{{ $attendance['impression'] ?? '-' }}</td>
-            <td class="tm" style="max-width:240px;white-space:normal;">{{ $attendance['feedback'] ?? '-' }}</td>
-            <td class="tc">
-              @if(!empty($attendance['created_at']))
-                {{ \Carbon\Carbon::parse($attendance['created_at'])->timezone(config('app.timezone'))->format('d M Y, H:i') }}
-              @else
-                -
-              @endif
-            </td>
-            <td class="tr">
-              <form method="POST" action="{{ route('admin.attendance.delete', $attendance['id']) }}" style="display:inline;">
-                @csrf
-                <button type="button" class="btn btn-sm btn-re" onclick="if(confirm('Hapus data presensi ini?')) this.closest('form').submit()">
-                  <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                  Hapus
-                </button>
-              </form>
-            </td>
+            <th>Nama</th>
+            <th>Nomor</th>
+            <th>Asal</th>
+            <th>Jurusan</th>
+            <th>Kesan</th>
+            <th>Saran / Kritik</th>
+            <th>Waktu</th>
+            <th class="tr">Aksi</th>
           </tr>
-        @endforeach
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @foreach($attendances as $attendance)
+            <tr>
+              <td class="fw7">{{ $attendance['name'] ?? '-' }}</td>
+              <td class="tm">{{ $attendance['contact_number'] ?? '-' }}</td>
+              <td><span class="badge b-active">{{ $typeLabels[$attendance['attendee_type'] ?? ''] ?? '-' }}</span></td>
+              <td class="tm">{{ $majorLabels[$attendance['major'] ?? ''] ?? '-' }}</td>
+              <td class="tm" style="max-width:200px;white-space:normal;min-width:120px;">{{ $attendance['impression'] ?? '-' }}</td>
+              <td class="tm" style="max-width:200px;white-space:normal;min-width:120px;">{{ $attendance['feedback'] ?? '-' }}</td>
+              <td class="tc" style="white-space:nowrap;">
+                @if(!empty($attendance['created_at']))
+                  {{ \Carbon\Carbon::parse($attendance['created_at'])->timezone(config('app.timezone'))->format('d M Y, H:i') }}
+                @else
+                  -
+                @endif
+              </td>
+              <td class="tr">
+                <form method="POST" action="{{ route('admin.attendance.delete', $attendance['id']) }}" style="display:inline;">
+                  @csrf
+                  <button type="button" class="btn btn-sm btn-re" onclick="if(confirm('Hapus data presensi ini?')) this.closest('form').submit()">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    Hapus
+                  </button>
+                </form>
+              </td>
+            </tr>
+          @endforeach
+        </tbody>
+      </table>
+    </div>
   @endif
 </div>
 @endsection

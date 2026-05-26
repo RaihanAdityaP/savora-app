@@ -18,12 +18,14 @@
         --pu:#9C27B0;--pu2:#BA68C8;
         --bd:rgba(255,255,255,.07);
         --tw:#FFFFFF;--tm:#AFAFAF;--td:#5E5E5E;
-        --sw:260px;--th:64px
+        --sw:260px;--th:64px;
+        --pg:32px;
     }
     html,body{height:100%}
     body{background:var(--bg);color:var(--tw);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.55;display:flex}
-    /* SIDEBAR */
-    .sb{width:var(--sw);background:var(--bg-s);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:200}
+
+    /* ── SIDEBAR ── */
+    .sb{width:var(--sw);background:var(--bg-s);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:300;transition:transform .25s cubic-bezier(.4,0,.2,1)}
     .sb-brand{display:flex;align-items:center;gap:14px;padding:22px 20px;border-bottom:1px solid var(--bd)}
     .sb-logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--go),var(--go2));display:flex;align-items:center;justify-content:center;box-shadow:0 0 22px rgba(255,215,0,.25);flex-shrink:0}
     .sb-logo svg{width:24px;height:24px;fill:none;stroke:#000;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
@@ -43,26 +45,42 @@
     .na:not(.on):hover .ni svg{stroke:var(--tw)}
     .sb-foot{padding:16px 20px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:8px}
     .dot{width:8px;height:8px;border-radius:50%;background:var(--gr);box-shadow:0 0 7px var(--gr);flex-shrink:0}
-    /* MAIN */
-    .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
-    /* TOPBAR */
-    .top{height:var(--th);background:rgba(10,10,10,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 32px;position:sticky;top:0;z-index:100}
-    .top-ttl{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px}
-    .top-r{margin-left:auto;display:flex;align-items:center;gap:18px}
-    .top-dt{font-size:13px;color:var(--td)}
-    .top-b{display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--bd);font-size:13px;font-weight:500;color:var(--tm)}
-    /* PAGE */
-    .pg{padding:32px;flex:1}
-    /* ALERTS */
+
+    /* ── OVERLAY ── */
+    .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:299;backdrop-filter:blur(2px)}
+
+    /* ── HAMBURGER ── */
+    .hamburger{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--bd);cursor:pointer;flex-shrink:0}
+    .hamburger svg{width:18px;height:18px;fill:none;stroke:var(--tw);stroke-width:2;stroke-linecap:round}
+
+    /* ── MAIN ── */
+    .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+
+    /* ── TOPBAR ── */
+    .top{height:var(--th);background:rgba(10,10,10,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 var(--pg);position:sticky;top:0;z-index:100;gap:12px}
+    .top-ttl{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .top-r{margin-left:auto;display:flex;align-items:center;gap:12px;flex-shrink:0}
+    .top-dt{font-size:13px;color:var(--td);white-space:nowrap}
+    .top-b{display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--bd);font-size:13px;font-weight:500;color:var(--tm);white-space:nowrap}
+    .btn-logout{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.2);color:#E57373;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .btn-logout:hover{background:rgba(244,67,54,.18)}
+    .btn-logout svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+    /* ── PAGE ── */
+    .pg{padding:var(--pg);flex:1}
+
+    /* ── ALERTS ── */
     .al{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:14px;font-size:13px;font-weight:500;margin-bottom:24px}
     .al svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
     .al-ok{background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.25);color:var(--gr2)}
     .al-err{background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.25);color:var(--re2)}
-    /* SECTION HEADER */
+
+    /* ── SECTION HEADER ── */
     .sh{display:flex;align-items:center;gap:12px;margin-bottom:20px}
     .sh-bar{width:4px;height:28px;background:linear-gradient(180deg,var(--go),var(--go2));border-radius:2px;flex-shrink:0}
     .sh-ttl{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;letter-spacing:1.5px;background:linear-gradient(90deg,var(--go),var(--go2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    /* STAT GRID */
+
+    /* ── STAT GRID ── */
     .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px}
     .sc{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:22px;padding:24px 22px;transition:transform .2s,box-shadow .25s}
     .sc:hover{transform:translateY(-3px)}
@@ -70,7 +88,8 @@
     .sc-ico svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .sc-val{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1;margin-bottom:8px}
     .sc-lbl{font-size:12px;font-weight:600;color:var(--td);letter-spacing:.4px}
-    /* MENU CARDS */
+
+    /* ── MENU CARDS ── */
     .mg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
     .mc{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:22px;padding:24px;display:flex;align-items:center;gap:20px;text-decoration:none;color:inherit;transition:transform .2s,box-shadow .25s}
     .mc:hover{transform:translateY(-3px)}
@@ -81,16 +100,20 @@
     .mc-sub{font-size:13px;color:var(--td)}
     .mc-arr{width:32px;height:32px;border-radius:50%;background:rgba(255,215,0,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .mc-arr svg{width:14px;height:14px;fill:none;stroke:var(--go);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-    /* CARD */
+
+    /* ── CARD ── */
     .card{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:22px;overflow:hidden}
     .card-hd{padding:20px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-    /* TABLE */
-    table{width:100%;border-collapse:collapse}
-    thead th{text-align:left;padding:14px 22px;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--td);text-transform:uppercase;border-bottom:1px solid var(--bd);white-space:nowrap}
-    tbody td{padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+
+    /* ── TABLE ── */
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{width:100%;border-collapse:collapse;min-width:580px}
+    thead th{text-align:left;padding:14px 20px;font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--td);text-transform:uppercase;border-bottom:1px solid var(--bd);white-space:nowrap}
+    tbody td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
     tbody tr:last-child td{border-bottom:none}
     tbody tr:hover td{background:rgba(255,255,255,.018)}
-    /* INPUTS */
+
+    /* ── INPUTS ── */
     .inp,.sel{background:var(--bi);border:1px solid var(--bd);border-radius:10px;padding:9px 14px;color:var(--tw);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
     .inp:focus,.sel:focus{border-color:rgba(255,215,0,.35)}
     .sel{padding-right:32px;cursor:pointer;appearance:none}
@@ -101,12 +124,13 @@
     .ssel{position:relative;display:inline-flex;align-items:center}
     .ssel>svg{position:absolute;right:11px;width:13px;height:13px;fill:none;stroke:var(--td);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
     .ssel .sel{width:160px}
-    /* BUTTONS */
+
+    /* ── BUTTONS ── */
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 18px;border-radius:11px;border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.7px;cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s,opacity .15s;white-space:nowrap;line-height:1}
     .btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
     .btn:hover{transform:translateY(-1px);opacity:.92}
     .btn:active{transform:none;opacity:1}
-    .btn-sm{padding:7px 13px;font-size:11px}
+    .btn-sm{padding:7px 12px;font-size:11px}
     .btn-go{background:linear-gradient(135deg,var(--go),var(--go2));color:#000}
     .btn-go:hover{box-shadow:0 4px 18px rgba(255,215,0,.28)}
     .btn-gr{background:linear-gradient(135deg,var(--gr),var(--gr2));color:#fff}
@@ -117,7 +141,8 @@
     .btn-pu:hover{box-shadow:0 4px 18px rgba(156,39,176,.28)}
     .btn-gh{background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--tm)}
     .btn-gh:hover{background:rgba(255,255,255,.1);color:var(--tw)}
-    /* BADGES */
+
+    /* ── BADGES ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
     .badge svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
     .b-banned{background:rgba(244,67,54,.15);border:1px solid rgba(244,67,54,.3);color:var(--re2)}
@@ -127,90 +152,187 @@
     .b-pending{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.3);color:var(--or2)}
     .b-approved{background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);color:var(--gr2)}
     .b-rejected{background:rgba(244,67,54,.15);border:1px solid rgba(244,67,54,.3);color:var(--re2)}
-    /* CHIPS */
+
+    /* ── CHIPS ── */
     .chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{display:inline-flex;align-items:center;padding:7px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;border:1px solid var(--bd);color:var(--td);background:var(--bc);letter-spacing:.4px;transition:all .15s}
+    .chip{display:inline-flex;align-items:center;padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;border:1px solid var(--bd);color:var(--td);background:var(--bc);letter-spacing:.4px;transition:all .15s}
     .chip:hover{border-color:rgba(255,215,0,.25);color:var(--tw)}
     .chip.on{background:linear-gradient(135deg,var(--go),var(--go2));color:#000;border-color:transparent}
-    /* AVATAR */
+
+    /* ── AVATAR / RECIPE IMG ── */
     .ava{width:38px;height:38px;border-radius:50%;background:var(--bc2);border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;overflow:hidden;flex-shrink:0}
     .ava img{width:100%;height:100%;object-fit:cover}
-    /* RECIPE IMG */
-    .rimg{width:58px;height:58px;border-radius:13px;background:var(--bc2);border:1px solid var(--bd);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .rimg{width:54px;height:54px;border-radius:12px;background:var(--bc2);border:1px solid var(--bd);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
     .rimg img{width:100%;height:100%;object-fit:cover}
-    .rimg svg{width:24px;height:24px;fill:none;stroke:var(--td);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-    /* MODAL */
-    .mbk{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+    .rimg svg{width:22px;height:22px;fill:none;stroke:var(--td);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── MODAL ── */
+    .mbk{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
     .mbk.open{display:flex}
-    .modal{background:var(--bc);border:1px solid rgba(255,255,255,.1);border-radius:24px;width:100%;max-width:480px;padding:32px;animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
+    .modal{background:var(--bc);border:1px solid rgba(255,255,255,.1);border-radius:24px;width:100%;max-width:480px;padding:28px;animation:mIn .2s ease;max-height:90vh;overflow-y:auto}
     .modal-xl{max-width:640px}
     @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}
     .m-head{display:flex;align-items:center;gap:14px;margin-bottom:24px}
     .m-ico{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .m-ico svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
     .m-ttl{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
-    /* REASON CHIPS */
+
+    /* ── REASON CHIPS ── */
     .rchips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
     .rchip{display:inline-flex;align-items:center;padding:7px 15px;border-radius:9px;border:1px solid var(--bd);background:var(--bc2);color:var(--tm);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
     .rchip:has(input:checked){background:linear-gradient(135deg,var(--go),var(--go2));color:#000;border-color:transparent}
     .rchip input{display:none}
-    /* PAGINATOR */
+
+    /* ── PAGINATOR ── */
     .pager{display:flex;align-items:center;gap:6px;padding:18px 22px;border-top:1px solid var(--bd);flex-wrap:wrap}
     .pg-a{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--bd);color:var(--tm);transition:all .15s}
     .pg-a:hover{border-color:rgba(255,215,0,.3);color:var(--tw)}
     .pg-a.on{background:linear-gradient(135deg,var(--go),var(--go2));color:#000;border-color:transparent}
     .pg-a.dis{opacity:.3;pointer-events:none}
-    /* EMPTY */
+
+    /* ── EMPTY ── */
     .empty{text-align:center;padding:64px 24px}
     .e-ico{width:88px;height:88px;border-radius:50%;background:var(--bc2);border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
     .e-ico svg{width:40px;height:40px;fill:none;stroke:var(--td);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
     .e-ttl{font-size:18px;font-weight:700;color:var(--tm);margin-bottom:6px}
     .e-sub{font-size:13px;color:var(--td)}
-    /* LOG CARD */
+
+    /* ── LOG CARD ── */
     .lc{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:20px;padding:20px;display:flex;align-items:flex-start;gap:16px;margin-bottom:12px}
     .l-ico{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .l-ico svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-    /* FORM */
+
+    /* ── FORM ── */
     .lbl{font-size:12px;font-weight:600;color:var(--tm);display:block;margin-bottom:6px}
     .ta{width:100%;background:var(--bc2);border:1px solid var(--bd);border-radius:11px;padding:11px 14px;color:var(--tw);font-family:'DM Sans',sans-serif;font-size:13px;resize:vertical;outline:none;transition:border-color .2s}
     .ta:focus{border-color:rgba(255,215,0,.35)}
-    /* UTILS */
+
+    /* ── UTILS ── */
     .f{display:flex}.ac{align-items:center}.jb{justify-content:space-between}.g2{gap:8px}.g3{gap:12px}.g4{gap:16px}.g5{gap:20px}
     .mla{margin-left:auto}.mb2{margin-bottom:8px}.mb3{margin-bottom:12px}.mb4{margin-bottom:16px}.mb5{margin-bottom:20px}.mb6{margin-bottom:24px}
     .mt4{margin-top:16px}.mt5{margin-top:20px}.wf{width:100%}.tr{text-align:right}
     .tc{color:var(--td)}.tm{color:var(--tm)}.ts{font-size:12px}.tx{font-size:11px}.fw7{font-weight:700}.fw6{font-weight:600}
     .trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    @media(max-width:1100px){.sg{grid-template-columns:repeat(2,1fr)}.mg{grid-template-columns:1fr}}
-    @media(max-width:768px){
-        .sb{transform:translateX(-100%);transition:transform .25s ease;z-index:300}
-        .sb.open{transform:translateX(0)}
-        .main{margin-left:0}
-        .pg{padding:16px}
-        .top{padding:0 16px}
-        .top-dt{display:none}
-        .sg{grid-template-columns:repeat(2,1fr);gap:12px}
-        .sc{padding:18px 16px}
-        .sc-val{font-size:28px}
+
+    /* ════════════════════════════════
+       RESPONSIVE — LAPTOP (≤1200px)
+    ════════════════════════════════ */
+    @media(max-width:1200px){
+        .sg{grid-template-columns:repeat(2,1fr)}
+        .mg{grid-template-columns:repeat(2,1fr)}
+    }
+
+    /* ════════════════════════════════
+       RESPONSIVE — TABLET (≤900px)
+    ════════════════════════════════ */
+    @media(max-width:900px){
+        :root{--pg:20px}
         .mg{grid-template-columns:1fr}
-        .card{overflow-x:auto}
-        table{min-width:600px}
-        .sbox .inp{width:160px}
-        .ssel .sel{width:120px}
-        .sb-overlay{display:block}
+        .top-dt{display:none}
+        .sbox .inp{width:180px}
+        .ssel .sel{width:130px}
     }
-    @media(max-width:480px){
-        .sg{grid-template-columns:1fr}
+
+    /* ════════════════════════════════
+       RESPONSIVE — MOBILE (≤768px)
+    ════════════════════════════════ */
+    @media(max-width:768px){
+        :root{--pg:14px}
+
+        /* Sidebar: off-canvas drawer */
+        .sb{transform:translateX(-100%);box-shadow:none}
+        .sb.open{transform:translateX(0);box-shadow:8px 0 40px rgba(0,0,0,.6)}
+
+        /* Main takes full width */
+        .main{margin-left:0}
+
+        /* Topbar */
+        .top{padding:0 var(--pg);gap:8px}
         .top-b{display:none}
+
+        /* Hamburger visible */
+        .hamburger{display:flex}
+
+        /* Stat grid: 2 col */
+        .sg{grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+        .sc{padding:18px 14px;border-radius:16px}
+        .sc-ico{width:40px;height:40px;border-radius:12px;margin-bottom:12px}
+        .sc-ico svg{width:20px;height:20px}
+        .sc-val{font-size:26px;margin-bottom:6px}
+        .sc-lbl{font-size:11px}
+
+        /* Menu cards: 1 col */
+        .mg{grid-template-columns:1fr;gap:10px}
+        .mc{padding:16px;border-radius:16px;gap:14px}
+        .mc-ico{width:46px;height:46px;border-radius:14px}
+        .mc-ico svg{width:22px;height:22px}
+        .mc-title{font-size:14px;margin-bottom:2px}
+        .mc-sub{font-size:12px}
+        .mc-arr{width:28px;height:28px}
+
+        /* Table: scrollable */
+        .card{border-radius:16px}
+        .card .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+        .card-hd{padding:14px 16px;gap:10px}
+
+        /* Table cells compact */
+        thead th{padding:12px 14px}
+        tbody td{padding:12px 14px}
+
+        /* Search bar */
+        .sbox .inp{width:100%}
+        .ssel .sel{width:110px}
+
+        /* Log cards */
+        .lc{padding:14px;border-radius:14px;gap:12px}
+        .l-ico{width:38px;height:38px;border-radius:12px}
+        .l-ico svg{width:18px;height:18px}
+
+        /* Modal */
+        .modal{padding:20px;border-radius:18px}
+        .modal-xl{max-width:100%}
+
+        /* Page padding */
+        .pg{padding:var(--pg)}
+        .empty{padding:40px 16px}
     }
-    .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299}
-    .hamburger{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--bd);cursor:pointer;margin-right:12px;flex-shrink:0}
-    .hamburger svg{width:18px;height:18px;fill:none;stroke:var(--tw);stroke-width:2;stroke-linecap:round}
-    @media(max-width:768px){.hamburger{display:flex}}
+
+    /* ════════════════════════════════
+       RESPONSIVE — SMALL MOBILE (≤480px)
+    ════════════════════════════════ */
+    @media(max-width:480px){
+        /* Stat grid: still 2 col but tighter */
+        .sg{grid-template-columns:repeat(2,1fr);gap:10px}
+        .sc{padding:14px 12px}
+        .sc-val{font-size:22px}
+
+        /* Top title shorter */
+        .top-ttl{font-size:13px;letter-spacing:1px}
+
+        /* Chips scrollable */
+        .chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+        .chip{flex-shrink:0}
+
+        /* Btn compact on small screens */
+        .btn-sm{padding:6px 10px;font-size:10px}
+
+        /* Rchips wrap */
+        .rchips{gap:6px}
+        .rchip{padding:6px 12px;font-size:11px}
+
+        /* Pager */
+        .pager{padding:12px 14px;gap:4px}
+        .pg-a{width:32px;height:32px;font-size:12px}
+    }
     </style>
     @stack('styles')
 </head>
 <body>
+
+{{-- Overlay --}}
 <div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
+
+{{-- Sidebar --}}
 <aside class="sb" id="sidebar">
     <div class="sb-brand">
         <div class="sb-logo">
@@ -239,12 +361,7 @@
             @endif
         </a>
         <a href="{{ route('admin.tags') }}" class="na {{ request()->routeIs('admin.tags') ? 'on' : '' }}">
-            <div class="ni">
-                <svg viewBox="0 0 24 24">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                    <line x1="7" y1="7" x2="7.01" y2="7"/>
-                </svg>
-            </div>
+            <div class="ni"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
             Tags
             @if(($pendingTagCount ?? 0) > 0)
                 <span style="margin-left:auto;background:var(--re);color:#fff;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:700;">{{ $pendingTagCount }}</span>
@@ -268,6 +385,8 @@
         <span class="ts tc">System Online</span>
     </div>
 </aside>
+
+{{-- Main --}}
 <div class="main">
     <header class="top">
         <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
@@ -275,27 +394,17 @@
         </button>
         <div class="top-ttl">@yield('page-title','DASHBOARD')</div>
         <div class="top-r">
-    <span class="top-dt">{{ now()->format('d M Y') }}</span>
-    <div class="top-b"><div class="dot"></div>{{ session('admin_username', 'Admin') }}</div>
-    <form method="POST" action="{{ route('admin.logout') }}" style="display:inline;">
-        @csrf
-        <button type="button"
-                onclick="if(confirm('Logout dari admin panel?')) this.closest('form').submit()"
-                style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
-                       background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.2);
-                       color:#E57373;font-family:'DM Sans',sans-serif;font-size:13px;
-                       font-weight:500;cursor:pointer;transition:all .15s;"
-                onmouseover="this.style.background='rgba(244,67,54,.18)'"
-                onmouseout="this.style.background='rgba(244,67,54,.1)'">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Logout
-        </button>
-    </form>
-</div>
+            <span class="top-dt">{{ now()->format('d M Y') }}</span>
+            <div class="top-b"><div class="dot"></div>{{ session('admin_username', 'Admin') }}</div>
+            <form method="POST" action="{{ route('admin.logout') }}" style="display:inline;">
+                @csrf
+                <button type="button" class="btn-logout"
+                        onclick="if(confirm('Logout dari admin panel?')) this.closest('form').submit()">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span class="logout-text">Logout</span>
+                </button>
+            </form>
+        </div>
     </header>
     <main class="pg">
         @if(session('status'))
@@ -307,18 +416,36 @@
         @yield('content')
     </main>
 </div>
+
 @stack('scripts')
 <script>
 function toggleSidebar(){
-    const sb = document.getElementById('sidebar');
-    const ov = document.getElementById('sbOverlay');
-    sb.classList.toggle('open');
-    ov.style.display = sb.classList.contains('open') ? 'block' : 'none';
+    const sb  = document.getElementById('sidebar');
+    const ov  = document.getElementById('sbOverlay');
+    const open = sb.classList.toggle('open');
+    ov.style.display = open ? 'block' : 'none';
+    document.body.style.overflow = open ? 'hidden' : '';
 }
-// Close sidebar on nav link click (mobile)
+// Auto-close on nav click (mobile)
 document.querySelectorAll('.sb .na').forEach(a => a.addEventListener('click', () => {
     if(window.innerWidth <= 768) toggleSidebar();
 }));
+// Auto-close on resize to desktop
+window.addEventListener('resize', () => {
+    if(window.innerWidth > 768){
+        const sb = document.getElementById('sidebar');
+        const ov = document.getElementById('sbOverlay');
+        sb.classList.remove('open');
+        ov.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+});
+// Hide logout text on very small screens
+(function(){
+    const style = document.createElement('style');
+    style.textContent = '@media(max-width:400px){.logout-text{display:none}}';
+    document.head.appendChild(style);
+})();
 </script>
 </body>
-</html> 
+</html>

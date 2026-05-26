@@ -5,7 +5,7 @@
 
 @section('content')
 
-{{-- ── Alerts ── --}}
+{{-- Alerts --}}
 @if(($error ?? null) && !session('error'))
 <div class="al al-err">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
@@ -13,7 +13,7 @@
 </div>
 @endif
 
-{{-- ── Form ── --}}
+{{-- Grid --}}
 <div class="bc-grid">
 
   {{-- LEFT: form --}}
@@ -66,7 +66,7 @@
 
       <div id="targetUser" class="{{ old('audience') === 'user' ? '' : 'bc-hidden' }}" style="margin-top:12px;">
         <label class="lbl">Pilih User</label>
-        <div class="ssel">
+        <div class="ssel" style="width:100%;">
           <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           <select name="user_id" class="sel" style="width:100%;">
             <option value="">Pilih user...</option>
@@ -95,7 +95,7 @@
           </svg>
           <input name="title" class="inp bc-inp-padded" value="{{ old('title') }}"
                  maxlength="120" required placeholder="Contoh: Event Baru di Savora"
-                 oninput="updatePreview()">
+                 oninput="updatePreview()" style="width:100%;">
         </div>
         <div class="bc-char-hint" id="titleCount">0 / 120</div>
       </div>
@@ -115,10 +115,10 @@
         <div class="bc-step">3</div>
         <span>Aksi Tap (Opsional)</span>
       </div>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:14px;">
+      <div class="bc-action-grid">
         <div>
           <label class="lbl">Tap Action</label>
-          <div class="ssel">
+          <div class="ssel" style="width:100%;">
             <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
             <select name="route" class="sel" style="width:100%;">
               <option value="home"    @selected(old('route') === 'home')>Home</option>
@@ -130,7 +130,7 @@
         <div>
           <label class="lbl">Related ID</label>
           <input name="related_entity_id" class="inp" value="{{ old('related_entity_id') }}"
-                 placeholder="UUID recipe/profile">
+                 placeholder="UUID recipe/profile" style="width:100%;">
         </div>
       </div>
     </div>
@@ -203,30 +203,31 @@
   </div>
 </div>
 
-{{-- ── Styles ── --}}
 <style>
 /* Grid layout */
-.bc-grid{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start;}
-@media(max-width:1100px){.bc-grid{grid-template-columns:1fr;}}
+.bc-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
 
 /* Form col */
-.bc-form-col{display:flex;flex-direction:column;gap:16px;}
-.bc-section{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:18px;padding:20px 22px;}
-.bc-section-label{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--tw);letter-spacing:.5px;}
+.bc-form-col{display:flex;flex-direction:column;gap:14px;}
+.bc-section{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:18px;padding:18px 20px;}
+.bc-section-label{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--tw);letter-spacing:.5px;}
 .bc-step{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--go),var(--go2));color:#000;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .bc-required{color:var(--re2);font-size:11px;}
 
+/* Action grid */
+.bc-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
 /* Radio group */
 .bc-radio-group{display:flex;flex-direction:column;gap:10px;}
-.bc-radio{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--bd);background:var(--bi);cursor:pointer;transition:border-color .2s,background .2s;}
+.bc-radio{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--bd);background:var(--bi);cursor:pointer;transition:border-color .2s,background .2s;}
 .bc-radio:has(input:checked){border-color:rgba(255,215,0,.35);background:rgba(255,215,0,.06);}
 .bc-radio input{display:none;}
-.bc-radio-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.bc-radio-icon svg{width:18px;height:18px;}
+.bc-radio-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.bc-radio-icon svg{width:17px;height:17px;}
 .bc-radio-body{flex:1;min-width:0;}
 .bc-radio-title{font-size:13px;font-weight:700;color:var(--tw);margin-bottom:2px;}
 .bc-radio-desc{font-size:11px;color:var(--td);}
-.bc-radio-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s;}
+.bc-radio-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,border-color .2s;}
 .bc-radio-check svg{width:11px;height:11px;fill:none;stroke:transparent;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s;}
 .bc-radio:has(input:checked) .bc-radio-check{background:var(--go);border-color:var(--go);}
 .bc-radio:has(input:checked) .bc-radio-check svg{stroke:#000;}
@@ -235,7 +236,7 @@
 .bc-input-wrap{position:relative;}
 .bc-input-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--td);pointer-events:none;}
 .bc-inp-padded{padding-left:38px !important;}
-.bc-textarea{width:100%;resize:vertical;min-height:110px;}
+.bc-textarea{width:100%;resize:vertical;min-height:100px;}
 .bc-char-hint{font-size:11px;color:var(--td);text-align:right;margin-top:5px;}
 .bc-hidden{display:none;}
 
@@ -243,23 +244,23 @@
 .bc-submit-btn{width:100%;padding:14px;border-radius:14px;font-size:14px;letter-spacing:.8px;justify-content:center;gap:9px;}
 
 /* Right col */
-.bc-right-col{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px;}
+.bc-right-col{display:flex;flex-direction:column;gap:14px;position:sticky;top:80px;}
 
 /* Preview card */
-.bc-preview-card{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:18px;padding:20px;overflow:hidden;}
-.bc-preview-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:var(--td);text-transform:uppercase;margin-bottom:18px;}
+.bc-preview-card{background:linear-gradient(135deg,var(--bc2),var(--bc));border:1px solid var(--bd);border-radius:18px;padding:18px;overflow:hidden;}
+.bc-preview-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:var(--td);text-transform:uppercase;margin-bottom:16px;}
 .bc-dot-live{width:7px;height:7px;border-radius:50%;background:#4CAF50;box-shadow:0 0 6px #4CAF50;animation:livePulse 2s ease-in-out infinite;}
 @keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 
 /* Phone frame */
-.bc-phone{width:200px;margin:0 auto;background:#111;border:2px solid rgba(255,255,255,.15);border-radius:28px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);}
+.bc-phone{width:190px;margin:0 auto;background:#111;border:2px solid rgba(255,255,255,.15);border-radius:26px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.5);}
 .bc-phone-status{height:24px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
-.bc-phone-screen{background:#1a1a2e;min-height:140px;padding:12px;}
-.bc-phone-home{height:20px;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;}
-.bc-phone-home::before{content:'';width:50px;height:3px;background:rgba(255,255,255,.3);border-radius:9999px;}
+.bc-phone-screen{background:#1a1a2e;min-height:130px;padding:10px;}
+.bc-phone-home{height:18px;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;}
+.bc-phone-home::before{content:'';width:46px;height:3px;background:rgba(255,255,255,.3);border-radius:9999px;}
 
 /* Notification bubble */
-.bc-notif-bubble{background:rgba(255,255,255,.10);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;}
+.bc-notif-bubble{background:rgba(255,255,255,.10);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:9px 11px;}
 .bc-notif-app{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:10px;font-weight:700;color:rgba(255,255,255,.6);}
 .bc-notif-app-icon{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#E76F51,#F4A261);display:flex;align-items:center;justify-content:center;}
 .bc-notif-app-icon svg{width:10px;height:10px;}
@@ -267,16 +268,31 @@
 .bc-notif-msg{font-size:10px;color:rgba(255,255,255,.65);line-height:1.4;word-break:break-word;}
 
 /* Tips */
-.bc-tips{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.18);border-radius:16px;padding:18px 20px;}
-.bc-tips-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--go);letter-spacing:.5px;margin-bottom:12px;}
+.bc-tips{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.18);border-radius:16px;padding:16px 18px;}
+.bc-tips-header{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--go);letter-spacing:.5px;margin-bottom:10px;}
 .bc-tips-header svg{width:14px;height:14px;flex-shrink:0;}
-.bc-tips-list{list-style:none;display:flex;flex-direction:column;gap:8px;}
+.bc-tips-list{list-style:none;display:flex;flex-direction:column;gap:7px;}
 .bc-tips-list li{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--tm);line-height:1.5;}
 .bc-tip-dot{width:5px;height:5px;border-radius:50%;background:var(--go);flex-shrink:0;margin-top:5px;}
 
-@media(max-width:768px){
-  .bc-section{padding:16px;}
-  .bc-right-col{position:static;}
+/* ── Responsive ── */
+@media(max-width:1100px){
+  .bc-grid{grid-template-columns:1fr;}
+  .bc-right-col{position:static;flex-direction:row;flex-wrap:wrap;}
+  .bc-preview-card{flex:1;min-width:260px;}
+  .bc-tips{flex:1;min-width:260px;}
+}
+@media(max-width:600px){
+  .bc-action-grid{grid-template-columns:1fr;}
+  .bc-right-col{flex-direction:column;}
+  .bc-section{padding:14px 16px;}
+  .bc-submit-btn{padding:13px;}
+}
+@media(max-width:400px){
+  .bc-radio{padding:10px 12px;gap:10px;}
+  .bc-radio-icon{width:30px;height:30px;}
+  .bc-radio-icon svg{width:14px;height:14px;}
+  .bc-radio-desc{display:none;}
 }
 </style>
 

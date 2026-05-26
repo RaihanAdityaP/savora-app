@@ -4,7 +4,7 @@
 @section('content')
 @if($error)<div class="al al-err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ $error }}</div>@endif
 
-<div class="f ac jb mb4" style="flex-wrap:wrap;gap:16px;">
+<div class="f ac jb mb4" style="flex-wrap:wrap;gap:12px;">
   <div style="flex:1;"></div>
   <span class="ts tc">{{ $paginator->total() }} total entries</span>
 </div>
@@ -50,7 +50,7 @@
   $label = ['ban_user'=>'Ban User','unban_user'=>'Unban User','moderate_recipe'=>'Moderate Recipe','delete_recipe'=>'Delete Recipe','delete_comment'=>'Delete Comment'][$action] ?? strtoupper(str_replace('_',' ',$action));
 @endphp
 <div class="lc" style="border-color:{{ str_replace('.3','.15',$glow) }};">
-  <div class="l-ico" style="background:{{ $grad }};box-shadow:0 4px 16px {{ $glow }};">
+  <div class="l-ico" style="background:{{ $grad }};box-shadow:0 4px 16px {{ $glow }};flex-shrink:0;">
     <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{!! $lico !!}</svg>
   </div>
   <div style="flex:1;min-width:0;">
@@ -60,12 +60,12 @@
       <span class="tc">{{ $username }}</span>
     </div>
     @if(!empty($details))
-    <div style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;margin-bottom:10px;">
+    <div style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;margin-bottom:10px;">
       @foreach(['recipe_title'=>'Recipe','username'=>'Target','status'=>'Status','action'=>'Action'] as $dk=>$dl)
         @if(isset($details[$dk]))
         <div class="f g3 ts mb2">
           <span class="tc fw6" style="width:54px;flex-shrink:0;">{{ $dl }}:</span>
-          <span class="tm">{{ is_string($details[$dk]) ? strtoupper($details[$dk]) : $details[$dk] }}</span>
+          <span class="tm" style="word-break:break-word;">{{ is_string($details[$dk]) ? strtoupper($details[$dk]) : $details[$dk] }}</span>
         </div>
         @endif
       @endforeach

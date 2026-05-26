@@ -4,10 +4,10 @@
 @section('content')
 @if($error)<div class="al al-err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>{{ $error }}</div>@endif
 
-<div class="f ac jb mb4" style="flex-wrap:wrap;gap:16px;">
-  <div style="flex:1;"></div>
-  <form method="GET" action="{{ route('admin.recipes') }}" class="f ac g3" style="flex-wrap:wrap;width:100%;">
-    <div class="sbox" style="flex:1;min-width:0;">
+{{-- Filter Bar --}}
+<div class="mb4">
+  <form method="GET" action="{{ route('admin.recipes') }}" class="filter-form">
+    <div class="sbox filter-search">
       <svg viewBox="0 0 24 24" fill="none" stroke="var(--go)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="Search recipes..." class="inp" style="width:100%;">
     </div>
@@ -30,79 +30,81 @@
     <div class="e-sub">Try a different filter</div>
   </div>
 @else
-  <table>
-    <thead><tr>
-      <th>Recipe</th><th>Author</th><th>Details</th><th>Status</th><th>Date</th><th class="tr">Actions</th>
-    </tr></thead>
-    <tbody>
-    @foreach($recipes as $recipe)
-    @php
-      $status   = $recipe['status'] ?? 'pending';
-      $profile  = $recipe['profiles'] ?? null;
-      $username = $profile['username'] ?? '—';
-      $avUrl    = $profile['avatar_url'] ?? null;
-      $initials = strtoupper(substr($username,0,1));
-      $created  = isset($recipe['created_at']) ? \Carbon\Carbon::parse($recipe['created_at'])->format('d M Y') : '—';
-      $imgUrl   = $recipe['image_url'] ?? null;
-      $bc       = match($status){ 'approved'=>'b-approved','rejected'=>'b-rejected',default=>'b-pending' };
-    @endphp
-    <tr>
-      <td>
-        <div class="f ac g3">
-          <div class="rimg">
-            @if($imgUrl)<img src="{{ $imgUrl }}" alt="">
-            @else<svg viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>@endif
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Recipe</th><th>Author</th><th>Details</th><th>Status</th><th>Date</th><th class="tr">Actions</th>
+      </tr></thead>
+      <tbody>
+      @foreach($recipes as $recipe)
+      @php
+        $status   = $recipe['status'] ?? 'pending';
+        $profile  = $recipe['profiles'] ?? null;
+        $username = $profile['username'] ?? '—';
+        $avUrl    = $profile['avatar_url'] ?? null;
+        $initials = strtoupper(substr($username,0,1));
+        $created  = isset($recipe['created_at']) ? \Carbon\Carbon::parse($recipe['created_at'])->format('d M Y') : '—';
+        $imgUrl   = $recipe['image_url'] ?? null;
+        $bc       = match($status){ 'approved'=>'b-approved','rejected'=>'b-rejected',default=>'b-pending' };
+      @endphp
+      <tr>
+        <td>
+          <div class="f ac g3">
+            <div class="rimg">
+              @if($imgUrl)<img src="{{ $imgUrl }}" alt="">
+              @else<svg viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>@endif
+            </div>
+            <div>
+              <div class="fw6 trunc" style="max-width:200px;">{{ $recipe['title'] ?? '—' }}</div>
+              @if($recipe['description'] ?? null)
+              <div class="ts tc trunc" style="max-width:200px;">{{ $recipe['description'] }}</div>
+              @endif
+            </div>
           </div>
-          <div>
-            <div class="fw6 trunc" style="max-width:220px;">{{ $recipe['title'] ?? '—' }}</div>
-            @if($recipe['description'] ?? null)
-            <div class="ts tc trunc" style="max-width:220px;">{{ $recipe['description'] }}</div>
+        </td>
+        <td>
+          <div class="f ac g2">
+            <div class="ava" style="width:28px;height:28px;font-size:11px;">
+              @if($avUrl)<img src="{{ $avUrl }}" alt="">@else{{ $initials }}@endif
+            </div>
+            <span class="ts">{{ $username }}</span>
+          </div>
+        </td>
+        <td>
+          <div class="f ac g2" style="flex-wrap:wrap;">
+            @if($recipe['cooking_time'] ?? null)
+              <span class="badge" style="background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.2);color:var(--or2);">{{ $recipe['cooking_time'] }}m</span>
+            @endif
+            @if($recipe['difficulty'] ?? null)
+              <span class="badge" style="background:rgba(33,150,243,.1);border:1px solid rgba(33,150,243,.2);color:var(--bl2);">{{ ucfirst($recipe['difficulty']) }}</span>
             @endif
           </div>
-        </div>
-      </td>
-      <td>
-        <div class="f ac g2">
-          <div class="ava" style="width:28px;height:28px;font-size:11px;">
-            @if($avUrl)<img src="{{ $avUrl }}" alt="">@else{{ $initials }}@endif
-          </div>
-          <span class="ts">{{ $username }}</span>
-        </div>
-      </td>
-      <td>
-        <div class="f ac g2" style="flex-wrap:wrap;">
-          @if($recipe['cooking_time'] ?? null)
-            <span class="badge" style="background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.2);color:var(--or2);">{{ $recipe['cooking_time'] }}m</span>
-          @endif
-          @if($recipe['difficulty'] ?? null)
-            <span class="badge" style="background:rgba(33,150,243,.1);border:1px solid rgba(33,150,243,.2);color:var(--bl2);">{{ ucfirst($recipe['difficulty']) }}</span>
-          @endif
-        </div>
-      </td>
-      <td><span class="badge {{ $bc }}">{{ ucfirst($status) }}</span></td>
-      <td class="tc ts">{{ $created }}</td>
-      <td class="tr">
-        <div class="f ac g2" style="justify-content:flex-end;">
-          <button type="button" class="btn btn-gh btn-sm" onclick="openRecipeModal({{ json_encode($recipe) }})">
-            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
-          </button>
-          @if($status === 'pending')
-          <form method="POST" action="{{ route('admin.recipes.moderate',$recipe['id']) }}" style="display:inline;">
-            @csrf<input type="hidden" name="action" value="approved">
-            <button type="submit" class="btn btn-gr btn-sm" onclick="return confirm('Approve recipe?')">
-              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approve
+        </td>
+        <td><span class="badge {{ $bc }}">{{ ucfirst($status) }}</span></td>
+        <td class="tc ts">{{ $created }}</td>
+        <td class="tr">
+          <div class="f ac g2" style="justify-content:flex-end;flex-wrap:wrap;">
+            <button type="button" class="btn btn-gh btn-sm" onclick="openRecipeModal({{ json_encode($recipe) }})">
+              <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View
             </button>
-          </form>
-          <button type="button" class="btn btn-re btn-sm" onclick="openRejectModal('{{ $recipe['id'] }}','{{ addslashes($recipe['title'] ?? '') }}')">
-            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Reject
-          </button>
-          @endif
-        </div>
-      </td>
-    </tr>
-    @endforeach
-    </tbody>
-  </table>
+            @if($status === 'pending')
+            <form method="POST" action="{{ route('admin.recipes.moderate',$recipe['id']) }}" style="display:inline;">
+              @csrf<input type="hidden" name="action" value="approved">
+              <button type="submit" class="btn btn-gr btn-sm" onclick="return confirm('Approve recipe?')">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Approve
+              </button>
+            </form>
+            <button type="button" class="btn btn-re btn-sm" onclick="openRejectModal('{{ $recipe['id'] }}','{{ addslashes($recipe['title'] ?? '') }}')">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Reject
+            </button>
+            @endif
+          </div>
+        </td>
+      </tr>
+      @endforeach
+      </tbody>
+    </table>
+  </div>
 @endif
 </div>
 
@@ -148,13 +150,23 @@
     </form>
   </div>
 </div>
+
+<style>
+.filter-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-search{flex:1;min-width:160px}
+.filter-search .inp{width:100%}
+@media(max-width:480px){
+  .filter-form{flex-direction:column;align-items:stretch}
+  .filter-form .btn{width:100%;justify-content:center}
+}
+</style>
 @endsection
 @push('scripts')
 <script>
 function openRecipeModal(r){
   document.getElementById('rModalTitle').textContent=r.title||'Recipe Detail';
-  document.getElementById('rImg').innerHTML=r.image_url?`<img src="${r.image_url}" style="width:100%;height:220px;object-fit:cover;border-radius:16px;border:1px solid rgba(255,255,255,.07);">`:'';
-  const mB=(col,label,val)=>`<div style="background:${col}11;border:1px solid ${col}33;border-radius:10px;padding:12px 16px;text-align:center;min-width:100px;"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:${col};margin-bottom:4px;">${label}</div><div style="font-size:15px;font-weight:700;">${val}</div></div>`;
+  document.getElementById('rImg').innerHTML=r.image_url?`<img src="${r.image_url}" style="width:100%;height:200px;object-fit:cover;border-radius:14px;border:1px solid rgba(255,255,255,.07);">`:'';
+  const mB=(col,label,val)=>`<div style="background:${col}11;border:1px solid ${col}33;border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;"><div style="font-size:10px;font-weight:700;letter-spacing:1px;color:${col};margin-bottom:4px;">${label}</div><div style="font-size:15px;font-weight:700;">${val}</div></div>`;
   let meta='';
   if(r.cooking_time)meta+=mB('#FF9800','COOK TIME',r.cooking_time+' min');
   if(r.servings)meta+=mB('#4CAF50','SERVINGS',r.servings);
